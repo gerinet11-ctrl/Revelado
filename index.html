@@ -744,12 +744,12 @@ kbd {
 .splash.play .splash-word { animation: develop 1.25s .3s cubic-bezier(.3,.7,.3,1) both; }
 .splash.play .splash-tag  { animation: rise .6s .95s ease-out both; }
 .splash.play .splash-foot { animation: rise .5s .2s ease-out both; }
-.splash.play .splash-bar i { animation: load 3.1s .1s cubic-bezier(.4,0,.2,1) both; }
-.splash.play .ic-rocket { animation: rocket-launch 1.6s 1.9s linear both; }
-.splash.play .ic-fire { animation: fire .12s 2.45s 10 alternate ease-in-out both; }
-.splash.quick.play .ic-rocket { animation-delay: .1s; animation-duration: 1.2s; }
-.splash.quick.play .ic-fire { animation-delay: .45s; }
-.splash.quick.play .splash-bar i { animation-duration: 1.3s; }
+.splash.play .splash-bar i { animation: load 4.1s .1s cubic-bezier(.4,0,.2,1) both; }
+.splash.play .ic-rocket { animation: rocket-launch 1.6s 2.9s linear both; }
+.splash.play .ic-fire { animation: fire .12s 3.45s 10 alternate ease-in-out both; }
+.splash.quick.play .ic-rocket { animation-delay: 1.1s; animation-duration: 1.2s; }
+.splash.quick.play .ic-fire { animation-delay: 1.45s; }
+.splash.quick.play .splash-bar i { animation-duration: 2.3s; }
 .splash.quick.play .splash-tag { animation-delay: .25s; }
 .splash.leaving { animation: splash-out .45s ease forwards; pointer-events: none; }
 .app.entering { animation: app-in .55s .05s cubic-bezier(.2,.8,.2,1) both; }
@@ -3975,7 +3975,7 @@ body::before {
   /* ================= Pantalla de inicio ================= */
   const splash = $("splash"), app = document.querySelector(".app");
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const SPLASH_MIN = REDUCED ? 1500 : splash.classList.contains("quick") ? 1500 : 3600;
+  const SPLASH_MIN = REDUCED ? 2500 : splash.classList.contains("quick") ? 2500 : 4600;
   let splashTimer = 0;
   function hideSplash() {
     if (splash.hidden || splash.classList.contains("leaving")) return;
@@ -3991,7 +3991,7 @@ body::before {
     splash.hidden = false;
     void splash.offsetWidth;
     splash.classList.add("play");
-    const full = REDUCED ? 1500 : 3600;
+    const full = REDUCED ? 2500 : 4600;
     splashTimer = setTimeout(hideSplash, full);
     setTimeout(() => { $("splash-status").textContent = "Listo"; }, full - 500);
   }
