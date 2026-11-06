@@ -813,7 +813,7 @@ body::before {
     padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
     background: var(--bg);
   }
-  .standalone .topbar { padding-top: 8px; }
+  .standalone .topbar, .standalone.under-bar .topbar { padding-top: 8px; }   /* el margen del reloj ya lo pone .app: no sumarlo dos veces */
   .topbar .brand { margin-right: auto; font-size: 19px; gap: 8px; }
   .topbar .brand .mark { width: 30px; height: 30px; }
   .topbar #reset { display: none; }   /* en el móvil cada pestaña tiene su «Sin …» */
