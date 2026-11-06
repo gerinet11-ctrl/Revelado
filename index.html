@@ -1321,8 +1321,8 @@ body::before {
       ref: "Como una réflex con objetivo luminoso: fondo desenfocado, piel suave y luces contenidas. Toca la foto para elegir qué queda enfocado.",
       p: { temperature: 8, shadows: 18, highlights: -20, clarity: -14, contrast: 4, saturation: 4, sharpen: 22, vignette: 14, depth: 45, smooth: 30 } },
     { id: "flash", name: "Flash", cam: "flash",
-      ref: "Como un flash directo de estudio: la persona brilla, el fondo se oscurece, contraste marcado, sombras duras y color limpio.",
-      p: { flash: 75, contrast: 22, exposure: 4, shadows: -16, highlights: -8, saturation: 8, temperature: -6, clarity: 10, sharpen: 32 } },
+      ref: "Como una luz profesional de frente: ilumina a la persona y toda la foto, aclara las sombras, colores limpios y brillo nítido.",
+      p: { flash: 80, exposure: 6, contrast: 8, shadows: 18, highlights: -14, saturation: 6, temperature: -4, clarity: 6, sharpen: 30 } },
     { id: "cromo", name: "Cromo clásico", cam: "sinespejo",
       ref: "Como una película de color apagado: poco color, sombras firmes y luces suaves.",
       p: { saturation: -35, contrast: 18, shadows: -14, highlights: -26, temperature: -6, clarity: 12, sharpen: 22 } },
@@ -1642,22 +1642,28 @@ body::before {
       }
     }
 
-    // 3b. Flash directo: luz fuerte sobre el sujeto que cae rápido hacia los bordes, brillos en las zonas claras
+    // 3b. Flash frontal profesional: ilumina toda la foto y sobre todo al sujeto, aclara las sombras
+    //     (la luz de frente las rellena), protege las zonas claras para que no se quemen y añade un brillo limpio.
     const fl = Math.min(1, (p.flash || 0) / 100);
     if (fl) {
-      const fx0 = w * 0.5, fy0 = h * 0.42, R = Math.max(w, h) * 0.62;
+      const fx0 = w * 0.5, fy0 = h * 0.42, R = Math.max(w, h) * 0.75;
+      const shoulder = v => v <= 205 ? v : 205 + 50 * (1 - Math.exp(-(v - 205) / 50));   // las luces se acercan al blanco sin quemarse
       let i = 0;
       for (let y = 0; y < h; y++) {
         const dy = (y - fy0) / R;
         for (let x = 0; x < w; x++, i += 4) {
           const dx = (x - fx0) / R;
           let t = Math.sqrt(dx * dx + dy * dy); t = t > 1 ? 1 : t;
-          const g = (1 + fl * 0.42 * (1 - t) * (1 - t)) * (1 - fl * 0.5 * t * t);   // más luz cerca, fondo más oscuro
-          let r = d[i] * g, gg = d[i+1] * g, b = d[i+2] * g;
+          const near = (1 - t) * Math.sqrt(1 - t);                    // 1 en el sujeto, 0 en los bordes
+          const gain = 1 + fl * (0.14 + 0.26 * near);                 // toda la foto más clara, el sujeto mucho más
+          let r = d[i] * gain, gg = d[i+1] * gain, b = d[i+2] * gain;
+          const L0 = (d[i] * .2126 + d[i+1] * .7152 + d[i+2] * .0722) / 255;
+          const fill = fl * 34 * (1 - L0) * (1 - L0) * (0.55 + 0.45 * near);   // relleno de sombras
+          r += fill; gg += fill; b += fill;
           const L = (r * .2126 + gg * .7152 + b * .0722) / 255;
-          if (L > 0.55) { const sp = fl * 38 * (L - 0.55) * (1 - t); r += sp; gg += sp; b += sp * 1.08; }   // brillo del flash
-          b += fl * 5 * (1 - t);                                                   // la luz de flash es algo fría
-          d[i] = r; d[i+1] = gg; d[i+2] = b;
+          if (L > 0.6) { const sp = fl * 22 * (L - 0.6) * near; r += sp; gg += sp; b += sp * 1.06; }   // brillo del flash
+          b += fl * 4 * near;                                          // la luz de flash es algo fría
+          d[i] = shoulder(r); d[i+1] = shoulder(gg); d[i+2] = shoulder(b);
         }
       }
     }
