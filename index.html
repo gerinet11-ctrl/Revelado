@@ -1253,7 +1253,14 @@ body::before {
     const top = Math.round(probeTop.getBoundingClientRect().height);
     root.style.setProperty("--safe-top", top + "px");
     root.classList.toggle("under-bar", top >= 10);   // la app se dibuja detrás del reloj
-    root.style.setProperty("--app-h", Math.round(Math.max(innerHeight, probeFull.getBoundingClientRect().height)) + "px");
+    // Si la app se dibuja detrás del reloj, el iPhone suele informar de un alto menor que el visible
+    // (le resta la zona del reloj): se suma esa zona, sin pasar nunca del alto de la pantalla.
+    const vh = Math.max(innerHeight, probeFull.getBoundingClientRect().height);
+    const portrait = innerHeight >= innerWidth;
+    const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    const h = top >= 10 ? Math.max(vh, Math.min(screenH, vh + top)) : vh;
+    root.style.setProperty("--app-h", Math.round(h) + "px");
+    window.__fitInfo = { innerHeight, fijo: Math.round(probeFull.getBoundingClientRect().height), pantalla: screenH, reloj: top, usado: Math.round(h) };
   };
   fit();
   addEventListener("resize", fit);
@@ -3996,7 +4003,20 @@ body::before {
     setTimeout(() => { $("splash-status").textContent = "Listo"; }, full - 500);
   }
   splash.addEventListener("click", hideSplash);
-  $("brand").addEventListener("click", playSplash);
+  $("brand").addEventListener("click", () => { if (!brandLong) playSplash(); brandLong = false; });
+  // Mantener pulsado el logo 1 segundo muestra las medidas de la pantalla (para ajustar el diseño al iPhone).
+  let brandLong = false, brandTimer = 0;
+  $("brand").addEventListener("pointerdown", () => {
+    brandLong = false; clearTimeout(brandTimer);
+    brandTimer = setTimeout(() => {
+      brandLong = true;
+      const f = window.__fitInfo || {}, rt = getComputedStyle(document.documentElement);
+      const tabsBottom = Math.round(document.querySelector(".tabs").getBoundingClientRect().bottom);
+      toast(`Medidas · modo app: ${document.documentElement.classList.contains("standalone") ? "sí" : "no"} · alto informado ${f.innerHeight ?? innerHeight} · fijo ${f.fijo ?? "-"} · pantalla ${f.pantalla ?? screen.height} · reloj ${f.reloj ?? 0} · usado ${f.usado ?? "-"} · pestañas terminan en ${tabsBottom}`);
+    }, 1000);
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => $("brand").addEventListener(ev, () => clearTimeout(brandTimer)));
+  $("brand").addEventListener("contextmenu", e => e.preventDefault());
   const isTouchDevice = matchMedia("(pointer: coarse)").matches;
   setTimeout(() => {
     try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
