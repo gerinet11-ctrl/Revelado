@@ -417,8 +417,10 @@ button, label, .film, .preset { -webkit-tap-highlight-color: transparent; }
 .section-title.fold { cursor: pointer; user-select: none; -webkit-user-select: none; }
 .section-title.fold::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s; }
 .section.collapsed .section-title.fold::after { transform: rotate(-45deg); }
-.section.collapsed > :not(.section-title) { display: none !important; }
-.section.collapsed { padding-bottom: 10px; }
+@media (min-width: 861px) {   /* plegar grupos solo en el ordenador; en el móvil se ve un ajuste cada vez */
+  .section.collapsed > :not(.section-title) { display: none !important; }
+  .section.collapsed { padding-bottom: 10px; }
+}
 .hsl-bands { gap: 10px; }
 .hsl-dot { position: relative; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 2px var(--panel); padding: 0; }
 .hsl-dot[aria-pressed="true"] { border-color: var(--fg); }
@@ -565,6 +567,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .chip:hover { background: var(--raise); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .chip.text { font-family: var(--f-ui); }
+.chip:disabled { opacity: .4; cursor: default; }
+.m-fcats .chip { flex: none; }
 .mini-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
 
 .formats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -613,6 +617,21 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 }
 .field input:focus { border-color: var(--accent); outline: none; }
 
+.m-only, #tab-fotos { display: none; }
+#m-adj-slider { padding-top: 6px; }
+.m-adj-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin-bottom: 2px; }
+.m-adj-head output { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-adj-head output.changed { color: var(--accent); }
+.m-icons { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 8px 0 2px; }
+.m-icons::-webkit-scrollbar, .presets::-webkit-scrollbar, .formats::-webkit-scrollbar, .m-fcats::-webkit-scrollbar { display: none; }
+.m-ico { flex: 0 0 62px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 11px; cursor: pointer; position: relative; }
+.m-ico .ring { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
+.m-ico .ring svg { width: 19px; height: 19px; }
+.m-ico[aria-pressed="true"] { color: var(--fg); }
+.m-ico[aria-pressed="true"] .ring { border-color: var(--accent); color: var(--accent); }
+.m-ico.changed .ring::after { content: ""; position: absolute; top: 1px; right: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1.5px var(--panel); }
+.m-ico.act .ring { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.m-ico:disabled { opacity: .4; }
 .panel-foot { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 kbd {
   font-family: var(--f-mono);
@@ -773,36 +792,79 @@ body::before {
   z-index: 15;
 }
 @media (max-width: 860px) {
-  /* En el móvil, como una app de fotos: la foto se queda fija arriba y solo se deslizan las opciones de abajo */
-  html { height: var(--app-h, 100%); }   /* incluye el margen de la barrita de inicio del iPhone */
+  /* Móvil: la foto es la protagonista. Arriba una barra fina; abajo las opciones de la herramienta
+     abierta (deslizables de lado) y la fila de herramientas. */
+  html { height: var(--app-h, 100%); }
   html, body { overflow: hidden; overscroll-behavior: none; }
   body { height: 100%; }
-  /* Botones en una columna a la derecha de la foto: la foto gana toda la altura de arriba */
-  .topbar {
-    grid-row: 1; grid-column: 2;
-    flex-direction: column; flex-wrap: nowrap; justify-content: flex-start;
-    gap: 8px; padding: 0; background: none;
-  }
-  .topbar .group { flex-direction: column; gap: 8px; }
-  .topbar .btn, .topbar .btn.icon { width: 40px; height: 40px; padding: 0; justify-content: center; }
-  .topbar .btn svg { width: 18px; height: 18px; }
-  .topbar .btn .lbl { display: none; }
   .app {
     height: 100%;
-    gap: 10px 8px;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: minmax(200px, 6fr) auto minmax(0, 5fr);
-    padding-block: 10px 10px;
+    gap: 0;
+    padding: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
-  .standalone .topbar { padding-top: 0; }
-  .standalone .app { padding-top: calc(var(--safe-top, 0px) + 30px); }
-  .stage { grid-row: 1; grid-column: 1; padding: 12px 12px 54px; }   /* abajo queda sitio para el nombre y el zoom */
-  .strip { grid-row: 2; grid-column: 1 / -1; }
-  .panel { grid-row: 3; grid-column: 1 / -1; overflow: hidden; }
-  .tab-body { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .standalone .app { padding-top: calc(var(--safe-top, 0px) + 24px); }
+  .topbar {
+    grid-row: 1; grid-column: 1;
+    flex-wrap: nowrap; justify-content: flex-start; gap: 6px;
+    padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
+    background: var(--bg);
+  }
+  .standalone .topbar { padding-top: 8px; }
+  .topbar .group { margin-right: auto; }
+  .topbar .btn, .topbar .btn.icon { width: 38px; height: 38px; padding: 0; justify-content: center; }
+  .topbar .btn svg { width: 18px; height: 18px; }
+  .topbar .btn .lbl { display: none; }
+  .topbar #export-open { width: auto; padding: 0 14px; }
+  .topbar #export-open .lbl { display: inline; }
+  .stage { grid-row: 2; grid-column: 1; border-radius: 0; padding: 0 0 46px; background-image: none; }
+  .stage-meta { display: none; }
+  .app > .strip { display: none; }
+  .strip { padding: 6px 0 2px; }
+  .film, .film-add { height: 54px; }
+  .film { width: 54px; }
+  .panel { grid-row: 3; grid-column: 1; border: 0; border-top: 1px solid var(--line); border-radius: 0; overflow: hidden; }
+  .tab-body {
+    order: 1; flex: none; max-height: 34vh;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: 2px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px));
+  }
+  .tabs { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 8px 10px 6px; font-size: 11px;
+    border-bottom: 0; border-top: 2px solid transparent;
+  }
+  .tab svg { width: 20px; height: 20px; margin: 0; }
+  .tab[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
+  #tab-fotos { display: flex; }
   .panel-foot { display: none; }
-  .film, .film-add { height: 50px; }
-  .film { width: 50px; }
+  .m-only { display: block; }
+  .tab-body .section { padding-block: 8px 4px; gap: 8px; }
+  .tab-body .section + .section { border-top: 0; }
+  .tab-body .section-title { display: none; }
+  .tab-body .note:not(#erase-status):not(#fit-note):not(#size-note), .tab-body .lead { display: none; }
+  #aspects, #pct-row, #bg-row, .hsl-bands, #my-styles { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .amount-bar { position: static; margin-inline: 0; padding: 6px 0 2px; border-bottom: 0; }
+  .amount-bar .row { display: none; }
+  .presets { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .presets .preset-wrap { flex: 0 0 72px; }
+  .preset small { display: none; }
+  .formats { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .formats .fmt { flex: 0 0 156px; }
+  /* Filtros: una sola fila visible, según la categoría elegida */
+  .m-only.m-fcats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 0 2px; }
+  #pane-filtros .section[data-cat] { display: none; }
+  #pane-filtros[data-cat="fav"] .section[data-cat="fav"],
+  #pane-filtros[data-cat="mine"] .section[data-cat="mine"],
+  #pane-filtros[data-cat="cam"] .section[data-cat="cam"],
+  #pane-filtros[data-cat="crea"] .section[data-cat="crea"] { display: flex; }
+  /* Ajustes: una barra y una fila de iconos */
+  #pane-ajustes > :not(#m-adjust):not(.hsl-sec) { display: none !important; }
+  #pane-ajustes > .hsl-sec { display: none; }
+  #pane-ajustes.m-tonos > .hsl-sec { display: flex; padding-top: 4px; }
+  #pane-ajustes.m-tonos #m-adj-slider { display: none; }
   .sheet-body { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 560px) {
@@ -971,6 +1033,7 @@ body::before {
       <button class="tab" role="tab" id="tab-recortar" aria-controls="pane-recortar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Recortar</button>
       <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4-4a2 2 0 0 1 0-2.8l9.2-9.2a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 21z"/><path d="M7 21h14"/><path d="m9 11 6 6"/></svg>Borrar</button>
       <button class="tab" role="tab" id="tab-tamano" aria-controls="pane-tamano" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>Tamaño</button>
+      <button class="tab" role="tab" id="tab-fotos" aria-controls="pane-fotos" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="14" height="14" rx="2"/><path d="M3 15V5a2 2 0 0 1 2-2h10"/><circle cx="12" cy="12" r="1.5"/><path d="m21 17-3.5-3.5L11 20"/></svg>Fotos</button>
     </div>
 
     <div class="tab-body">
@@ -988,6 +1051,7 @@ body::before {
           </div>
           <p class="note" id="amount-note">Elige un filtro y mueve la barra: a la izquierda se aplica menos, a la derecha más.</p>
         </div>
+        <div class="m-only m-fcats" id="m-fcats"></div>
         <div class="section" id="fav-sec" hidden>
           <div class="section-title">Favoritos</div>
           <div class="presets" id="presets-fav"></div>
@@ -1077,6 +1141,7 @@ body::before {
         </div>
       </div>
 
+      <div id="pane-fotos" role="tabpanel" aria-labelledby="tab-fotos" hidden></div>
       <div id="pane-tamano" role="tabpanel" aria-labelledby="tab-tamano" hidden>
         <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-tamano"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Tamaño original</button><span class="note" style="flex:1 1 140px">Sin formato de redes ni cambio de tamaño.</span></div></div>
         <div class="section">
@@ -1943,7 +2008,15 @@ body::before {
   }
   const isPristine = st => JSON.stringify({ ...st, edits: 0 }) === JSON.stringify(defaults()) && !st.edits;
 
+  // Desplaza solo la fila (pestañas, miniaturas) para mostrar un elemento, sin mover la pantalla entera.
+  function revealInRow(el, row) {
+    if (!el || !row) return;
+    const l = el.offsetLeft - row.offsetLeft, r = l + el.offsetWidth;
+    if (l < row.scrollLeft) row.scrollLeft = l - 8;
+    else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 8;
+  }
   const stripEl = $("strip");
+  const mobileMQ = matchMedia("(max-width: 860px)");
   const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   function renderStrip() {
     stripEl.textContent = "";
@@ -1982,7 +2055,7 @@ body::before {
       stripEl.appendChild(c);
     }
     const active = stripEl.querySelector('.film[aria-pressed="true"]');
-    if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (active) revealInRow(active.closest(".film-wrap"), stripEl);
   }
 
   // Copia el «look» de la foto activa a las demás. Cada foto lo guarda en su historial, así que se puede deshacer.
@@ -2064,7 +2137,8 @@ body::before {
       if (!keep) cur = -1;
       activate(firstNew, keep);
       const n = docs.length - firstNew;
-      toast(n === 1 ? `Abierta: ${docs[firstNew].name}` : `${n} fotos abiertas. Toca una miniatura de abajo para cambiar de foto.`);
+      toast(n === 1 ? `Abierta: ${docs[firstNew].name}` : mobileMQ.matches ? `${n} fotos abiertas. Cámbialas desde «Fotos», abajo.` : `${n} fotos abiertas. Toca una miniatura de abajo para cambiar de foto.`);
+      if (n > 1 && mobileMQ.matches) showTab("fotos");
     } else if (!docs.length) {
       const sample = makeSample();
       docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
@@ -2219,11 +2293,41 @@ body::before {
       st.setAttribute("aria-label", on ? "Quitar de favoritos" : "Marcar como favorito");
     });
   }
+  let fcat = null;
+  function setFcat(c) {
+    if (c === "fav" && !favs.length) c = "cam";
+    fcat = c;
+    $("pane-filtros").dataset.cat = c;
+    $("m-fcats").querySelectorAll(".chip:not([data-c='none'])").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.c === c)));
+  }
+  function renderFcats() {
+    const box = $("m-fcats");
+    box.textContent = "";
+    const none = document.createElement("button");
+    none.className = "chip text"; none.dataset.c = "none"; none.textContent = "⊘ Sin filtro";
+    none.disabled = state.preset === "original";
+    none.addEventListener("click", () => $("none-filtro").click());
+    box.appendChild(none);
+    [["fav", "★ Favoritos"], ["cam", "Cámara"], ["crea", "Creativos"], ["mine", "Mis estilos"]].forEach(([c, l]) => {
+      if (c === "fav" && !favs.length) return;
+      const b = document.createElement("button");
+      b.className = "chip text"; b.dataset.c = c; b.textContent = l;
+      b.addEventListener("click", () => setFcat(c));
+      box.appendChild(b);
+    });
+    setFcat(fcat || (favs.length ? "fav" : "cam"));
+  }
+  $("fav-sec").dataset.cat = "fav";
+  $("my-styles-sec").dataset.cat = "mine";
+  $("presets-cam").closest(".section").dataset.cat = "cam";
+  $("presets").closest(".section").dataset.cat = "crea";
   function renderFavorites() {
     const box = $("presets-fav");
     box.textContent = "";
     favs.forEach(id => box.appendChild(makePresetButton(ALL_PRESETS.find(p => p.id === id))));
     $("fav-sec").hidden = !favs.length;
+    if (fcat === "fav" && !favs.length) fcat = "cam";
+    renderFcats();
     syncStars();
     renderThumbs(box);
     box.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === state.preset)));
@@ -2266,7 +2370,7 @@ body::before {
   let hslBand = "rojo";
   function buildHslSection() {
     const sec = document.createElement("div");
-    sec.className = "section";
+    sec.className = "section hsl-sec";
     sec.innerHTML = `<div class="section-title">Color por tonos</div>
       <div class="row hsl-bands" id="hsl-bands">${HSL_BANDS.map(b => `<button class="hsl-dot" data-b="${b.id}" style="--c:${b.color}" aria-pressed="false" title="${b.name}" aria-label="${b.name}"></button>`).join("")}</div>
       <div class="ctl"><label for="hsl-s">Saturación · <span id="hsl-name">Rojos</span></label><output id="out-hsl-s">0</output>
@@ -2342,6 +2446,86 @@ body::before {
     if (g.group !== "Piel") makeFoldable(sec, g.group);
     if (g.group === "Color") { const h = buildHslSection(); pane.appendChild(h); makeFoldable(h, "tonos"); }
   });
+
+  const M_ICONS = {
+    exposure: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
+    highlights: '<path d="M12 3v3M5.6 5.6l2.1 2.1M18.4 5.6l-2.1 2.1M3 13h3M18 13h3"/><path d="M7 17a5 5 0 0 1 10 0"/><path d="M3 21h18"/>',
+    shadows: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    fade: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/>',
+    saturation: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+    temperature: '<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>',
+    tint: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 8h5M12 12h7M12 16h5"/>',
+    hue: '<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7.8 4.5M12 12 4.2 16.5"/>',
+    tonos: '<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><circle cx="12" cy="16" r="3"/>',
+    clarity: '<path d="M12 3 21 12 12 21 3 12z"/><path d="M12 8l4 4-4 4-4-4z"/>',
+    sharpen: '<path d="M12 3 21 20H3z"/>',
+    depth: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M21 12h-6M12 21v-6M3 12h6"/>',
+    focusArea: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/>',
+    vignette: '<rect x="3" y="4" width="18" height="16" rx="3"/><ellipse cx="12" cy="12" rx="5" ry="4"/>',
+    grain: '<circle cx="6" cy="7" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="18" cy="8" r="1"/><circle cx="8" cy="13" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="17" r="1"/><circle cx="18" cy="16" r="1"/>',
+    blur: '<path d="M3 8c3-2 6 2 9 0s6-2 9 0M3 13c3-2 6 2 9 0s6-2 9 0M3 18c3-2 6 2 9 0s6-2 9 0"/>',
+    auto: '<path d="M5 19 15 9"/><path d="m14 4 1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>',
+    none: '<circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/>',
+  };
+  const ADJ_ITEM = Object.fromEntries(ADJUSTMENTS.flatMap(g => g.items).map(it => [it.k, it]));
+  let mKey = "exposure";
+  function buildMobileAdjust() {
+    pane.insertAdjacentHTML("afterbegin", `<div id="m-adjust" class="m-only">
+      <div id="m-adj-slider">
+        <div class="m-adj-head"><span id="m-adj-name">Exposición</span><output id="m-adj-out">0</output></div>
+        <input type="range" id="m-adj-range" min="-100" max="100" step="1" value="0">
+      </div>
+      <div class="m-icons" id="m-adj-icons"></div></div>`);
+    const items = [{ k: "auto", l: "Auto", act: true }, { k: "none", l: "Sin ajustes" }];
+    ADJUSTMENTS.filter(g => g.group !== "Piel").forEach(g => {
+      g.items.forEach(it => items.push(it));
+      if (g.group === "Color") items.push({ k: "tonos", l: "Por tonos" });
+    });
+    const box = $("m-adj-icons");
+    items.forEach(it => {
+      const b = document.createElement("button");
+      b.className = "m-ico" + (it.act ? " act" : ""); b.dataset.k = it.k;
+      b.innerHTML = `<span class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${M_ICONS[it.k] || ""}</svg></span>${it.l}`;
+      if (it.k === "blur" && !BLUR_OK) b.disabled = true;
+      b.addEventListener("click", () => {
+        if (it.k === "auto") { $("auto-btn").click(); return; }
+        if (it.k === "none") { $("none-ajustes").click(); return; }
+        mKey = it.k; syncMobileAdjust();
+      });
+      box.appendChild(b);
+    });
+    const r = $("m-adj-range");
+    r.addEventListener("input", () => {
+      const it = ADJ_ITEM[mKey]; if (!it) return;
+      state.adj[mKey] = +r.value; updateCtl(it); syncMobileAdjust(true); scheduleRender(true);
+    });
+    r.addEventListener("change", () => { commit(); scheduleRender(); });
+    document.querySelector(".m-adj-head").addEventListener("dblclick", () => {
+      const it = ADJ_ITEM[mKey]; if (!it || !state.adj[mKey]) return;
+      state.adj[mKey] = 0; updateCtl(it); commit(); syncMobileAdjust(); scheduleRender();
+    });
+  }
+  function syncMobileAdjust(fromSlider = false) {
+    if (!$("m-adjust")) return;
+    pane.classList.toggle("m-tonos", mKey === "tonos");
+    document.querySelectorAll(".m-ico").forEach(b => {
+      const k = b.dataset.k;
+      b.setAttribute("aria-pressed", String(k === mKey));
+      b.classList.toggle("changed", k === "tonos" ? hasHsl(state.hsl) : !!(ADJ_ITEM[k] && state.adj[k]));
+    });
+    const noneBtn = document.querySelector('.m-ico[data-k="none"]');
+    if (noneBtn) noneBtn.disabled = $("none-ajustes").disabled;
+    const it = ADJ_ITEM[mKey]; if (!it) return;
+    const r = $("m-adj-range"), v = state.adj[mKey] || 0;
+    r.min = it.min; r.max = it.max; r.disabled = it.k === "blur" && !BLUR_OK;
+    if (!fromSlider) r.value = v;
+    setFill(r);
+    $("m-adj-name").textContent = it.l;
+    const out = $("m-adj-out"); out.textContent = fmt(v, it.min < 0, it.unit); out.classList.toggle("changed", v !== 0);
+  }
+
+  buildMobileAdjust();
 
   function setFill(input) {
     const min = +input.min, max = +input.max, v = +input.value;
@@ -3008,6 +3192,7 @@ body::before {
     amount.value = state.presetAmount; $("out-amount").textContent = state.presetAmount + "%"; setFill(amount);
     syncHsl();
     if (typeof syncNone === "function") syncNone();
+    syncMobileAdjust();
     $("safe-row").hidden = state.format !== "historia";
     const chosen = ALL_PRESETS.find(x => x.id === state.preset);
     $("amount-name").textContent = chosen && chosen.id !== "original" ? "· " + chosen.name : "";
@@ -3065,7 +3250,7 @@ body::before {
   }
 
   /* ================= Pestañas ================= */
-  const tabs = ["ajustes", "piel", "filtros", "recortar", "borrar", "tamano"];
+  const tabs = ["ajustes", "piel", "filtros", "recortar", "borrar", "tamano", "fotos"];
   const FOOT = {
     ajustes: "Con Profundidad activada, toca la foto para elegir qué queda enfocado · doble clic en un ajuste lo pone a cero",
     piel: "Con pincel: pinta solo la zona que quieras suavizar · acerca la foto con dos dedos para más precisión",
@@ -3073,20 +3258,31 @@ body::before {
     recortar: "El recorte se aplica al salir de esta pestaña",
     borrar: "Cada borrado se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>",
     tamano: "El tamaño elegido es el que tendrá la foto al guardarla",
+    fotos: "Toca una foto para editarla",
   };
   function showTab(name) {
+    if (name === "fotos" && !mobileMQ.matches) name = "ajustes";
     activeTab = name;
     tabs.forEach(t => {
       $("tab-" + t).setAttribute("aria-selected", String(t === name));
       $("pane-" + t).hidden = t !== name;
     });
     $("panel-foot").innerHTML = FOOT[name];
-    $("tab-" + name).scrollIntoView({ block: "nearest", inline: "nearest" });
+    revealInRow($("tab-" + name), $("tab-" + name).parentElement);
     brushCursor.hidden = true;
     try { localStorage.setItem("revelado-tab", name); } catch (e) {}
     scheduleRender();
   }
   tabs.forEach(t => $("tab-" + t).addEventListener("click", () => showTab(t)));
+  // En el móvil, la tira de fotos vive dentro de la pestaña «Fotos» para dejar sitio a la foto.
+  function placeStrip() {
+    const appEl = document.querySelector(".app"), panelEl = document.querySelector(".panel");
+    if (mobileMQ.matches) $("pane-fotos").appendChild(stripEl);
+    else { if (stripEl.parentElement !== appEl) appEl.insertBefore(stripEl, panelEl); if (activeTab === "fotos") showTab("ajustes"); }
+    scheduleRender();
+  }
+  if (mobileMQ.addEventListener) mobileMQ.addEventListener("change", placeStrip); else mobileMQ.addListener(placeStrip);
+  placeStrip();
 
   /* ================= Comparar antes/después con una línea ================= */
   const cmp = $("compare");
@@ -3130,7 +3326,10 @@ body::before {
     if (!a.has()) return;
     a.run(); commit(); syncUI(); renderThumbs(); scheduleRender();
   }));
-  function syncNone() { Object.entries(noneActions).forEach(([k, a]) => { $("none-" + k).disabled = !a.has(); }); }
+  function syncNone() {
+    Object.entries(noneActions).forEach(([k, a]) => { $("none-" + k).disabled = !a.has(); });
+    const mc = document.querySelector('#m-fcats [data-c="none"]'); if (mc) mc.disabled = !noneActions.filtro.has();
+  }
 
   /* ================= Zonas que tapa Instagram ================= */
   let showSafe = true;
