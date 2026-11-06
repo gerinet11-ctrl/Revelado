@@ -607,6 +607,11 @@ kbd {
 @keyframes app-in { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
 
 /* ---------- Pantallas estrechas ---------- */
+/* Abierta como app desde la pantalla de inicio: la barra de botones incluye la zona del reloj,
+   así queda en el mismo sitio al abrir la app y al desplazarse. */
+html.standalone { padding-top: 0 !important; }
+.standalone .topbar { padding-top: calc(var(--safe-top, 0px) + 12px); }
+
 /* Franja del reloj y la batería: siempre con el fondo de la app, aunque el contenido pase por debajo */
 body::before {
   content: "";
@@ -626,8 +631,7 @@ body::before {
     background: var(--bg);
     padding-block: 10px 8px;
   }
-  /* Abierta como app: un poco más de aire bajo el reloj */
-  .standalone .topbar { padding-top: 26px; }
+  .standalone .topbar { top: 0; }
   .app {
     height: auto;
     min-height: 100%;
@@ -940,7 +944,8 @@ body::before {
   document.body.appendChild(probe);
   const h = probe.getBoundingClientRect().height;
   probe.remove();
-  if (h < 10) document.documentElement.style.setProperty("--safe-top", "54px");
+  // Se guarda el alto medido en píxeles (o uno de respaldo si el iPhone no lo informa).
+  document.documentElement.style.setProperty("--safe-top", (h >= 10 ? Math.round(h) : 54) + "px");
 })();
 (() => {
   "use strict";
