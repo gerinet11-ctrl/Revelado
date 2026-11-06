@@ -1302,7 +1302,8 @@ body::before {
     medio:    '<rect x="4" y="5" width="16" height="15" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M8 5V3h8v2"/>',
     telemetro:'<rect x="2.5" y="7" width="19" height="11" rx="1.5"/><circle cx="12" cy="12.5" r="3.4"/><rect x="4.5" y="9" width="3" height="2"/><rect x="16.5" y="9" width="3" height="2"/>',
   };
-  const CAMERA_TYPE = { compacta: "Compacta", reflex: "Réflex", sinespejo: "Sin espejo", pelicula: "Película", cine: "Cine", medio: "Medio formato", telemetro: "Telémetro" };
+  CAMERA_ICONS.flash = '<rect x="2.5" y="9" width="19" height="11" rx="2"/><circle cx="12" cy="14.5" r="3.2"/><path d="M13.5 2 10 6.5h3.5L11 10"/>';
+  const CAMERA_TYPE = { flash: "Flash", compacta: "Compacta", reflex: "Réflex", sinespejo: "Sin espejo", pelicula: "Película", cine: "Cine", medio: "Medio formato", telemetro: "Telémetro" };
   const CAMERAS = [
     { id: "vlog-calido", name: "Vlog cálido", cam: "compacta",
       ref: "Color típico de las compactas para vlog: piel cálida y sana, contraste suave.",
@@ -1313,6 +1314,9 @@ body::before {
     { id: "retrato", name: "Retrato réflex", cam: "reflex",
       ref: "Como una réflex con objetivo luminoso: fondo desenfocado, piel suave y luces contenidas. Toca la foto para elegir qué queda enfocado.",
       p: { temperature: 8, shadows: 18, highlights: -20, clarity: -14, contrast: 4, saturation: 4, sharpen: 22, vignette: 14, depth: 45, smooth: 30 } },
+    { id: "flash", name: "Flash", cam: "flash",
+      ref: "Como un flash directo de estudio: la persona brilla, el fondo se oscurece, contraste marcado, sombras duras y color limpio.",
+      p: { flash: 75, contrast: 22, exposure: 4, shadows: -16, highlights: -8, saturation: 8, temperature: -6, clarity: 10, sharpen: 32 } },
     { id: "cromo", name: "Cromo clásico", cam: "sinespejo",
       ref: "Como una película de color apagado: poco color, sombras firmes y luces suaves.",
       p: { saturation: -35, contrast: 18, shadows: -14, highlights: -26, temperature: -6, clarity: 12, sharpen: 22 } },
@@ -1501,6 +1505,7 @@ body::before {
     out.sharpen = Math.min(100, out.sharpen);
     out.depth = Math.min(100, out.depth);
     out.smooth = Math.min(100, out.smooth);
+    out.flash = Math.min(100, out.flash || 0);
     out.clarity = clamp(out.clarity, -100, 100);
     out.hsl = hasHsl(s.hsl) ? s.hsl : 0;
     return out;
@@ -1626,6 +1631,26 @@ body::before {
       for (let y = 1; y < h - 1; y++) for (let x = 1, j = y * w + 1; x < w - 1; x++, j++) {
         const add = (L[j] - (L[j-1] + L[j+1] + L[j-w] + L[j+w]) * 0.25) * k, i = j * 4;
         d[i] += add; d[i+1] += add; d[i+2] += add;
+      }
+    }
+
+    // 3b. Flash directo: luz fuerte sobre el sujeto que cae rápido hacia los bordes, brillos en las zonas claras
+    const fl = Math.min(1, (p.flash || 0) / 100);
+    if (fl) {
+      const fx0 = w * 0.5, fy0 = h * 0.42, R = Math.max(w, h) * 0.62;
+      let i = 0;
+      for (let y = 0; y < h; y++) {
+        const dy = (y - fy0) / R;
+        for (let x = 0; x < w; x++, i += 4) {
+          const dx = (x - fx0) / R;
+          let t = Math.sqrt(dx * dx + dy * dy); t = t > 1 ? 1 : t;
+          const g = (1 + fl * 0.42 * (1 - t) * (1 - t)) * (1 - fl * 0.5 * t * t);   // más luz cerca, fondo más oscuro
+          let r = d[i] * g, gg = d[i+1] * g, b = d[i+2] * g;
+          const L = (r * .2126 + gg * .7152 + b * .0722) / 255;
+          if (L > 0.55) { const sp = fl * 38 * (L - 0.55) * (1 - t); r += sp; gg += sp; b += sp * 1.08; }   // brillo del flash
+          b += fl * 5 * (1 - t);                                                   // la luz de flash es algo fría
+          d[i] = r; d[i+1] = gg; d[i+2] = b;
+        }
       }
     }
 
