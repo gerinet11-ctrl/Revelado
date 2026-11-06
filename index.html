@@ -781,7 +781,7 @@ kbd {
    así queda en el mismo sitio al abrir la app y al desplazarse. */
 html.standalone { padding-top: 0 !important; }
 /* +38px: debajo del oscurecido que el iPhone dibuja bajo el reloj, para que los botones se vean y se pulsen bien */
-.standalone .topbar { padding-top: calc(var(--safe-top, 0px) + 38px); }
+.standalone.under-bar .topbar { padding-top: calc(var(--safe-top, 0px) + 38px); }
 
 /* Franja del reloj y la batería: siempre con el fondo de la app, aunque el contenido pase por debajo */
 body::before {
@@ -805,7 +805,8 @@ body::before {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
-  .standalone .app { padding-top: calc(var(--safe-top, 0px) + 24px); }
+  .standalone .app { padding-top: 4px; }
+  .standalone.under-bar .app { padding-top: calc(var(--safe-top, 0px) + 24px); }
   .topbar {
     grid-row: 1; grid-column: 1;
     flex-wrap: nowrap; justify-content: flex-start; gap: 6px;
@@ -1241,23 +1242,22 @@ body::before {
   const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
   if (!standalone) return;
   document.documentElement.classList.add("standalone");
-  // En modo app el iPhone puede informar de un alto menor que la pantalla y quedaba un hueco abajo:
-  // se usa el alto real de la pantalla.
-  const fitHeight = () => {
-    const portrait = innerHeight >= innerWidth;
-    const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    document.documentElement.style.setProperty("--app-h", Math.max(innerHeight, screenH) + "px");
+  // Se mide el espacio real que da el iPhone (no se supone nada): el alto de la zona del reloj, si la app
+  // queda por debajo de él, y el alto visible. Así funciona igual si la app empieza debajo del reloj o detrás.
+  const root = document.documentElement;
+  const probeTop = document.createElement("div"), probeFull = document.createElement("div");
+  probeTop.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
+  probeFull.style.cssText = "position:fixed;top:0;bottom:0;left:0;width:1px;visibility:hidden;pointer-events:none";
+  document.body.append(probeTop, probeFull);
+  const fit = () => {
+    const top = Math.round(probeTop.getBoundingClientRect().height);
+    root.style.setProperty("--safe-top", top + "px");
+    root.classList.toggle("under-bar", top >= 10);   // la app se dibuja detrás del reloj
+    root.style.setProperty("--app-h", Math.round(Math.max(innerHeight, probeFull.getBoundingClientRect().height)) + "px");
   };
-  fitHeight();
-  addEventListener("resize", fitHeight);
-  addEventListener("orientationchange", () => setTimeout(fitHeight, 300));
-  const probe = document.createElement("div");
-  probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
-  document.body.appendChild(probe);
-  const h = probe.getBoundingClientRect().height;
-  probe.remove();
-  // Se guarda el alto medido en píxeles (o uno de respaldo si el iPhone no lo informa).
-  document.documentElement.style.setProperty("--safe-top", (h >= 10 ? Math.round(h) : 54) + "px");
+  fit();
+  addEventListener("resize", fit);
+  addEventListener("orientationchange", () => setTimeout(fit, 300));
 })();
 (() => {
   "use strict";
