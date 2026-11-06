@@ -626,6 +626,8 @@ body::before {
     background: var(--bg);
     padding-block: 10px 8px;
   }
+  /* Abierta como app: un poco más de aire bajo el reloj */
+  .standalone .topbar { padding-top: 26px; }
   .app {
     height: auto;
     min-height: 100%;
@@ -932,6 +934,7 @@ body::before {
 (() => {
   const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
   if (!standalone) return;
+  document.documentElement.classList.add("standalone");
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
   document.body.appendChild(probe);
