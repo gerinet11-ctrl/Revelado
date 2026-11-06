@@ -2,7 +2,7 @@
 
 Editor de fotos que funciona en el navegador y se instala en el iPhone como una app.
 
-**Abrir la app:** https://gerinet11-ctrl.github.io/revelado/
+**Abrir la app:** https://gerinet11-ctrl.github.io/Revelado/
 
 ## Instalarla en el iPhone
 1. Abre la dirección de arriba en **Safari**.
