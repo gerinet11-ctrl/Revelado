@@ -354,11 +354,22 @@ button, input, select { font: inherit; color: inherit; }
   color: var(--muted);
 }
 
-.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
+  flex: 1 0 auto;
   border: 0;
   background: none;
-  padding: 11px 0 10px;
+  padding: 11px 14px 10px;
+  white-space: nowrap;
+  scroll-snap-align: start;
   cursor: pointer;
   color: var(--muted);
   font-size: 13px;
@@ -518,6 +529,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: none; padding: 8px 4px; cursor: pointer; font-family: var(--f-mono); font-size: 12px; }
 .seg.text button { font-family: var(--f-ui); font-size: 13px; }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+.seg.three button { padding-inline: 4px; line-height: 1.25; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--raise); color: var(--accent); }
 
@@ -848,6 +861,7 @@ body::before {
   <aside class="panel" aria-label="Herramientas de edición">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-ajustes" aria-controls="pane-ajustes" aria-selected="true">Ajustes</button>
+      <button class="tab" role="tab" id="tab-piel" aria-controls="pane-piel" aria-selected="false">Piel</button>
       <button class="tab" role="tab" id="tab-filtros" aria-controls="pane-filtros" aria-selected="false">Filtros</button>
       <button class="tab" role="tab" id="tab-recortar" aria-controls="pane-recortar" aria-selected="false">Recortar</button>
       <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false">Borrar</button>
@@ -856,6 +870,7 @@ body::before {
 
     <div class="tab-body">
       <div id="pane-ajustes" role="tabpanel" aria-labelledby="tab-ajustes"></div>
+      <div id="pane-piel" role="tabpanel" aria-labelledby="tab-piel" hidden></div>
 
       <div id="pane-filtros" role="tabpanel" aria-labelledby="tab-filtros" hidden>
         <div class="section">
@@ -931,11 +946,13 @@ body::before {
           <p class="note" id="format-note"></p>
         </div>
         <div class="section" id="fit-section" hidden>
-          <div class="section-title">Cómo encajar la foto</div>
-          <div class="seg text" id="fit-seg">
-            <button data-fit="cover" aria-pressed="true">Recortar para llenar</button>
-            <button data-fit="contain" aria-pressed="false">Encajar con fondo</button>
+          <div class="section-title">Cómo adaptar la foto</div>
+          <div class="seg text three" id="fit-seg">
+            <button data-fit="cover" aria-pressed="true">Recortar</button>
+            <button data-fit="contain" aria-pressed="false">Rellenar con fondo</button>
+            <button data-fit="stretch" aria-pressed="false">Redimensionar</button>
           </div>
+          <p class="note" id="fit-note"></p>
           <div class="row" id="bg-row">
             <span class="mini-label">Fondo</span>
             <button class="chip text" data-bg="blur" aria-pressed="true">Difuminado</button>
@@ -944,7 +961,7 @@ body::before {
           </div>
         </div>
         <div class="section">
-          <div class="section-title">Tamaño a medida</div>
+          <div class="section-title">Redimensionar a medida</div>
           <div class="dims">
             <label class="field"><span>Ancho (px)</span><input type="number" id="out-w" min="16" max="12000" step="1" inputmode="numeric"></label>
             <button class="btn icon" id="lock" aria-pressed="true" title="Mantener la proporción" aria-label="Mantener la proporción">
@@ -1496,6 +1513,11 @@ body::before {
       else { ctx.imageSmoothingQuality = "high"; ctx.drawImage(proc, c.sx, c.sy, c.sw, c.sh, 0, 0, W, H); }
       return;
     }
+    if (s.fit === "stretch") {   // redimensionar: la foto entera se estira o encoge al tamaño exacto
+      if (hq) ctx.drawImage(resizeHQ(proc, W, H), 0, 0);
+      else { ctx.imageSmoothingQuality = "high"; ctx.drawImage(proc, 0, 0, W, H); }
+      return;
+    }
     if (s.fitBg === "blur") {
       // Fondo difuminado: se reduce mucho y se vuelve a ampliar (funciona en cualquier navegador).
       const c = coverRect();
@@ -1527,7 +1549,7 @@ body::before {
   /* ================= Render de la vista ================= */
   // normal: todo aplicado · crop: foto entera con el marco de recorte · erase: recortada, sin formato
   const viewMode = () => activeTab === "recortar" ? "crop" : activeTab === "borrar" ? "erase"
-    : (activeTab === "ajustes" && state.smoothMode === "brush") ? "paint" : "normal";
+    : (activeTab === "piel" && state.smoothMode === "brush") ? "paint" : "normal";
 
   let rafId = 0;
   function scheduleRender() {
@@ -1910,7 +1932,7 @@ body::before {
         </div>
         <div class="row"><button class="chip text" id="smooth-show" aria-pressed="true">Ver zona marcada</button></div>
       </div>`);
-    pane.appendChild(sec);
+    (g.group === "Piel" ? $("pane-piel") : pane).appendChild(sec);
   });
 
   function setFill(input) {
@@ -2385,6 +2407,7 @@ body::before {
       const c = pw / ph > r ? { sw: ph * r, sh: ph, sx: (pw - ph * r) / 2, sy: 0 } : { sw: pw, sh: pw / r, sx: 0, sy: (ph - pw / r) / 2 };
       return { x: (c.sx + nx * c.sw) / pw, y: (c.sy + ny * c.sh) / ph };
     }
+    if (state.fit === "stretch") return { x: nx, y: ny };
     const k = Math.min(W / pw, H / ph), dw = pw * k, dh = ph * k;
     return { x: (nx * W - (W - dw) / 2) / dw, y: (ny * H - (H - dh) / 2) / dh };
   }
@@ -2460,6 +2483,11 @@ body::before {
     $("fit-section").hidden = !state.format;
     $("fit-seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.fit === state.fit)));
     $("bg-row").hidden = state.fit !== "contain";
+    const fmtNow = fmtById(state.format);
+    $("fit-note").textContent = !fmtNow ? "" :
+      state.fit === "cover" ? `Se recorta lo que sobra para llenar ${fmtNow.w} × ${fmtNow.h}. Puedes mover el recorte en «Recortar».` :
+      state.fit === "contain" ? `La foto entera cabe en ${fmtNow.w} × ${fmtNow.h} y el espacio libre se rellena con fondo.` :
+      `La foto entera se estira o encoge a ${fmtNow.w} × ${fmtNow.h}. Si su forma es distinta, se verá algo deformada.`;
     $("bg-row").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bg === state.fitBg)));
 
     if (srcCanvas) {
@@ -2479,9 +2507,10 @@ body::before {
   }
 
   /* ================= Pestañas ================= */
-  const tabs = ["ajustes", "filtros", "recortar", "borrar", "tamano"];
+  const tabs = ["ajustes", "piel", "filtros", "recortar", "borrar", "tamano"];
   const FOOT = {
     ajustes: "Con Profundidad activada, toca la foto para elegir qué queda enfocado · doble clic en un ajuste lo pone a cero",
+    piel: "Con pincel: pinta solo la zona que quieras suavizar · acerca la foto con dos dedos para más precisión",
     filtros: "Con un estilo que desenfoca el fondo, toca la foto para elegir qué queda enfocado",
     recortar: "El recorte se aplica al salir de esta pestaña",
     borrar: "Cada borrado se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>",
@@ -2494,6 +2523,7 @@ body::before {
       $("pane-" + t).hidden = t !== name;
     });
     $("panel-foot").innerHTML = FOOT[name];
+    $("tab-" + name).scrollIntoView({ block: "nearest", inline: "nearest" });
     brushCursor.hidden = true;
     try { localStorage.setItem("revelado-tab", name); } catch (e) {}
     scheduleRender();
