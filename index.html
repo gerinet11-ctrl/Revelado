@@ -872,6 +872,23 @@ body::before {
   </div>
 </div>
 <script>
+  // Red de seguridad: si algo falla al arrancar, no se queda parada en la pantalla de inicio;
+  // se entra igual y se muestra qué falló para poder arreglarlo.
+  (function () {
+    var shown = false;
+    function onBootError(msg) {
+      if (window.__appReady || shown) return;
+      shown = true;
+      var sp = document.getElementById("splash"), st = document.getElementById("splash-status");
+      if (st) st.textContent = "Algo falló al abrir (" + String(msg).slice(0, 120) + "). Toca para continuar.";
+      if (sp) {
+        sp.addEventListener("click", function () { sp.hidden = true; });
+        setTimeout(function () { sp.hidden = true; }, 8000);
+      }
+    }
+    window.addEventListener("error", function (e) { onBootError(e.message || "error"); });
+    window.addEventListener("unhandledrejection", function (e) { onBootError((e.reason && e.reason.message) || "error"); });
+  })();
   // Si la app se abrió en las últimas 6 horas, la animación de inicio es corta.
   try {
     var last = +localStorage.getItem("revelado-last-open") || 0;
@@ -3708,6 +3725,7 @@ body::before {
   }, SPLASH_MIN + 700);
   setTimeout(() => { $("splash-status").textContent = "Listo"; }, Math.max(0, SPLASH_MIN - 500 - performance.now()));
   splashTimer = setTimeout(hideSplash, Math.max(300, SPLASH_MIN - performance.now()));
+  window.__appReady = true;
 })();
 </script>
 </body>
