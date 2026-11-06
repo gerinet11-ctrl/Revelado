@@ -610,7 +610,8 @@ kbd {
 /* Abierta como app desde la pantalla de inicio: la barra de botones incluye la zona del reloj,
    así queda en el mismo sitio al abrir la app y al desplazarse. */
 html.standalone { padding-top: 0 !important; }
-.standalone .topbar { padding-top: calc(var(--safe-top, 0px) + 12px); }
+/* +38px: debajo del oscurecido que el iPhone dibuja bajo el reloj, para que los botones se vean y se pulsen bien */
+.standalone .topbar { padding-top: calc(var(--safe-top, 0px) + 38px); }
 
 /* Franja del reloj y la batería: siempre con el fondo de la app, aunque el contenido pase por debajo */
 body::before {
