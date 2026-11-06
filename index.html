@@ -55,7 +55,7 @@ button, input, select { font: inherit; color: inherit; }
   height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -262,6 +262,76 @@ button, input, select { font: inherit; color: inherit; }
   color: var(--accent);
   pointer-events: none;
   z-index: 3;
+}
+
+/* ---------- Tira de fotos ---------- */
+.stage { grid-row: 2; grid-column: 1; }
+.panel { grid-row: 2 / span 2; grid-column: 2; }
+.strip {
+  grid-row: 3; grid-column: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.strip::-webkit-scrollbar { display: none; }
+.film-wrap { position: relative; flex: none; }
+.film {
+  display: block;
+  width: 58px; height: 58px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: var(--well);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.film canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+.film[aria-pressed="true"] { border-color: var(--accent); box-shadow: none; }
+.film .dot {
+  position: absolute; left: 5px; top: 5px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,.65);
+}
+.film-x {
+  position: absolute; right: -5px; top: -5px;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--raise);
+  color: var(--fg);
+  cursor: pointer;
+}
+.film-x svg { width: 11px; height: 11px; }
+.film-add {
+  flex: none;
+  height: 58px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.film-add:hover { color: var(--fg); border-color: var(--muted); }
+.film-add svg { width: 16px; height: 16px; }
+.strip-count {
+  flex: none;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding-right: 4px;
 }
 
 /* ---------- Panel de revelado ---------- */
@@ -637,9 +707,10 @@ body::before {
     height: auto;
     min-height: 100%;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 52vh auto;
+    grid-template-rows: auto 52vh auto auto;
   }
   .stage { padding: 16px; }
+  .panel { grid-row: 4; grid-column: 1; }
   .panel { overflow: visible; }
   .tab-body { overflow: visible; }
   .sheet-body { grid-template-columns: minmax(0, 1fr); }
@@ -719,11 +790,11 @@ body::before {
   <header class="topbar">
     <button class="brand" id="brand" title="Ver otra vez la pantalla de inicio"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Revelado <small>maqueta</small></button>
 
-    <label class="btn" for="file-input" title="Abrir foto (también puedes arrastrarla o pegarla)">
+    <label class="btn" for="file-input" title="Abrir fotos: puedes elegir varias a la vez, arrastrarlas o pegarlas">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 4v12"/><path d="m7 9 5-5 5 5"/></svg>
-      <span class="lbl">Abrir foto</span>
+      <span class="lbl">Abrir fotos</span>
     </label>
-    <input type="file" id="file-input" accept="image/*" hidden>
+    <input type="file" id="file-input" accept="image/*" multiple hidden>
 
     <div class="group">
       <button class="btn icon" id="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">
@@ -764,15 +835,17 @@ body::before {
     </div>
     <div class="compare-tag" id="compare-tag" hidden>Original</div>
     <div class="mode-tag" id="mode-tag" hidden></div>
-    <div class="sample-hint" id="sample-hint"><b>Foto de ejemplo.</b> Arrastra aquí la tuya o pulsa «Abrir foto».</div>
+    <div class="sample-hint" id="sample-hint"><b>Foto de ejemplo.</b> Abre las tuyas con «Añadir fotos»; puedes elegir varias.</div>
     <div class="stage-meta"><span id="meta-name">ejemplo-atardecer.jpg</span><span class="dot"></span><span id="meta-size">1600 × 1067 px</span></div>
-    <div class="drop-overlay" id="drop-overlay" hidden>Suelta la foto para abrirla</div>
+    <div class="drop-overlay" id="drop-overlay" hidden>Suelta las fotos para abrirlas</div>
     <div class="zoom-ctl" id="zoom-ctl" title="Zoom: pellizca con dos dedos, usa la rueda del ratón o doble toque en la foto">
       <button class="zbtn" id="zoom-out" aria-label="Alejar">−</button>
       <button class="zbtn zval" id="zoom-fit" aria-label="Ajustar a la pantalla" title="Ajustar a la pantalla">100%</button>
       <button class="zbtn" id="zoom-in" aria-label="Acercar">+</button>
     </div>
   </main>
+
+  <nav class="strip" id="strip" aria-label="Fotos abiertas"></nav>
 
   <aside class="panel" aria-label="Herramientas de edición">
     <div class="tabs" role="tablist">
@@ -1473,6 +1546,7 @@ body::before {
     if (mode === "paint") drawSmoothOverlay();
     if (mode === "crop") updateCropOverlay();
     if (mode === "erase") syncMaskSize();
+    if (mode === "normal" && !comparing) scheduleStripThumb();
     const tag = $("mode-tag");
     tag.hidden = comparing || mode === "normal";
     tag.textContent = mode === "crop" ? "Arrastra las esquinas para recortar" : mode === "paint" ? "Pinta la zona que quieras suavizar" : "Pinta lo que quieras borrar";
@@ -1507,46 +1581,169 @@ body::before {
     thumbCanvas.getContext("2d").drawImage(workCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
   }
 
-  function setSource(drawable, w, h, name, isSample) {
-    const s = Math.min(1, SRC_MAX / Math.max(w, h));
+  // Cada foto abierta es un «documento» con su propia edición, historial y borrados.
+  // Solo la foto activa tiene lienzos grandes en memoria; las demás guardan la imagen original
+  // y se reconstruyen al volver a ellas (así caben varias fotos del iPhone sin agotar la memoria).
+  const docs = [];
+  let cur = -1;
+
+  function makeDoc(drawable, w, h, name, isSample) {
+    const thumb = document.createElement("canvas");
+    const k = 116 / Math.min(w, h);
+    thumb.width = Math.max(1, Math.round(w * k)); thumb.height = Math.max(1, Math.round(h * k));
+    const tc = thumb.getContext("2d"); tc.imageSmoothingQuality = "high"; tc.drawImage(drawable, 0, 0, thumb.width, thumb.height);
+    const st = defaults();
+    return { drawable, w, h, name, isSample, thumb, state: st,
+             history: { stack: [JSON.stringify(st)], i: 0 }, eraseOps: [], appliedEdits: 0 };
+  }
+
+  function stashCurrent() {
+    const d = docs[cur];
+    if (!d) return;
+    d.state = state;
+    d.history = { stack: history.stack, i: history.i };
+    d.eraseOps = eraseOps.slice();
+    d.appliedEdits = appliedEdits;
+    if (srcCanvas) { srcCanvas.width = srcCanvas.height = 0; srcCanvas = null; }   // libera memoria
+  }
+
+  function activate(i, keepCurrent = true) {
+    if (keepCurrent && i === cur) return;
+    if (keepCurrent) stashCurrent();
+    cur = i;
+    const d = docs[i];
+    const s = Math.min(1, SRC_MAX / Math.max(d.w, d.h));
     srcCanvas = document.createElement("canvas");
-    srcCanvas.width = Math.round(w * s); srcCanvas.height = Math.round(h * s);
-    srcCanvas.getContext("2d").drawImage(drawable, 0, 0, srcCanvas.width, srcCanvas.height);
+    srcCanvas.width = Math.round(d.w * s); srcCanvas.height = Math.round(d.h * s);
+    const sctx = ctx2d(srcCanvas);
+    sctx.drawImage(d.drawable, 0, 0, srcCanvas.width, srcCanvas.height);
+    for (let k = 0; k < d.appliedEdits; k++) sctx.putImageData(d.eraseOps[k].after, d.eraseOps[k].x, d.eraseOps[k].y);
     rebuildDerived();
 
-    fileBase = name.replace(/\.[^.]+$/, "") || "foto";
-    $("meta-name").textContent = name;
-    $("sample-hint").hidden = !isSample;
-    eraseOps.length = 0; appliedEdits = 0;
+    fileBase = d.name.replace(/\.[^.]+$/, "") || "foto";
+    $("meta-name").textContent = d.name;
+    $("sample-hint").hidden = !d.isSample;
+    eraseOps.length = 0; eraseOps.push(...d.eraseOps); appliedEdits = d.appliedEdits;
+    maskCache.clear();
     resetZoom(false);
     clearMask();
 
-    state = defaults();
-    history.stack = [JSON.stringify(state)]; history.i = 0;
+    state = d.state;
+    history.stack = d.history.stack; history.i = d.history.i;
     syncUI();
     renderThumbs();
     renderView();
+    renderStrip();
   }
 
-  function loadFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast(`«${file.name}» no es una imagen. Prueba con un JPG, PNG o WebP.`, true);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      setSource(img, img.naturalWidth, img.naturalHeight, file.name, false);
-      URL.revokeObjectURL(url);
-      toast(`Abierta: ${file.name}`);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      toast(`No se pudo abrir «${file.name}». Este navegador no lee ese formato; prueba con JPG, PNG o WebP.`, true);
-    };
-    img.src = url;
+  function setSource(drawable, w, h, name, isSample) {
+    docs.push(makeDoc(drawable, w, h, name, isSample));
+    activate(docs.length - 1);
   }
+
+  function removeDoc(i) {
+    const wasCurrent = i === cur;
+    if (wasCurrent && srcCanvas) { srcCanvas.width = srcCanvas.height = 0; srcCanvas = null; }
+    const removed = docs.splice(i, 1)[0];
+    if (!docs.length) {
+      const sample = makeSample();
+      docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
+      cur = -1; activate(0, false);
+    } else if (wasCurrent) {
+      cur = -1; activate(Math.min(i, docs.length - 1), false);
+    } else {
+      if (i < cur) cur--;
+      renderStrip();
+    }
+    toast(`Quitada: ${removed.name}`);
+  }
+
+  const isPristine = st => JSON.stringify({ ...st, edits: 0 }) === JSON.stringify(defaults()) && !st.edits;
+
+  const stripEl = $("strip");
+  const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function renderStrip() {
+    stripEl.textContent = "";
+    docs.forEach((d, i) => {
+      const wrap = document.createElement("div"); wrap.className = "film-wrap";
+      const b = document.createElement("button");
+      b.className = "film"; b.setAttribute("aria-pressed", String(i === cur));
+      b.setAttribute("aria-label", `${d.name}${i === cur ? " (abierta)" : ""}`); b.title = d.name;
+      b.appendChild(d.thumb);
+      const st = i === cur ? state : d.state;
+      if (!isPristine(st)) { const dot = document.createElement("span"); dot.className = "dot"; dot.title = "Editada"; b.appendChild(dot); }
+      b.addEventListener("click", () => activate(i));
+      wrap.appendChild(b);
+      if (i === cur && !(docs.length === 1 && d.isSample)) {
+        const x = document.createElement("button");
+        x.className = "film-x"; x.innerHTML = ICON_X; x.setAttribute("aria-label", `Quitar ${d.name}`); x.title = "Quitar esta foto";
+        x.addEventListener("click", () => removeDoc(i));
+        wrap.appendChild(x);
+      }
+      stripEl.appendChild(wrap);
+    });
+    const add = document.createElement("label");
+    add.className = "film-add"; add.htmlFor = "file-input";
+    add.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir fotos';
+    stripEl.appendChild(add);
+    if (docs.length > 1) {
+      const c = document.createElement("span"); c.className = "strip-count"; c.textContent = `${cur + 1} de ${docs.length}`;
+      stripEl.appendChild(c);
+    }
+    const active = stripEl.querySelector('.film[aria-pressed="true"]');
+    if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  // La miniatura de la foto activa refleja su edición (se actualiza poco después de cada cambio).
+  let stripTimer = 0, lastDot = null;
+  function scheduleStripThumb() {
+    clearTimeout(stripTimer);
+    stripTimer = setTimeout(() => {
+      const d = docs[cur]; if (!d || !view.width) return;
+      const k = 116 / Math.min(view.width, view.height);
+      d.thumb.width = Math.max(1, Math.round(view.width * k)); d.thumb.height = Math.max(1, Math.round(view.height * k));
+      const tc = d.thumb.getContext("2d"); tc.imageSmoothingQuality = "high"; tc.drawImage(view, 0, 0, d.thumb.width, d.thumb.height);
+      const dot = !isPristine(state);
+      if (dot !== lastDot) { lastDot = dot; renderStrip(); }
+    }, 350);
+  }
+
+  function readImage(file) {
+    return new Promise(resolve => {
+      if (!file.type.startsWith("image/")) { resolve({ error: `«${file.name}» no es una imagen` }); return; }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { resolve({ img }); };   // la URL se mantiene: la foto se vuelve a dibujar al volver a ella
+      img.onerror = () => { URL.revokeObjectURL(url); resolve({ error: `No se pudo abrir «${file.name}»` }); };
+      img.src = url;
+    });
+  }
+  async function loadFiles(list) {
+    const files = [...(list || [])].filter(Boolean);
+    if (!files.length) return;
+    // La foto de ejemplo se quita al abrir las tuyas.
+    if (docs.length === 1 && docs[0].isSample) { stashCurrent(); docs.length = 0; cur = -1; }
+    const firstNew = docs.length;
+    const errors = [];
+    for (const f of files) {
+      const r = await readImage(f);
+      if (r.error) { errors.push(r.error); continue; }
+      docs.push(makeDoc(r.img, r.img.naturalWidth, r.img.naturalHeight, f.name, false));
+    }
+    if (docs.length > firstNew) {
+      const keep = cur >= 0;
+      if (!keep) cur = -1;
+      activate(firstNew, keep);
+      const n = docs.length - firstNew;
+      toast(n === 1 ? `Abierta: ${docs[firstNew].name}` : `${n} fotos abiertas. Toca una miniatura de abajo para cambiar de foto.`);
+    } else if (!docs.length) {
+      const sample = makeSample();
+      docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
+      activate(0, false);
+    }
+    if (errors.length) toast(errors.join(". ") + ". Prueba con JPG, PNG o WebP.", true);
+  }
+  const loadFile = f => loadFiles([f]);
 
   // Foto de ejemplo dibujada a mano: atardecer sobre un lago de montaña, con un velero para probar «Borrar».
   function makeSample(W = 1600, H = 1067) {
@@ -2311,7 +2508,7 @@ body::before {
   cmp.addEventListener("contextmenu", e => e.preventDefault());
 
   /* ================= Abrir: botón, arrastrar, pegar ================= */
-  $("file-input").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+  $("file-input").addEventListener("change", e => { loadFiles(e.target.files); e.target.value = ""; });
   const overlay = $("drop-overlay");
   let dragDepth = 0;
   window.addEventListener("dragenter", e => {
@@ -2322,11 +2519,11 @@ body::before {
   window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) overlay.hidden = true; });
   window.addEventListener("drop", e => {
     e.preventDefault(); dragDepth = 0; overlay.hidden = true;
-    loadFile(e.dataTransfer?.files?.[0]);
+    loadFiles(e.dataTransfer?.files);
   });
   window.addEventListener("paste", e => {
-    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
-    if (item) loadFile(item.getAsFile());
+    const items = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith("image/"));
+    if (items.length) loadFiles(items.map(i => i.getAsFile()));
   });
 
   /* ================= Atajos ================= */
