@@ -694,13 +694,15 @@ body::before {
 }
 @media (max-width: 860px) {
   /* En el móvil, como una app de fotos: la foto se queda fija arriba y solo se deslizan las opciones de abajo */
-  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  html { height: var(--app-h, 100%); }   /* incluye el margen de la barrita de inicio del iPhone */
+  html, body { overflow: hidden; overscroll-behavior: none; }
+  body { height: 100%; }
   .topbar { background: var(--bg); padding-block: 10px 6px; }
   .app {
     height: 100%;
     gap: 10px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(160px, 5fr) auto minmax(0, 6fr);
+    grid-template-rows: auto minmax(180px, 6fr) auto minmax(0, 5fr);
     padding-bottom: 10px;
   }
   .stage { padding: 12px 12px 54px; }   /* abajo queda sitio para el nombre y el zoom, sin tapar la foto */
@@ -1009,6 +1011,16 @@ body::before {
   const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
   if (!standalone) return;
   document.documentElement.classList.add("standalone");
+  // En modo app el iPhone puede informar de un alto menor que la pantalla y quedaba un hueco abajo:
+  // se usa el alto real de la pantalla.
+  const fitHeight = () => {
+    const portrait = innerHeight >= innerWidth;
+    const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    document.documentElement.style.setProperty("--app-h", Math.max(innerHeight, screenH) + "px");
+  };
+  fitHeight();
+  addEventListener("resize", fitHeight);
+  addEventListener("orientationchange", () => setTimeout(fitHeight, 300));
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
   document.body.appendChild(probe);
