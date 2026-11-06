@@ -6,19 +6,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Revelado">
+<meta name="apple-mobile-web-app-title" content="Moon">
 <meta name="theme-color" content="#131211">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="logo/icono-192.png">
 <style>:root{padding-top:var(--safe-top,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}</style>
-<title>Revelado</title>
+<title>Moon</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: cuarto oscuro. Barra superior, mesa de luz central con la foto y panel de revelado a la derecha (debajo en móvil). */
+/* Layout: Moon. Barra superior, la foto en el centro y el panel de herramientas a la derecha (debajo en el móvil). */
 :root {
   --bg: #131211;
   --well: #0c0b0a;
@@ -597,6 +597,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .seg button { border: 0; background: none; padding: 8px 4px; cursor: pointer; font-family: var(--f-mono); font-size: 12px; }
 .seg.text button { font-family: var(--f-ui); font-size: 13px; }
 .seg.three { grid-template-columns: repeat(3, 1fr); }
+.size-seg { margin-top: 10px; }
 .seg.three button { padding-inline: 4px; line-height: 1.25; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--raise); color: var(--accent); }
@@ -857,7 +858,6 @@ body::before {
   .m-only.m-fcats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 0 2px; }
   #pane-filtros .section[data-cat] { display: none; }
   #pane-filtros[data-cat="fav"] .section[data-cat="fav"],
-  #pane-filtros[data-cat="mine"] .section[data-cat="mine"],
   #pane-filtros[data-cat="cam"] .section[data-cat="cam"],
   #pane-filtros[data-cat="crea"] .section[data-cat="crea"] { display: flex; }
   /* Ajustes: una barra y una fila de iconos */
@@ -907,7 +907,7 @@ body::before {
   </symbol>
 </svg>
 
-<div class="splash play" id="splash" role="status" aria-label="Abriendo Revelado. Toca para entrar.">
+<div class="splash play" id="splash" role="status" aria-label="Abriendo Moon. Toca para entrar.">
   <svg class="splash-icon" viewBox="0 0 1024 1024" aria-hidden="true">
     <rect width="1024" height="1024" rx="230" fill="url(#ic-oro)"/>
     <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
@@ -926,11 +926,11 @@ body::before {
       </g>
     </g>
   </svg>
-  <p class="splash-word">Revelado</p>
-  <p class="splash-tag">Cuarto oscuro de bolsillo</p>
+  <p class="splash-word">Moon</p>
+  <p class="splash-tag">Volemos hacia la perfección</p>
   <div class="splash-foot">
     <div class="splash-bar"><i></i></div>
-    <span id="splash-status">Preparando el cuarto oscuro…</span>
+    <span id="splash-status">Preparando el despegue…</span>
   </div>
 </div>
 <script>
@@ -1030,7 +1030,6 @@ body::before {
       <button class="tab" role="tab" id="tab-ajustes" aria-controls="pane-ajustes" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Ajustes</button>
       <button class="tab" role="tab" id="tab-piel" aria-controls="pane-piel" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01"/><path d="M9 15c1.5 1.3 4.5 1.3 6 0"/></svg>Piel</button>
       <button class="tab" role="tab" id="tab-filtros" aria-controls="pane-filtros" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="15" r="5.5"/></svg>Filtros</button>
-      <button class="tab" role="tab" id="tab-recortar" aria-controls="pane-recortar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Recortar</button>
       <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4-4a2 2 0 0 1 0-2.8l9.2-9.2a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 21z"/><path d="M7 21h14"/><path d="m9 11 6 6"/></svg>Borrar</button>
       <button class="tab" role="tab" id="tab-tamano" aria-controls="pane-tamano" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>Tamaño</button>
       <button class="tab" role="tab" id="tab-fotos" aria-controls="pane-fotos" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="14" height="14" rx="2"/><path d="M3 15V5a2 2 0 0 1 2-2h10"/><circle cx="12" cy="12" r="1.5"/><path d="m21 17-3.5-3.5L11 20"/></svg>Fotos</button>
@@ -1056,16 +1055,6 @@ body::before {
           <div class="section-title">Favoritos</div>
           <div class="presets" id="presets-fav"></div>
         </div>
-        <div class="section" id="my-styles-sec">
-          <div class="section-title">Mis estilos</div>
-          <div class="row" id="my-styles"></div>
-          <div class="row" id="my-style-form" hidden>
-            <input type="text" id="my-style-name" class="text-input" maxlength="24" placeholder="Nombre, por ejemplo «Atardecer»">
-            <button class="btn primary" id="my-style-save">Guardar</button>
-            <button class="btn" id="my-style-cancel">Cancelar</button>
-          </div>
-          <p class="note" id="my-styles-note"></p>
-        </div>
         <div class="section">
           <div class="section-title">Estilos de cámara</div>
           <div class="presets" id="presets-cam"></div>
@@ -1077,7 +1066,32 @@ body::before {
         </div>
       </div>
 
-      <div id="pane-recortar" role="tabpanel" aria-labelledby="tab-recortar" hidden>
+      <div id="pane-borrar" role="tabpanel" aria-labelledby="tab-borrar" hidden>
+        <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-borrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin borrados</button><span class="note" style="flex:1 1 140px">Recupera todo lo borrado en esta foto.</span></div></div>
+        <div class="section">
+          <p class="lead">Pinta encima de lo que quieras quitar (una persona, un objeto, una mancha) y pulsa <b>Borrar</b>. En la foto de ejemplo, prueba con el velero.</p>
+          <div class="ctl">
+            <label for="brush">Tamaño del pincel</label><output id="out-brush">36 px</output>
+            <input type="range" id="brush" min="8" max="120" step="1" value="36">
+          </div>
+          <div class="row">
+            <button class="btn primary" id="erase-apply" disabled>Borrar</button>
+            <button class="btn" id="erase-clear" disabled>Limpiar trazo</button>
+          </div>
+          <p class="note" id="erase-status"></p>
+        </div>
+        <div class="section">
+          <p class="note">Funciona mejor sobre fondos sencillos: cielo, agua, arena o una pared. Para quitar personas de fondos con mucho detalle, la versión final usará un modelo de IA.</p>
+        </div>
+      </div>
+
+      <div id="pane-fotos" role="tabpanel" aria-labelledby="tab-fotos" hidden></div>
+      <div id="pane-tamano" role="tabpanel" aria-labelledby="tab-tamano" hidden>
+        <div class="seg text size-seg" id="size-seg">
+          <button data-sub="formato" aria-pressed="true">Tamaño y formato</button>
+          <button data-sub="recorte" aria-pressed="false">Recortar y girar</button>
+        </div>
+        <div id="sub-recorte" hidden>
         <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-recortar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin recorte ni giros</button><span class="note" style="flex:1 1 140px">Vuelve a la foto entera y derecha.</span></div></div>
         <div class="section">
           <div class="section-title">Proporción</div>
@@ -1120,29 +1134,8 @@ body::before {
             </button>
           </div>
         </div>
-      </div>
-
-      <div id="pane-borrar" role="tabpanel" aria-labelledby="tab-borrar" hidden>
-        <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-borrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin borrados</button><span class="note" style="flex:1 1 140px">Recupera todo lo borrado en esta foto.</span></div></div>
-        <div class="section">
-          <p class="lead">Pinta encima de lo que quieras quitar (una persona, un objeto, una mancha) y pulsa <b>Borrar</b>. En la foto de ejemplo, prueba con el velero.</p>
-          <div class="ctl">
-            <label for="brush">Tamaño del pincel</label><output id="out-brush">36 px</output>
-            <input type="range" id="brush" min="8" max="120" step="1" value="36">
-          </div>
-          <div class="row">
-            <button class="btn primary" id="erase-apply" disabled>Borrar</button>
-            <button class="btn" id="erase-clear" disabled>Limpiar trazo</button>
-          </div>
-          <p class="note" id="erase-status"></p>
         </div>
-        <div class="section">
-          <p class="note">Funciona mejor sobre fondos sencillos: cielo, agua, arena o una pared. Para quitar personas de fondos con mucho detalle, la versión final usará un modelo de IA.</p>
-        </div>
-      </div>
-
-      <div id="pane-fotos" role="tabpanel" aria-labelledby="tab-fotos" hidden></div>
-      <div id="pane-tamano" role="tabpanel" aria-labelledby="tab-tamano" hidden>
+        <div id="sub-formato">
         <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-tamano"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Tamaño original</button><span class="note" style="flex:1 1 140px">Sin formato de redes ni cambio de tamaño.</span></div></div>
         <div class="section">
           <div class="section-title"><span>Para redes sociales</span></div>
@@ -1176,6 +1169,7 @@ body::before {
           </div>
           <div class="row" id="pct-row"></div>
           <p class="note" id="size-note"></p>
+        </div>
         </div>
       </div>
     </div>
@@ -1739,12 +1733,11 @@ body::before {
     ctx.clearRect(0, 0, g.cw, g.ch);
     const M = geoMatrix(g, s);
     ctx.setTransform(M); ctx.drawImage(source, 0, 0);
-    if (p && p.blur && BLUR_OK) {
-      ctx.filter = `blur(${(p.blur / 100 * Math.max(g.cw, g.ch) * 0.012).toFixed(2)}px)`;
-      ctx.drawImage(source, 0, 0);
-      ctx.filter = "none";
-    }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (p && p.blur) {   // reducir y volver a ampliar: desenfoque que funciona también en el iPhone
+      const bw = Math.max(4, Math.round(g.cw / (1 + p.blur / 100 * 45)));
+      ctx.drawImage(softScale(target, g.cw, g.ch, bw), 0, 0);
+    }
     let img = ctx.getImageData(0, 0, g.cw, g.ch);
     let pp = p, smask = null;
     if (p && p.smooth && s.smoothMode === "brush") {
@@ -1835,10 +1828,10 @@ body::before {
 
   /* ================= Render de la vista ================= */
   // normal: todo aplicado · crop: foto entera con el marco de recorte · erase: recortada, sin formato
-  const viewMode = () => activeTab === "recortar" ? "crop" : activeTab === "borrar" ? "erase"
+  const viewMode = () => (activeTab === "tamano" && sizeSub === "recorte") ? "crop" : activeTab === "borrar" ? "erase"
     : (activeTab === "piel" && state.smoothMode === "brush") ? "paint" : "normal";
 
-  let rafId = 0, pendingDraft = null, previewState = null;
+  let rafId = 0, pendingDraft = null, previewState = null, sizeSub = "formato";
   // draft = true: mientras el dedo arrastra una barra (calcula rápido); al soltar se calcula con todo el detalle.
   function scheduleRender(draft = false) {
     pendingDraft = pendingDraft === null ? draft : (pendingDraft && draft);
@@ -2308,7 +2301,7 @@ body::before {
     none.disabled = state.preset === "original";
     none.addEventListener("click", () => $("none-filtro").click());
     box.appendChild(none);
-    [["fav", "★ Favoritos"], ["cam", "Cámara"], ["crea", "Creativos"], ["mine", "Mis estilos"]].forEach(([c, l]) => {
+    [["fav", "★ Favoritos"], ["cam", "Cámara"], ["crea", "Creativos"]].forEach(([c, l]) => {
       if (c === "fav" && !favs.length) return;
       const b = document.createElement("button");
       b.className = "chip text"; b.dataset.c = c; b.textContent = l;
@@ -2318,7 +2311,6 @@ body::before {
     setFcat(fcat || (favs.length ? "fav" : "cam"));
   }
   $("fav-sec").dataset.cat = "fav";
-  $("my-styles-sec").dataset.cat = "mine";
   $("presets-cam").closest(".section").dataset.cat = "cam";
   $("presets").closest(".section").dataset.cat = "crea";
   function renderFavorites() {
@@ -2414,7 +2406,7 @@ body::before {
       </div>
       <p class="note" id="smooth-auto-note">Detecta la piel sola y la suaviza en toda la foto.</p>`);
     g.items.forEach(it => {
-      const disabled = it.k === "blur" && !BLUR_OK;
+      const disabled = false;
       const row = document.createElement("div");
       row.className = "ctl" + (disabled ? " disabled" : "");
       row.title = disabled ? "Este navegador no permite desenfocar el lienzo" : "Doble clic para poner a cero";
@@ -2487,7 +2479,6 @@ body::before {
       const b = document.createElement("button");
       b.className = "m-ico" + (it.act ? " act" : ""); b.dataset.k = it.k;
       b.innerHTML = `<span class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${M_ICONS[it.k] || ""}</svg></span>${it.l}`;
-      if (it.k === "blur" && !BLUR_OK) b.disabled = true;
       b.addEventListener("click", () => {
         if (it.k === "auto") { $("auto-btn").click(); return; }
         if (it.k === "none") { $("none-ajustes").click(); return; }
@@ -2518,7 +2509,7 @@ body::before {
     if (noneBtn) noneBtn.disabled = $("none-ajustes").disabled;
     const it = ADJ_ITEM[mKey]; if (!it) return;
     const r = $("m-adj-range"), v = state.adj[mKey] || 0;
-    r.min = it.min; r.max = it.max; r.disabled = it.k === "blur" && !BLUR_OK;
+    r.min = it.min; r.max = it.max;
     if (!fromSlider) r.value = v;
     setFill(r);
     $("m-adj-name").textContent = it.l;
@@ -3250,18 +3241,19 @@ body::before {
   }
 
   /* ================= Pestañas ================= */
-  const tabs = ["ajustes", "piel", "filtros", "recortar", "borrar", "tamano", "fotos"];
+  const tabs = ["ajustes", "piel", "filtros", "borrar", "tamano", "fotos"];
   const FOOT = {
     ajustes: "Con Profundidad activada, toca la foto para elegir qué queda enfocado · doble clic en un ajuste lo pone a cero",
     piel: "Con pincel: pinta solo la zona que quieras suavizar · acerca la foto con dos dedos para más precisión",
     filtros: "Mantén pulsado un filtro para verlo en la foto sin aplicarlo · cada filtro recuerda su intensidad",
-    recortar: "El recorte se aplica al salir de esta pestaña",
+
     borrar: "Cada borrado se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>",
     tamano: "El tamaño elegido es el que tendrá la foto al guardarla",
     fotos: "Toca una foto para editarla",
   };
   function showTab(name) {
-    if (name === "fotos" && !mobileMQ.matches) name = "ajustes";
+    if (name === "recortar") { sizeSub = "recorte"; name = "tamano"; syncSizeSub(); }   // antes era una pestaña aparte
+    if (!tabs.includes(name) || (name === "fotos" && !mobileMQ.matches)) name = "ajustes";
     activeTab = name;
     tabs.forEach(t => {
       $("tab-" + t).setAttribute("aria-selected", String(t === name));
@@ -3274,6 +3266,12 @@ body::before {
     scheduleRender();
   }
   tabs.forEach(t => $("tab-" + t).addEventListener("click", () => showTab(t)));
+  function syncSizeSub() {
+    $("sub-recorte").hidden = sizeSub !== "recorte";
+    $("sub-formato").hidden = sizeSub !== "formato";
+    $("size-seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sub === sizeSub)));
+  }
+  $("size-seg").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { sizeSub = b.dataset.sub; syncSizeSub(); scheduleRender(); }));
   // En el móvil, la tira de fotos vive dentro de la pestaña «Fotos» para dejar sitio a la foto.
   function placeStrip() {
     const appEl = document.querySelector(".app"), panelEl = document.querySelector(".panel");
@@ -3344,44 +3342,6 @@ body::before {
     updateSafeZones();
   });
 
-  /* ================= Mis estilos ================= */
-  const STYLE_KEY = "revelado-estilos";
-  const loadStyles = () => { try { return JSON.parse(localStorage.getItem(STYLE_KEY) || "[]"); } catch (e) { return []; } };
-  const saveStyles = list => { try { localStorage.setItem(STYLE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } };
-  function renderMyStyles() {
-    const box = $("my-styles"), list = loadStyles();
-    box.textContent = "";
-    list.forEach(st => {
-      const wrap = document.createElement("span"); wrap.className = "mystyle";
-      const b = document.createElement("button"); b.className = "chip text"; b.textContent = st.name; b.title = "Aplicar «" + st.name + "»";
-      b.addEventListener("click", () => {
-        state = normalizeState({ ...state, adj: { ...defaults().adj, ...st.look.adj }, preset: st.look.preset, presetAmount: st.look.presetAmount, hsl: st.look.hsl || defaults().hsl });
-        commit(); syncUI(); scheduleRender();
-        toast(`Aplicado tu estilo «${st.name}».`);
-      });
-      const x = document.createElement("button"); x.className = "mystyle-x"; x.innerHTML = ICON_X; x.setAttribute("aria-label", "Borrar el estilo " + st.name);
-      x.addEventListener("click", () => { saveStyles(loadStyles().filter(o => o.id !== st.id)); renderMyStyles(); toast(`Borrado el estilo «${st.name}».`); });
-      wrap.append(b, x); box.appendChild(wrap);
-    });
-    const add = document.createElement("button"); add.className = "chip text"; add.textContent = "+ Guardar el actual";
-    add.addEventListener("click", () => { $("my-style-form").hidden = false; $("my-style-name").value = ""; $("my-style-name").focus(); });
-    box.appendChild(add);
-    $("my-styles-note").textContent = list.length ? "" : "Guarda aquí tu combinación de ajustes, filtro y color para usarla en otras fotos.";
-  }
-  function saveMyStyle() {
-    const name = $("my-style-name").value.trim();
-    if (!name) { $("my-style-name").focus(); toast("Escribe un nombre para el estilo.", true); return; }
-    const list = loadStyles();
-    list.push({ id: Date.now().toString(36), name, look: { adj: { ...state.adj }, preset: state.preset, presetAmount: state.presetAmount, hsl: JSON.parse(JSON.stringify(state.hsl)) } });
-    if (!saveStyles(list)) { toast("No se pudo guardar el estilo en este navegador.", true); return; }
-    $("my-style-form").hidden = true; renderMyStyles();
-    toast(`Guardado tu estilo «${name}».`);
-  }
-  $("my-style-save").addEventListener("click", saveMyStyle);
-  $("my-style-name").addEventListener("keydown", e => { if (e.key === "Enter") saveMyStyle(); if (e.key === "Escape") $("my-style-form").hidden = true; });
-  $("my-style-cancel").addEventListener("click", () => { $("my-style-form").hidden = true; });
-  renderMyStyles();
-
   /* ================= Auto ================= */
   // Mejora automática sencilla: lleva la luz media a un punto agradable, abre el rango de tonos y neutraliza dominantes fuertes.
   $("auto-btn").addEventListener("click", () => {
@@ -3445,7 +3405,7 @@ body::before {
   const exp = { fmt: "jpeg", url: null, timer: 0 };
   const modal = $("export-modal");
   const humanBytes = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.round(b / 1024) + " KB";
-  const exportName = () => `${fileBase}${state.format ? "-" + state.format : ""}-revelado.${exp.fmt === "jpeg" ? "jpg" : "png"}`;
+  const exportName = () => `${fileBase}${state.format ? "-" + state.format : ""}-moon.${exp.fmt === "jpeg" ? "jpg" : "png"}`;
 
   function buildExport() {
     $("exp-weight").textContent = "calculando…";
@@ -3504,7 +3464,7 @@ body::before {
     const file = new File([exp.blob], exportName(), { type: exp.blob.type });
     const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (isTouch && navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: "Revelado" }).catch(() => {});
+      navigator.share({ files: [file], title: "Moon" }).catch(() => {});
       return;
     }
     const a = document.createElement("a");
@@ -3574,15 +3534,15 @@ body::before {
     const list = allReady, files = list.map(x => x.file);
     const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (isTouch && navigator.canShare && navigator.canShare({ files })) {
-      try { await navigator.share({ files, title: "Revelado" }); $("save-all-note").textContent = "En el menú, elige «Guardar imágenes» para llevarlas a Fotos."; return; }
+      try { await navigator.share({ files, title: "Moon" }); $("save-all-note").textContent = "En el menú, elige «Guardar imágenes» para llevarlas a Fotos."; return; }
       catch (e) { if (e && e.name === "AbortError") return; }
     }
     const entries = await Promise.all(list.map(async x => ({ name: x.name, data: new Uint8Array(await x.blob.arrayBuffer()) })));
     const zip = makeZip(entries);
     if (downloadsApi === undefined) await Promise.race([downloadsReady, new Promise(r => setTimeout(r, 1500))]);
     try {
-      if (downloadsApi) await downloadsApi.save({ filename: "revelado-fotos.zip", data: zip });
-      else { const u = URL.createObjectURL(zip), a = document.createElement("a"); a.href = u; a.download = "revelado-fotos.zip"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+      if (downloadsApi) await downloadsApi.save({ filename: "moon-fotos.zip", data: zip });
+      else { const u = URL.createObjectURL(zip), a = document.createElement("a"); a.href = u; a.download = "moon-fotos.zip"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
       $("save-all-note").textContent = `Guardadas en un archivo ZIP con ${list.length} fotos.`;
     } catch (err) {
       $("save-all-note").textContent = err && err.code === "declined" ? "No se guardaron: cancelaste la descarga." : "No se pudieron guardar aquí. Guárdalas una a una con «Guardar imagen».";
@@ -3888,7 +3848,7 @@ body::before {
   // Estado inicial de demostración: un filtro aplicado para que se vea qué hace la app.
   state.preset = "calido"; state.adj.contrast = 12; state.adj.vignette = 20;
   commit(); syncUI();
-  try { const t = localStorage.getItem("revelado-tab"); if (tabs.includes(t)) showTab(t); } catch (e) {}
+  try { const t = localStorage.getItem("revelado-tab"); if (tabs.includes(t) || t === "recortar") showTab(t); } catch (e) {}
   renderView();
   renderFavorites();
   restoreSession();
@@ -3908,7 +3868,7 @@ body::before {
   function playSplash() {
     clearTimeout(splashTimer);
     splash.classList.remove("leaving", "play", "quick");   // al tocar el logo se ve la animación completa
-    $("splash-status").textContent = "Preparando el cuarto oscuro…";
+    $("splash-status").textContent = "Preparando el despegue…";
     splash.hidden = false;
     void splash.offsetWidth;
     splash.classList.add("play");

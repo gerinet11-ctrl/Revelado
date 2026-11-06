@@ -1,4 +1,6 @@
-# Revelado
+# Moon
+
+*Volemos hacia la perfección*
 
 Editor de fotos que funciona en el navegador y se instala en el iPhone como una app.
 
@@ -9,7 +11,7 @@ Editor de fotos que funciona en el navegador y se instala en el iPhone como una 
 2. Pulsa **Compartir** (el cuadrado con la flecha hacia arriba).
 3. Elige **Añadir a pantalla de inicio** y pulsa **Añadir**.
 
-Aparece con su logo y se abre a pantalla completa.
+Aparece como «Moon», con su logo, y se abre a pantalla completa.
 
 ## Qué hace
 - Ajustes de luz, color, detalle (claridad y nitidez) y efectos (profundidad, viñeta, grano)
