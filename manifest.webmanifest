@@ -1,0 +1,17 @@
+{
+  "name": "Revelado",
+  "short_name": "Revelado",
+  "description": "Editor de fotos: ajustes, estilos de cámara, recorte, borrar objetos y formatos para redes.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#131211",
+  "theme_color": "#131211",
+  "icons": [
+    { "src": "logo/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "logo/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "logo/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
