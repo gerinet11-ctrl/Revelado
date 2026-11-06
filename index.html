@@ -1037,6 +1037,7 @@ body::before {
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-ajustes" aria-controls="pane-ajustes" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Ajustes</button>
       <button class="tab" role="tab" id="tab-piel" aria-controls="pane-piel" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01"/><path d="M9 15c1.5 1.3 4.5 1.3 6 0"/></svg>Piel</button>
+      <button class="tab" role="tab" id="tab-enfoque" aria-controls="pane-enfoque" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.3 3.3 9.7 11M20.7 9.6 12.5 9.8M17.6 18.1l-4.3-7M9.7 20.7l4.6-7.7M3.3 14.4l8.2-.2M6.4 5.9l4.3 7"/></svg>Enfoque</button>
       <button class="tab" role="tab" id="tab-filtros" aria-controls="pane-filtros" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="15" r="5.5"/></svg>Filtros</button>
       <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4-4a2 2 0 0 1 0-2.8l9.2-9.2a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 21z"/><path d="M7 21h14"/><path d="m9 11 6 6"/></svg>Borrar</button>
       <button class="tab" role="tab" id="tab-tamano" aria-controls="pane-tamano" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>Tamaño</button>
@@ -1047,6 +1048,9 @@ body::before {
       <div id="pane-ajustes" role="tabpanel" aria-labelledby="tab-ajustes"></div>
       <div id="pane-piel" role="tabpanel" aria-labelledby="tab-piel" hidden>
         <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-piel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin suavizado</button><span class="note" style="flex:1 1 140px">Quita el suavizado y lo pintado con el pincel.</span></div></div>
+      </div>
+      <div id="pane-enfoque" role="tabpanel" aria-labelledby="tab-enfoque" hidden>
+        <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-enfoque"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin desenfoque de fondo</button></div></div>
       </div>
 
       <div id="pane-filtros" role="tabpanel" aria-labelledby="tab-filtros" hidden>
@@ -1275,16 +1279,18 @@ body::before {
       { k: "tint",        l: "Tinte",       min: -100, max: 100 },
       { k: "hue",         l: "Tono",        min: -180, max: 180, unit: "°" },
     ]},
-    { group: "Piel", items: [
+    { group: "Piel", pane: "piel", items: [
       { k: "smooth",      l: "Suavizar piel", min: 0,  max: 100 },
+    ]},
+    { group: "Enfoque", pane: "enfoque", items: [
+      { k: "depth",       l: "Desenfoque del fondo", min: 0, max: 100 },
+      { k: "focusArea",   l: "Zona enfocada", min: 0,  max: 100 },
     ]},
     { group: "Detalle", items: [
       { k: "clarity",     l: "Claridad",    min: -100, max: 100 },
       { k: "sharpen",     l: "Nitidez",     min: 0,    max: 100 },
     ]},
     { group: "Efectos", items: [
-      { k: "depth",       l: "Profundidad", min: 0,    max: 100 },
-      { k: "focusArea",   l: "Zona enfocada", min: 0,  max: 100 },
       { k: "vignette",    l: "Viñeta",      min: 0,    max: 100 },
       { k: "grain",       l: "Grano",       min: 0,    max: 100 },
       { k: "blur",        l: "Desenfoque",  min: 0,    max: 100 },
@@ -1421,7 +1427,9 @@ body::before {
     straighten: 0,           // giro fino en grados (−45 a 45) para enderezar el horizonte
     focus: { x: 0.5, y: 0.5 },
     smoothMode: "auto",      // "auto": toda la piel · "brush": solo lo pintado
-    smoothStrokes: [],       // trazos en coordenadas de la foto original (0–1): {r, pts:[[x,y],…]}
+    smoothStrokes: [],
+    focusMode: "punto",      // «punto»: desenfoque en círculo alrededor del punto tocado · «sujeto»: lo pintado queda nítido
+    focusStrokes: [],       // trazos en coordenadas de la foto original (0–1): {r, pts:[[x,y],…]}
   });
   let state = defaults();
   const history = { stack: [JSON.stringify(state)], i: 0 };
@@ -1680,10 +1688,19 @@ body::before {
   }
 
   // Profundidad: desenfoca lo que queda lejos del punto de enfoque, como un objetivo muy luminoso.
-  function applyDepth(target, ctx, depth, f, area = 0) {
+  function applyDepth(target, ctx, depth, f, area = 0, subject = null) {
     const w = target.width, h = target.height;
     const bl = softScale(target, w, h, Math.round(w * (0.12 - depth / 100 * 0.09)));
     const bc = bl.getContext("2d");
+    if (subject) {
+      // Sujeto marcado: queda nítido con su forma real (con el borde suavizado) y todo el fondo se desenfoca.
+      const mk = document.createElement("canvas"); mk.width = w; mk.height = h;
+      mk.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(subject), w, h), 0, 0);
+      const soft = softScale(mk, w, h, Math.max(8, Math.round(w / 6)));
+      bc.globalCompositeOperation = "destination-out"; bc.drawImage(soft, 0, 0);
+      ctx.drawImage(bl, 0, 0);
+      return;
+    }
     const fx = f.x * w, fy = f.y * h, m = Math.min(w, h), M = Math.max(w, h);
     const a = Math.max(0, area) / 100;            // «Zona enfocada»: agranda la parte nítida
     const inner = m * (0.12 + a * 0.33), outer = Math.max(inner * 1.35, M * (0.62 - depth / 100 * 0.25 + a * 0.3));
@@ -1730,11 +1747,12 @@ body::before {
   }
 
   const maskCache = new Map();
-  function smoothMask(source, g, s) {
-    const strokes = s.smoothStrokes;
+  const smoothMask = (source, g, s) => strokeMask(source, g, s, "smoothStrokes");
+  function strokeMask(source, g, s, field) {
+    const strokes = s[field];
     if (!strokes || !strokes.length) return null;
     const total = strokes.reduce((a, t) => a + t.pts.length, 0);
-    const key = [source.width, source.height, g.cw, g.ch, g.cx, g.cy, s.rotation, s.flipH, s.flipV, strokes.length, total, strokes[strokes.length - 1].r].join("|");
+    const key = [field, source.width, source.height, g.cw, g.ch, g.cx, g.cy, s.rotation, s.flipH, s.flipV, strokes.length, total, strokes[strokes.length - 1].r].join("|");
     if (maskCache.has(key)) return maskCache.get(key);
     const sw = source.width, sh = source.height, M = Math.max(sw, sh);
     const mc = document.createElement("canvas"); mc.width = sw; mc.height = sh;
@@ -1778,7 +1796,7 @@ body::before {
       if (!smask) pp = { ...p, smooth: 0 };   // con pincel y sin nada pintado: no se suaviza nada
     }
     if (pp && needsPixels(pp)) { processPixels(img, g.cw, g.ch, pp, smask); ctx.putImageData(img, 0, 0); }
-    if (p && p.depth) { applyDepth(target, ctx, p.depth, s.focus || { x: .5, y: .5 }, p.focusArea); img = ctx.getImageData(0, 0, g.cw, g.ch); }
+    if (p && p.depth) { applyDepth(target, ctx, p.depth, s.focus || { x: .5, y: .5 }, p.focusArea, s.focusMode === "sujeto" ? strokeMask(source, g, s, "focusStrokes") : null); img = ctx.getImageData(0, 0, g.cw, g.ch); }
     return img;
   }
 
@@ -1862,7 +1880,7 @@ body::before {
   /* ================= Render de la vista ================= */
   // normal: todo aplicado · crop: foto entera con el marco de recorte · erase: recortada, sin formato
   const viewMode = () => (activeTab === "tamano" && sizeSub === "recorte") ? "crop" : activeTab === "borrar" ? "erase"
-    : (activeTab === "piel" && state.smoothMode === "brush") ? "paint" : "normal";
+    : ((activeTab === "piel" && state.smoothMode === "brush") || (activeTab === "enfoque" && state.focusMode === "sujeto")) ? "paint" : "normal";
 
   let rafId = 0, pendingDraft = null, previewState = null, sizeSub = "formato";
   // draft = true: mientras el dedo arrastra una barra (calcula rápido); al soltar se calcula con todo el detalle.
@@ -1907,7 +1925,7 @@ body::before {
     if (typeof updateSafeZones === "function") updateSafeZones();
     const tag = $("mode-tag");
     tag.hidden = comparing || mode === "normal";
-    tag.textContent = mode === "crop" ? "Arrastra las esquinas para recortar" : mode === "paint" ? "Pinta la zona que quieras suavizar" : "Pinta lo que quieras borrar";
+    tag.textContent = mode === "crop" ? "Arrastra las esquinas para recortar" : mode === "paint" ? (activeTab === "enfoque" ? "Pinta encima del sujeto principal" : "Pinta la zona que quieras suavizar") : "Pinta lo que quieras borrar";
   }
 
   function layoutView() {
@@ -2467,8 +2485,30 @@ body::before {
         </div>
         <div class="row"><button class="chip text" id="smooth-show" aria-pressed="true">Ver zona marcada</button></div>
       </div>`);
-    (g.group === "Piel" ? $("pane-piel") : pane).appendChild(sec);
-    if (g.group !== "Piel") makeFoldable(sec, g.group);
+    if (g.group === "Enfoque") {
+      const ttl = sec.querySelector(".section-title");
+      ttl.textContent = "Enfoque principal";
+      ttl.insertAdjacentHTML("afterend", `
+        <div class="seg text" id="focus-mode">
+          <button data-m="punto" aria-pressed="true">Punto de enfoque</button>
+          <button data-m="sujeto" aria-pressed="false">Marcar sujeto</button>
+        </div>
+        <p class="note" id="focus-note"></p>`);
+      sec.insertAdjacentHTML("beforeend", `
+        <div id="focus-tools" hidden style="display:flex;flex-direction:column;gap:12px">
+          <div class="ctl">
+            <label for="focus-size">Tamaño del pincel</label><output id="out-focus-size">60 px</output>
+            <input type="range" id="focus-size" min="10" max="200" step="1" value="60">
+          </div>
+          <div class="row">
+            <button class="btn" id="focus-undo" disabled>Quitar último trazo</button>
+            <button class="btn" id="focus-clear" disabled>Borrar zona</button>
+          </div>
+          <div class="row"><button class="chip text" id="focus-show" aria-pressed="true">Ver zona marcada</button></div>
+        </div>`);
+    }
+    (g.pane ? $("pane-" + g.pane) : pane).appendChild(sec);
+    if (!g.pane) makeFoldable(sec, g.group);
     if (g.group === "Color") { const h = buildHslSection(); pane.appendChild(h); makeFoldable(h, "tonos"); }
   });
 
@@ -2503,7 +2543,7 @@ body::before {
       </div>
       <div class="m-icons" id="m-adj-icons"></div></div>`);
     const items = [{ k: "auto", l: "Auto", act: true }, { k: "none", l: "Sin ajustes" }];
-    ADJUSTMENTS.filter(g => g.group !== "Piel").forEach(g => {
+    ADJUSTMENTS.filter(g => !g.pane).forEach(g => {
       g.items.forEach(it => items.push(it));
       if (g.group === "Color") items.push({ k: "tonos", l: "Por tonos" });
     });
@@ -2704,7 +2744,7 @@ body::before {
     const r = frame.getBoundingClientRect();
     brushCursor.hidden = false;
     const z = zoom.s;   // el cursor vive dentro de la foto ampliada: se compensa para que mida lo mismo en pantalla
-    const size = (viewMode() === "paint" ? +smoothSize.value : +brushInput.value) / z + "px";
+    const size = (viewMode() === "paint" ? +paintSizeEl().value : +brushInput.value) / z + "px";
     brushCursor.style.width = brushCursor.style.height = size;
     brushCursor.style.borderWidth = 2 / z + "px";
     brushCursor.style.left = (e.clientX - r.left) / z + "px";
@@ -3009,6 +3049,24 @@ body::before {
   const paintCv = $("smooth-paint"), pctx = paintCv.getContext("2d");
   const smoothSize = $("smooth-size");
   let showZone = true, smoothStroke = null;
+  const focusSize = $("focus-size");
+  const paintField = () => activeTab === "enfoque" ? "focusStrokes" : "smoothStrokes";
+  const paintSizeEl = () => activeTab === "enfoque" ? focusSize : smoothSize;
+  setFill(focusSize);
+  focusSize.addEventListener("input", () => { $("out-focus-size").textContent = focusSize.value + " px"; setFill(focusSize); });
+  $("focus-mode").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    state.focusMode = b.dataset.m;
+    if (!state.adj.depth) state.adj.depth = 60;   // que se note desde el principio
+    commit(); syncUI(); scheduleRender();
+  }));
+  const toggleZone = () => {
+    showZone = !showZone;
+    ["smooth-show", "focus-show"].forEach(id => $(id).setAttribute("aria-pressed", String(showZone)));
+    scheduleRender();
+  };
+  $("focus-show").addEventListener("click", toggleZone);
+  $("focus-undo").addEventListener("click", () => { state.focusStrokes = state.focusStrokes.slice(0, -1); commit(); syncUI(); scheduleRender(); });
+  $("focus-clear").addEventListener("click", () => { state.focusStrokes = []; commit(); syncUI(); scheduleRender(); });
   setFill(smoothSize);
   smoothSize.addEventListener("input", () => { $("out-smooth-size").textContent = smoothSize.value + " px"; setFill(smoothSize); });
   $("smooth-mode").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
@@ -3016,9 +3074,7 @@ body::before {
     if (state.smoothMode === "brush" && !state.adj.smooth) state.adj.smooth = 50;   // que se note al pintar
     commit(); syncUI(); scheduleRender();
   }));
-  $("smooth-show").addEventListener("click", () => {
-    showZone = !showZone; $("smooth-show").setAttribute("aria-pressed", String(showZone)); scheduleRender();
-  });
+  $("smooth-show").addEventListener("click", toggleZone);
   $("smooth-undo").addEventListener("click", () => {
     state.smoothStrokes = state.smoothStrokes.slice(0, -1); commit(); syncUI(); scheduleRender();
   });
@@ -3031,10 +3087,11 @@ body::before {
     pctx.clearRect(0, 0, paintCv.width, paintCv.height);
     if (!showZone) return;
     const g = geometry(workCanvas.width, workCanvas.height);
-    const m = smoothMask(workCanvas, g, state);
+    const field = paintField(), m = strokeMask(workCanvas, g, state, field);
     if (!m || g.cw !== paintCv.width || g.ch !== paintCv.height) return;
     const out = pctx.createImageData(g.cw, g.ch), o = out.data;
-    for (let i = 0; i < o.length; i += 4) if (m[i + 3]) { o[i] = 231; o[i+1] = 162; o[i+2] = 64; o[i+3] = m[i + 3] * 0.38; }
+    const [cr, cg, cb] = field === "focusStrokes" ? [80, 170, 255] : [231, 162, 64];   // sujeto en azul, piel en dorado
+    for (let i = 0; i < o.length; i += 4) if (m[i + 3]) { o[i] = cr; o[i+1] = cg; o[i+2] = cb; o[i+3] = m[i + 3] * 0.38; }
     pctx.putImageData(out, 0, 0);
   }
   // Punto de la vista → coordenadas normalizadas de la foto original.
@@ -3048,8 +3105,9 @@ body::before {
     e.preventDefault();
     paintCv.setPointerCapture(e.pointerId);
     const q = viewToSource(e);
-    smoothStroke = { r: (+smoothSize.value / 2) * q.k / Math.max(workCanvas.width, workCanvas.height), pts: [[q.x, q.y]] };
-    state.smoothStrokes = [...state.smoothStrokes, smoothStroke];
+    smoothStroke = { r: (+paintSizeEl().value / 2) * q.k / Math.max(workCanvas.width, workCanvas.height), pts: [[q.x, q.y]] };
+    const f = paintField();
+    state[f] = [...state[f], smoothStroke];
     moveBrush(e); scheduleRender();
   });
   paintCv.addEventListener("pointermove", e => {
@@ -3228,6 +3286,13 @@ body::before {
     $("smooth-tools").hidden = state.smoothMode !== "brush";
     $("smooth-auto-note").hidden = state.smoothMode === "brush";
     $("smooth-undo").disabled = $("smooth-clear").disabled = !state.smoothStrokes.length;
+    $("focus-mode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === state.focusMode)));
+    $("focus-tools").hidden = state.focusMode !== "sujeto";
+    $("adj-focusArea").closest(".ctl").hidden = state.focusMode === "sujeto";
+    $("focus-undo").disabled = $("focus-clear").disabled = !state.focusStrokes.length;
+    $("focus-note").textContent = state.focusMode === "sujeto"
+      ? (state.focusStrokes.length ? "Lo pintado queda nítido y el fondo se desenfoca. Sube la barra para más desenfoque." : "Pinta encima de la persona u objeto principal. Acerca la foto con dos dedos para marcar bien los bordes.")
+      : "Toca la foto sobre el sujeto: lo de alrededor se desenfoca en círculo.";
     const cam = CAMERAS.find(c => c.id === state.preset);
     $("cam-note").textContent = cam ? cam.ref : "Cada estilo imita el color, la nitidez y el contraste de un tipo de cámara.";
     amount.disabled = state.preset === "original";
@@ -3274,10 +3339,11 @@ body::before {
   }
 
   /* ================= Pestañas ================= */
-  const tabs = ["ajustes", "piel", "filtros", "borrar", "tamano", "fotos"];
+  const tabs = ["ajustes", "piel", "enfoque", "filtros", "borrar", "tamano", "fotos"];
   const FOOT = {
     ajustes: "Con Profundidad activada, toca la foto para elegir qué queda enfocado · doble clic en un ajuste lo pone a cero",
     piel: "Con pincel: pinta solo la zona que quieras suavizar · acerca la foto con dos dedos para más precisión",
+    enfoque: "Marcar sujeto: pinta encima de la persona u objeto principal y el fondo se desenfoca · acerca la foto para marcar los bordes",
     filtros: "Mantén pulsado un filtro para verlo en la foto sin aplicarlo · cada filtro recuerda su intensidad",
 
     borrar: "Cada borrado se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>",
@@ -3344,6 +3410,8 @@ body::before {
   const noneActions = {
     ajustes: { has: () => Object.entries(state.adj).some(([k, v]) => k !== "smooth" && v) || hasHsl(state.hsl),
                run: () => { state.adj = { ...defaults().adj, smooth: state.adj.smooth }; state.hsl = defaults().hsl; } },
+    enfoque: { has: () => !!state.adj.depth || !!state.adj.focusArea || state.focusStrokes.length > 0,
+               run: () => { state.adj = { ...state.adj, depth: 0, focusArea: 0 }; state.focusStrokes = []; } },
     piel:    { has: () => !!state.adj.smooth || state.smoothStrokes.length > 0,
                run: () => { state.adj = { ...state.adj, smooth: 0 }; state.smoothStrokes = []; } },
     filtro:  { has: () => state.preset !== "original", run: () => { state.preset = "original"; } },
@@ -3678,7 +3746,7 @@ body::before {
       painting = null;
       if (maskUndo) { mctx.putImageData(maskUndo.img, 0, 0); setMaskDirty(maskUndo.dirty); }
     }
-    if (smoothStroke) { state.smoothStrokes = state.smoothStrokes.slice(0, -1); smoothStroke = null; scheduleRender(); }
+    if (smoothStroke) { const f = paintField(); state[f] = state[f].slice(0, -1); smoothStroke = null; scheduleRender(); }
     if (drag) { state.crop = drag.start; drag = null; updateCropOverlay(); updateMeta(); }
     brushCursor.hidden = true;
   }
