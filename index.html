@@ -324,6 +324,7 @@ button, input, select { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .film-add:hover { color: var(--fg); border-color: var(--muted); }
+.film-apply { border-style: solid; background: none; font: inherit; font-size: 13px; color: var(--fg); }
 .film-add svg { width: 16px; height: 16px; }
 .strip-count {
   flex: none;
@@ -677,6 +678,10 @@ kbd {
 .splash.play .splash-bar i { animation: load 3.1s .1s cubic-bezier(.4,0,.2,1) both; }
 .splash.play .ic-rocket { animation: rocket-launch 1.6s 1.9s linear both; }
 .splash.play .ic-fire { animation: fire .12s 2.45s 10 alternate ease-in-out both; }
+.splash.quick.play .ic-rocket { animation-delay: .1s; animation-duration: 1.2s; }
+.splash.quick.play .ic-fire { animation-delay: .45s; }
+.splash.quick.play .splash-bar i { animation-duration: 1.3s; }
+.splash.quick.play .splash-tag { animation-delay: .25s; }
 .splash.leaving { animation: splash-out .45s ease forwards; pointer-events: none; }
 .app.entering { animation: app-in .55s .05s cubic-bezier(.2,.8,.2,1) both; }
 
@@ -809,6 +814,14 @@ body::before {
     <span id="splash-status">Preparando el cuarto oscuro…</span>
   </div>
 </div>
+<script>
+  // Si la app se abrió en las últimas 6 horas, la animación de inicio es corta.
+  try {
+    var last = +localStorage.getItem("revelado-last-open") || 0;
+    if (Date.now() - last < 6 * 3600e3) document.getElementById("splash").classList.add("quick");
+    localStorage.setItem("revelado-last-open", String(Date.now()));
+  } catch (e) {}
+</script>
 
 <div class="app">
   <header class="topbar">
@@ -909,7 +922,12 @@ body::before {
           <div class="section-title">Proporción</div>
           <div class="row" id="aspects"></div>
           <p class="note" id="crop-note"></p>
-          <div class="row"><button class="btn" id="crop-reset">Quitar recorte</button></div>
+          <div class="row">
+            <button class="btn" id="crop-swap" title="Cambia entre vertical y horizontal, por ejemplo 4:5 ↔ 5:4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="11" height="14" rx="1.5"/><path d="M17 3h4v4"/><path d="M21 3l-5 5"/><path d="M14 3h-1a4 4 0 0 0-4 4"/></svg>Girar proporción
+            </button>
+            <button class="btn" id="crop-reset">Quitar recorte</button>
+          </div>
         </div>
         <div class="section">
           <div class="section-title">Girar</div>
@@ -921,6 +939,14 @@ body::before {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>90° derecha
             </button>
           </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Enderezar</div>
+          <div class="ctl" id="ctl-straighten" title="Doble clic para poner a cero">
+            <label for="straighten">Giro fino</label><output id="out-straighten">0°</output>
+            <input type="range" id="straighten" min="-45" max="45" step="0.5" value="0">
+          </div>
+          <p class="note">Usa la cuadrícula del recorte como guía para dejar recto el horizonte.</p>
         </div>
         <div class="section">
           <div class="section-title">Voltear</div>
@@ -1028,6 +1054,10 @@ body::before {
           </button>
           <button class="btn" id="export-resize">Cambiar tamaño</button>
         </div>
+        <div class="row" id="save-all-row" hidden>
+          <button class="btn" id="save-all">Guardar todas</button>
+        </div>
+        <p class="note" id="save-all-note"></p>
         <p class="note" id="save-note">En el ordenador se descarga en tu carpeta de descargas. En el iPhone se abre el menú de compartir: elige «Guardar imagen» y la foto va a Fotos.</p>
       </div>
     </div>
@@ -1087,6 +1117,7 @@ body::before {
     ]},
     { group: "Efectos", items: [
       { k: "depth",       l: "Profundidad", min: 0,    max: 100 },
+      { k: "focusArea",   l: "Zona enfocada", min: 0,  max: 100 },
       { k: "vignette",    l: "Viñeta",      min: 0,    max: 100 },
       { k: "grain",       l: "Grano",       min: 0,    max: 100 },
       { k: "blur",        l: "Desenfoque",  min: 0,    max: 100 },
@@ -1094,7 +1125,7 @@ body::before {
   ];
   const ADJ_KEYS = ADJUSTMENTS.flatMap(g => g.items.map(i => i.k));
 
-  // Estilos de cámara: aproximaciones al color típico de cada tipo de cámara, no perfiles oficiales.
+  // Estilos de cámara: aproximaciones al color típico de cada tipo de cámara o película, no perfiles oficiales.
   const CAMERA_ICONS = {
     compacta: '<rect x="2.5" y="6.5" width="19" height="12" rx="2"/><circle cx="13" cy="12.5" r="3.6"/><path d="M5.5 9.5h2"/><path d="M15 4.5h4v2"/>',
     reflex:   '<path d="M2.5 8.5h4l2-3.5h7l2 3.5h4v10h-19z"/><circle cx="12" cy="13.5" r="3.8"/>',
@@ -1107,47 +1138,47 @@ body::before {
   const CAMERA_TYPE = { compacta: "Compacta", reflex: "Réflex", sinespejo: "Sin espejo", pelicula: "Película", cine: "Cine", medio: "Medio formato", telemetro: "Telémetro" };
   const CAMERAS = [
     { id: "vlog-calido", name: "Vlog cálido", cam: "compacta",
-      ref: "Inspirado en el color de compactas de vlog como la Canon G7 X: piel cálida y sana, contraste suave.",
+      ref: "Color típico de las compactas para vlog: piel cálida y sana, contraste suave.",
       p: { temperature: 14, tint: 8, saturation: 12, contrast: 8, highlights: -18, shadows: 12, clarity: 8, sharpen: 30, smooth: 15 } },
     { id: "vlog-nitido", name: "Vlog nítido", cam: "compacta",
-      ref: "Inspirado en compactas de vlog como la Sony ZV-1: color neutro, algo frío y muy definido.",
+      ref: "Color de compacta para vlog más neutro: algo frío y muy definido.",
       p: { temperature: -8, tint: -4, contrast: 14, saturation: 6, highlights: -12, clarity: 18, sharpen: 55 } },
     { id: "retrato", name: "Retrato réflex", cam: "reflex",
       ref: "Como una réflex con objetivo luminoso: fondo desenfocado, piel suave y luces contenidas. Toca la foto para elegir qué queda enfocado.",
       p: { temperature: 8, shadows: 18, highlights: -20, clarity: -14, contrast: 4, saturation: 4, sharpen: 22, vignette: 14, depth: 45, smooth: 30 } },
     { id: "cromo", name: "Cromo clásico", cam: "sinespejo",
-      ref: "Inspirado en la simulación Classic Chrome de Fujifilm: poco color, sombras firmes y luces suaves.",
+      ref: "Como una película de color apagado: poco color, sombras firmes y luces suaves.",
       p: { saturation: -35, contrast: 18, shadows: -14, highlights: -26, temperature: -6, clarity: 12, sharpen: 22 } },
     { id: "diapositiva", name: "Diapositiva", cam: "pelicula",
-      ref: "Inspirado en películas de diapositiva como Velvia: color intenso y mucho contraste.",
+      ref: "Como una película de diapositiva: color intenso y mucho contraste.",
       p: { saturation: 45, contrast: 24, exposure: -8, clarity: 10, sharpen: 25 } },
     { id: "cine", name: "Cine", cam: "cine",
       ref: "Look de cámara de cine: sombras turquesa, luces anaranjadas y fondo algo desenfocado.",
       p: { split: 70, contrast: 12, saturation: -6, highlights: -15, shadows: 6, depth: 25, vignette: 20, sharpen: 15 } },
     // Nuevos: más estilos de cámaras y películas profesionales
     { id: "neg-clasico", name: "Negativo clásico", cam: "sinespejo",
-      ref: "Inspirado en Classic Negative de Fujifilm: contraste marcado, poco color, sombras hacia el cian y luces cálidas.",
+      ref: "Como un negativo de color clásico: contraste marcado, poco color, sombras hacia el cian y luces cálidas.",
       p: { contrast: 18, saturation: -20, split: 35, tint: 4, highlights: -12, clarity: 8, sharpen: 20 } },
     { id: "cine-suave", name: "Cine suave", cam: "cine",
-      ref: "Inspirado en Eterna de Fujifilm, pensado para cine: contraste muy suave, color contenido y sombras que no se empastan.",
+      ref: "Como una película de cine de contraste muy suave: color contenido y sombras que no se empastan.",
       p: { contrast: -20, saturation: -28, shadows: 22, highlights: -22, fade: 14, temperature: -4, sharpen: 12 } },
     { id: "retrato-suave", name: "Retrato suave", cam: "sinespejo",
-      ref: "Inspirado en Astia de Fujifilm: paso suave de luces a sombras, color presente y piel delicada.",
+      ref: "Pensado para retratos: paso suave de luces a sombras, color presente y piel delicada.",
       p: { contrast: -8, saturation: 8, temperature: 6, tint: 3, shadows: 12, highlights: -14, smooth: 20, sharpen: 18 } },
     { id: "bn-intenso", name: "B/N intenso", cam: "telemetro",
-      ref: "Blanco y negro de cámara profesional (como Acros de Fujifilm o los telémetros monocromos): sombras ricas, mucha nitidez y algo de grano.",
+      ref: "Blanco y negro de cámara profesional: sombras ricas, mucha nitidez y algo de grano.",
       p: { saturation: -100, contrast: 30, shadows: 8, clarity: 22, sharpen: 38, grain: 18, vignette: 12 } },
     { id: "retrato-400", name: "Retrato 400", cam: "pelicula",
-      ref: "Inspirado en la película Kodak Portra 400: tonos cálidos y naturales, contraste bajo, sombras abiertas y grano fino.",
+      ref: "Como una película de retrato de ISO 400: tonos cálidos y naturales, contraste bajo y grano fino.",
       p: { temperature: 12, tint: 4, saturation: -10, contrast: -8, shadows: 14, highlights: -16, fade: 10, grain: 12, smooth: 10 } },
     { id: "dorado-200", name: "Dorado 200", cam: "pelicula",
-      ref: "Inspirado en la película Kodak Gold 200: cálida, con color vivo, aire nostálgico y un grano más visible.",
+      ref: "Como una película de ISO 200 de toda la vida: cálida, color vivo, aire nostálgico y más grano.",
       p: { temperature: 24, saturation: 14, contrast: 8, fade: 12, grain: 22, vignette: 14, highlights: -8 } },
     { id: "color-natural", name: "Color natural", cam: "medio",
-      ref: "Como una cámara de medio formato tipo Hasselblad: colores fieles, luces bien contenidas y mucho detalle.",
+      ref: "Como una cámara de medio formato: colores fieles, luces bien contenidas y mucho detalle.",
       p: { contrast: 6, saturation: 4, highlights: -20, shadows: 10, clarity: 10, sharpen: 32 } },
     { id: "positivo", name: "Positivo", cam: "compacta",
-      ref: "Inspirado en Positive Film de la compacta Ricoh GR: color saturado, rojos intensos, verdes algo amarillos y contraste fuerte.",
+      ref: "Como el modo «película positiva» de las compactas de calle: color saturado, rojos intensos y contraste fuerte.",
       p: { saturation: 24, contrast: 22, temperature: 8, hue: -3, vignette: 18, clarity: 8, sharpen: 22 } },
     { id: "paisaje", name: "Paisaje réflex", cam: "reflex",
       ref: "Como el estilo Paisaje de las réflex: azules y verdes más vivos, mucha nitidez y detalle en el cielo.",
@@ -1189,7 +1220,8 @@ body::before {
   ];
   const fmtById = id => FORMATS.find(f => f.id === id);
 
-  const WORK_MAX = 1400;   // lado largo de la vista previa
+  const WORK_MAX = 2048;   // lado largo de la vista previa (nítida también con zoom)
+  const DRAFT_MAX = 960;   // mientras se arrastra una barra se calcula sobre una copia más pequeña: va fluido
   const SRC_MAX = 6000;    // lado largo máximo de la imagen de trabajo
   const FULL = { x: 0, y: 0, w: 1, h: 1 };
   const MASK_COLOR = "#ff4d5e";
@@ -1204,6 +1236,7 @@ body::before {
     format: null, fit: "cover", fitBg: "blur",
     size: { mode: "original", w: 0, h: 0, lock: true },
     edits: 0,
+    straighten: 0,           // giro fino en grados (−45 a 45) para enderezar el horizonte
     focus: { x: 0.5, y: 0.5 },
     smoothMode: "auto",      // "auto": toda la piel · "brush": solo lo pintado
     smoothStrokes: [],       // trazos en coordenadas de la foto original (0–1): {r, pts:[[x,y],…]}
@@ -1293,7 +1326,7 @@ body::before {
     return out;
   }
   const presetOnlyParams = id => effectiveParams({ ...defaults(), preset: id });
-  const needsPixels = p => Object.entries(p).some(([k, v]) => k !== "blur" && v);
+  const needsPixels = p => Object.entries(p).some(([k, v]) => k !== "blur" && k !== "focusArea" && v);
 
   // Difumina un lienzo reduciéndolo y volviéndolo a ampliar (rápido y funciona en cualquier navegador).
   function softScale(src, w, h, bw) {
@@ -1342,7 +1375,11 @@ body::before {
         else { if (sc <= 0) continue; skin = sc; }
         // Imperfección: más oscura y más rojiza que la piel de alrededor (las cejas y el pelo son marrones, no rojizos).
         const Yb = lum(big, i);
-        if (Yb - Y > 4 && cr - crOf(big, i) > -3) {
+        const crB = crOf(big, i), cbB = 128 - .168736 * big[i] - .331264 * big[i+1] + .5 * big[i+2];
+        const skinB = Math.min(1 - Math.max(0, Math.abs(cbB - 102) - 22) / 8, 1 - Math.max(0, Math.abs(crB - 153) - 17) / 8);
+        // solo si alrededor también hay piel: así no aparece un halo junto a ojos, cejas o fondo
+        // y sin nada más claro muy cerca (el blanco del ojo): si no, aparecería un halo brillante
+        if (Yb - Y > 4 && cr - crB > -3 && skinB > 0.5 && lum(bl, i) <= Yb + 3) {
           const e = 1 - (Yb - Y) / spotTol;
           if (e > 0) {
             const wgt = skin * Math.min(1, e * 1.6) * strength;
@@ -1352,7 +1389,11 @@ body::before {
         }
         const edge = 1 - Math.abs(Y - lum(bl, i)) / edgeTol;
         if (edge <= 0) continue;
-        const wgt = skin * edge * edge * strength;   // al cuadrado: los bordes marcados (ojos, labios, contorno) se respetan más
+        // cerca de algo mucho más claro u oscuro (el blanco del ojo, una ceja) los dos difuminados difieren: no se toca
+        const feature = Math.abs(lum(bl, i) - Yb);
+        const guard = feature <= 5 ? 1 : feature >= 16 ? 0 : 1 - (feature - 5) / 11;
+        if (guard <= 0) continue;
+        const wgt = skin * edge * edge * strength * 0.9 * guard;   // se deja un 10% de textura natural   // al cuadrado: los bordes marcados (ojos, labios, contorno) se respetan más
         d[i] = r + (bl[i] - r) * wgt; d[i+1] = g + (bl[i+1] - g) * wgt; d[i+2] = b + (bl[i+2] - b) * wgt;
       }
     }
@@ -1419,12 +1460,14 @@ body::before {
   }
 
   // Profundidad: desenfoca lo que queda lejos del punto de enfoque, como un objetivo muy luminoso.
-  function applyDepth(target, ctx, depth, f) {
+  function applyDepth(target, ctx, depth, f, area = 0) {
     const w = target.width, h = target.height;
     const bl = softScale(target, w, h, Math.round(w * (0.12 - depth / 100 * 0.09)));
     const bc = bl.getContext("2d");
     const fx = f.x * w, fy = f.y * h, m = Math.min(w, h), M = Math.max(w, h);
-    const g = bc.createRadialGradient(fx, fy, m * 0.12, fx, fy, M * (0.62 - depth / 100 * 0.25));
+    const a = Math.max(0, area) / 100;            // «Zona enfocada»: agranda la parte nítida
+    const inner = m * (0.12 + a * 0.33), outer = Math.max(inner * 1.35, M * (0.62 - depth / 100 * 0.25 + a * 0.3));
+    const g = bc.createRadialGradient(fx, fy, inner, fx, fy, outer);
     g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
     bc.globalCompositeOperation = "destination-out"; bc.fillStyle = g; bc.fillRect(0, 0, w, h);
     ctx.globalAlpha = Math.min(1, 0.55 + depth / 220); ctx.drawImage(bl, 0, 0); ctx.globalAlpha = 1;
@@ -1439,9 +1482,15 @@ body::before {
     const cw = clamp(Math.round(c.w * rw), 1, rw - cx), ch = clamp(Math.round(c.h * rh), 1, rh - cy);
     return { rw, rh, cw, ch, cx, cy, sw, sh };
   }
+  // Al enderezar, la foto se amplía lo justo para que no queden esquinas vacías.
+  function straightenScale(rw, rh, deg) {
+    const t = Math.abs(deg || 0) * Math.PI / 180, c = Math.cos(t), sn = Math.sin(t);
+    return Math.max((rw * c + rh * sn) / rw, (rw * sn + rh * c) / rh);
+  }
   const geoMatrix = (g, s) => new DOMMatrix()
     .translate(-g.cx, -g.cy).translate(g.rw / 2, g.rh / 2)
-    .scale(s.flipH ? -1 : 1, s.flipV ? -1 : 1).rotate(s.rotation)
+    .scale(s.flipH ? -1 : 1, s.flipV ? -1 : 1).rotate(s.rotation + (s.straighten || 0))
+    .scale(straightenScale(g.rw, g.rh, s.straighten))
     .translate(-g.sw / 2, -g.sh / 2);
   const rotatedDims = (s = state) => s.rotation % 180 ? [workCanvas.height, workCanvas.width] : [workCanvas.width, workCanvas.height];
 
@@ -1453,6 +1502,7 @@ body::before {
   }
   function cropRatio(s = state) {
     if (s.format && s.fit === "cover") { const f = fmtById(s.format); return f.w / f.h; }
+    if (s.cropAspect && s.cropAspect.startsWith("r:")) return parseFloat(s.cropAspect.slice(2));
     const a = CROP_ASPECTS.find(a => a.id === s.cropAspect);
     if (!a || a.id === "libre") return null;
     if (a.id === "original") { const [rw, rh] = rotatedDims(s); return rw / rh; }
@@ -1509,7 +1559,7 @@ body::before {
       if (!smask) pp = { ...p, smooth: 0 };   // con pincel y sin nada pintado: no se suaviza nada
     }
     if (pp && needsPixels(pp)) { processPixels(img, g.cw, g.ch, pp, smask); ctx.putImageData(img, 0, 0); }
-    if (p && p.depth) { applyDepth(target, ctx, p.depth, s.focus || { x: .5, y: .5 }); img = ctx.getImageData(0, 0, g.cw, g.ch); }
+    if (p && p.depth) { applyDepth(target, ctx, p.depth, s.focus || { x: .5, y: .5 }, p.focusArea); img = ctx.getImageData(0, 0, g.cw, g.ch); }
     return img;
   }
 
@@ -1595,23 +1645,25 @@ body::before {
   const viewMode = () => activeTab === "recortar" ? "crop" : activeTab === "borrar" ? "erase"
     : (activeTab === "piel" && state.smoothMode === "brush") ? "paint" : "normal";
 
-  let rafId = 0;
-  function scheduleRender() {
+  let rafId = 0, pendingDraft = null, previewState = null;
+  // draft = true: mientras el dedo arrastra una barra (calcula rápido); al soltar se calcula con todo el detalle.
+  function scheduleRender(draft = false) {
+    pendingDraft = pendingDraft === null ? draft : (pendingDraft && draft);
     if (rafId) return;
-    rafId = requestAnimationFrame(() => { rafId = 0; renderView(); });
+    rafId = requestAnimationFrame(() => { rafId = 0; const d = pendingDraft; pendingDraft = null; renderView(d); });
   }
-  function renderView() {
+  function renderView(draft = false) {
     if (!workCanvas) return;
     const mode = viewMode();
-    const p = comparing ? null : effectiveParams();
-    let img;
+    const useDraft = draft && draftCanvas && (mode === "normal" || mode === "crop");
+    const src = useDraft ? draftCanvas : workCanvas;
+    const p = comparing ? null : effectiveParams(previewState || state);
     if (mode === "normal" && state.format) {
-      renderImage(workCanvas, p, procCanvas, state);
-      const f = fmtById(state.format), k = Math.min(1, WORK_MAX / Math.max(f.w, f.h));
+      renderImage(src, p, procCanvas, state);
+      const f = fmtById(state.format), k = Math.min(1, (useDraft ? DRAFT_MAX : WORK_MAX) / Math.max(f.w, f.h));
       compose(procCanvas, Math.round(f.w * k), Math.round(f.h * k), state, view, false);
-      img = ctx2d(view).getImageData(0, 0, view.width, view.height);
     } else {
-      img = renderImage(workCanvas, p, view, state, mode !== "crop");
+      renderImage(src, p, view, state, mode !== "crop");
     }
     layoutView();
     $("crop-layer").hidden = mode !== "crop";
@@ -1620,7 +1672,8 @@ body::before {
     if (mode === "paint") drawSmoothOverlay();
     if (mode === "crop") updateCropOverlay();
     if (mode === "erase") syncMaskSize();
-    if (mode === "normal" && !comparing) scheduleStripThumb();
+    if (mode === "normal" && !comparing && !useDraft && !previewState) scheduleStripThumb();
+    if (typeof updateSafeZones === "function") updateSafeZones();
     const tag = $("mode-tag");
     tag.hidden = comparing || mode === "normal";
     tag.textContent = mode === "crop" ? "Arrastra las esquinas para recortar" : mode === "paint" ? "Pinta la zona que quieras suavizar" : "Pinta lo que quieras borrar";
@@ -1653,7 +1706,13 @@ body::before {
     if (!thumbCanvas) thumbCanvas = document.createElement("canvas");
     thumbCanvas.width = Math.max(1, Math.round(w * ts)); thumbCanvas.height = Math.max(1, Math.round(h * ts));
     thumbCanvas.getContext("2d").drawImage(workCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    const ds = Math.min(1, DRAFT_MAX / Math.max(workCanvas.width, workCanvas.height));
+    if (!draftCanvas) draftCanvas = document.createElement("canvas");
+    draftCanvas.width = Math.max(1, Math.round(workCanvas.width * ds)); draftCanvas.height = Math.max(1, Math.round(workCanvas.height * ds));
+    const dctx = draftCanvas.getContext("2d"); dctx.imageSmoothingQuality = "high";
+    dctx.drawImage(workCanvas, 0, 0, draftCanvas.width, draftCanvas.height);
   }
+  let draftCanvas = null;
 
   // Cada foto abierta es un «documento» con su propia edición, historial y borrados.
   // Solo la foto activa tiene lienzos grandes en memoria; las demás guardan la imagen original
@@ -1661,13 +1720,15 @@ body::before {
   const docs = [];
   let cur = -1;
 
+  let docSeq = 0;
   function makeDoc(drawable, w, h, name, isSample) {
     const thumb = document.createElement("canvas");
     const k = 116 / Math.min(w, h);
     thumb.width = Math.max(1, Math.round(w * k)); thumb.height = Math.max(1, Math.round(h * k));
     const tc = thumb.getContext("2d"); tc.imageSmoothingQuality = "high"; tc.drawImage(drawable, 0, 0, thumb.width, thumb.height);
     const st = defaults();
-    return { drawable, w, h, name, isSample, thumb, state: st,
+    return { id: Date.now().toString(36) + "-" + (docSeq++) + "-" + Math.random().toString(36).slice(2, 7),
+             drawable, w, h, name, isSample, thumb, state: st, blob: null,
              history: { stack: [JSON.stringify(st)], i: 0 }, eraseOps: [], appliedEdits: 0 };
   }
 
@@ -1702,12 +1763,13 @@ body::before {
     resetZoom(false);
     clearMask();
 
-    state = d.state;
+    state = normalizeState(d.state);
     history.stack = d.history.stack; history.i = d.history.i;
     syncUI();
     renderThumbs();
     renderView();
     renderStrip();
+    saveMetaSoon();
   }
 
   function setSource(drawable, w, h, name, isSample) {
@@ -1719,6 +1781,7 @@ body::before {
     const wasCurrent = i === cur;
     if (wasCurrent && srcCanvas) { srcCanvas.width = srcCanvas.height = 0; srcCanvas = null; }
     const removed = docs.splice(i, 1)[0];
+    store.remove(removed.id).catch(() => {});
     if (!docs.length) {
       const sample = makeSample();
       docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
@@ -1729,9 +1792,14 @@ body::before {
       if (i < cur) cur--;
       renderStrip();
     }
+    saveMetaSoon();
     toast(`Quitada: ${removed.name}`);
   }
 
+  function normalizeState(st) {
+    const d = defaults();
+    return { ...d, ...st, adj: { ...d.adj, ...(st.adj || {}) }, size: { ...d.size, ...(st.size || {}) } };
+  }
   const isPristine = st => JSON.stringify({ ...st, edits: 0 }) === JSON.stringify(defaults()) && !st.edits;
 
   const stripEl = $("strip");
@@ -1756,6 +1824,14 @@ body::before {
       }
       stripEl.appendChild(wrap);
     });
+    if (docs.length > 1) {
+      const ap = document.createElement("button");
+      ap.className = "film-add film-apply";
+      ap.title = "Copia los ajustes, el filtro, la piel y el tamaño de esta foto a las demás (el recorte y los borrados no)";
+      ap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg>Aplicar a todas';
+      ap.addEventListener("click", applyToAll);
+      stripEl.appendChild(ap);
+    }
     const add = document.createElement("label");
     add.className = "film-add"; add.htmlFor = "file-input";
     add.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir fotos';
@@ -1766,6 +1842,41 @@ body::before {
     }
     const active = stripEl.querySelector('.film[aria-pressed="true"]');
     if (active) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  // Copia el «look» de la foto activa a las demás. Cada foto lo guarda en su historial, así que se puede deshacer.
+  function applyToAll() {
+    const look = {
+      adj: { ...state.adj }, preset: state.preset, presetAmount: state.presetAmount,
+      presetAmounts: { ...(state.presetAmounts || {}) }, hsl: JSON.parse(JSON.stringify(state.hsl || {})),
+      format: state.format, fit: state.fit, fitBg: state.fitBg, size: { ...state.size },
+    };
+    let n = 0;
+    docs.forEach((d, i) => {
+      if (i === cur) return;
+      const ns = normalizeState({ ...d.state, ...look, smoothMode: state.smoothMode === "auto" ? "auto" : d.state.smoothMode });
+      d.history.stack.splice(d.history.i + 1);
+      d.history.stack.push(JSON.stringify(ns));
+      d.history.i = d.history.stack.length - 1;
+      d.state = ns;
+      refreshDocThumb(d);
+      saveDoc(d);
+      n++;
+    });
+    renderStrip();
+    toast(`Apliqué esta edición a ${n} ${n === 1 ? "foto" : "fotos"}. En cada una puedes deshacerlo.`);
+  }
+  // Miniatura de una foto que no está abierta, con su edición (sin los borrados).
+  function refreshDocThumb(d) {
+    const small = document.createElement("canvas");
+    const k = 240 / Math.max(d.w, d.h);
+    small.width = Math.max(1, Math.round(d.w * k)); small.height = Math.max(1, Math.round(d.h * k));
+    small.getContext("2d").drawImage(d.drawable, 0, 0, small.width, small.height);
+    const out = document.createElement("canvas");
+    renderImage(small, effectiveParams(d.state), out, d.state);
+    const t = 116 / Math.min(out.width, out.height);
+    d.thumb.width = Math.max(1, Math.round(out.width * t)); d.thumb.height = Math.max(1, Math.round(out.height * t));
+    d.thumb.getContext("2d").drawImage(out, 0, 0, d.thumb.width, d.thumb.height);
   }
 
   // La miniatura de la foto activa refleja su edición (se actualiza poco después de cada cambio).
@@ -1782,13 +1893,13 @@ body::before {
     }, 350);
   }
 
-  function readImage(file) {
+  function readImage(file, name = file.name) {
     return new Promise(resolve => {
-      if (!file.type.startsWith("image/")) { resolve({ error: `«${file.name}» no es una imagen` }); return; }
+      if (!file.type.startsWith("image/")) { resolve({ error: `«${name}» no es una imagen` }); return; }
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => { resolve({ img }); };   // la URL se mantiene: la foto se vuelve a dibujar al volver a ella
-      img.onerror = () => { URL.revokeObjectURL(url); resolve({ error: `No se pudo abrir «${file.name}»` }); };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve({ error: `No se pudo abrir «${name}»` }); };
       img.src = url;
     });
   }
@@ -1802,8 +1913,11 @@ body::before {
     for (const f of files) {
       const r = await readImage(f);
       if (r.error) { errors.push(r.error); continue; }
-      docs.push(makeDoc(r.img, r.img.naturalWidth, r.img.naturalHeight, f.name, false));
+      const d = makeDoc(r.img, r.img.naturalWidth, r.img.naturalHeight, f.name, false);
+      d.blob = f;
+      docs.push(d);
     }
+    docs.slice(firstNew).forEach(d => saveDoc(d));
     if (docs.length > firstNew) {
       const keep = cur >= 0;
       if (!keep) cur = -1;
@@ -1955,8 +2069,8 @@ body::before {
       row.innerHTML = `<label for="adj-${it.k}">${it.l}</label><output id="out-${it.k}">0</output>
         <input type="range" id="adj-${it.k}" min="${it.min}" max="${it.max}" step="1" value="0" ${disabled ? "disabled" : ""}>`;
       const input = row.querySelector("input");
-      input.addEventListener("input", () => { state.adj[it.k] = +input.value; updateCtl(it); scheduleRender(); });
-      input.addEventListener("change", commit);
+      input.addEventListener("input", () => { state.adj[it.k] = +input.value; updateCtl(it); scheduleRender(true); });
+      input.addEventListener("change", () => { commit(); scheduleRender(); });
       row.addEventListener("dblclick", () => {
         if (disabled || state.adj[it.k] === 0) return;
         state.adj[it.k] = 0; updateCtl(it); commit(); scheduleRender();
@@ -1998,10 +2112,10 @@ body::before {
   const amount = $("preset-amount");
   amount.addEventListener("input", () => {
     state.presetAmount = +amount.value;
-    $("out-amount").textContent = amount.value + "%"; setFill(amount); scheduleRender();
+    $("out-amount").textContent = amount.value + "%"; setFill(amount); scheduleRender(true);
     if (state.preset !== "original") $("amount-note").textContent = state.presetAmount > 100 ? "Por encima de 100% el filtro se exagera." : "";
   });
-  amount.addEventListener("change", commit);
+  amount.addEventListener("change", () => { commit(); scheduleRender(); });
 
   /* ================= Recortar ================= */
   const aspectBox = $("aspects");
@@ -2088,6 +2202,22 @@ body::before {
     geometryChanged();
   });
   function geometryChanged() { commit(); syncUI(); renderThumbs(); scheduleRender(); }
+  const straightenIn = $("straighten");
+  straightenIn.addEventListener("input", () => {
+    state.straighten = +straightenIn.value; setFill(straightenIn);
+    $("out-straighten").textContent = fmt(state.straighten, true, "°");
+    scheduleRender(true);
+  });
+  straightenIn.addEventListener("change", geometryChanged);
+  $("ctl-straighten").addEventListener("dblclick", () => { if (state.straighten) { state.straighten = 0; geometryChanged(); } });
+  $("crop-swap").addEventListener("click", () => {
+    const r = cropRatio(); if (!r) return;
+    if (state.format && state.fit === "cover") state.format = null;
+    const nr = 1 / r, match = CROP_ASPECTS.find(a => a.r && Math.abs(a.r - nr) < 0.01);
+    state.cropAspect = match ? match.id : "r:" + nr.toFixed(5);
+    state.crop = centeredCrop(nr);
+    commit(); syncUI(); scheduleRender();
+  });
 
   /* ================= Borrar objetos ================= */
   const maskCv = $("mask"), mctx = maskCv.getContext("2d");
@@ -2170,7 +2300,9 @@ body::before {
     const k = srcCanvas.width / workCanvas.width;
     const T = new DOMMatrix().scale(k, k).multiply(geoMatrix(g, state).inverse()); // vista → píxeles originales
     const pts = [[mb.x0, mb.y0], [mb.x1, mb.y0], [mb.x0, mb.y1], [mb.x1, mb.y1]].map(([x, y]) => T.transformPoint(new DOMPoint(x, y)));
-    const grow = Math.max(2, Math.round(k * 2)), pad = Math.ceil(10 * k) + grow + 6;
+    const grow = Math.max(2, Math.round(k * 2));
+    const spanX = Math.max(...pts.map(p => p.x)) - Math.min(...pts.map(p => p.x)), spanY = Math.max(...pts.map(p => p.y)) - Math.min(...pts.map(p => p.y));
+    const pad = Math.ceil(Math.max(10 * k + grow + 6, Math.max(spanX, spanY) * 0.9));
     const SW = srcCanvas.width, SH = srcCanvas.height;
     const x0 = clamp(Math.floor(Math.min(...pts.map(p => p.x))) - pad, 0, SW);
     const y0 = clamp(Math.floor(Math.min(...pts.map(p => p.y))) - pad, 0, SH);
@@ -2197,6 +2329,7 @@ body::before {
 
     eraseOps.length = appliedEdits;
     eraseOps.push({ x: x0, y: y0, before, after });
+    if (docs[cur] && !docs[cur].isSample) store.putOp(docs[cur].id, eraseOps.length - 1, eraseOps[eraseOps.length - 1]).catch(() => {});
     appliedEdits++;
     state.edits = appliedEdits;
     rebuildDerived(); clearMask(); commit(); renderThumbs(); scheduleRender();
@@ -2271,6 +2404,9 @@ body::before {
       front = next;
     }
 
+    // Si hay suficiente foto alrededor, se rellena copiando textura real; si no, se suaviza el relleno.
+    if (patchFill(d, hole, W, H)) { blendSeam(d, hole, W, H); return; }
+
     for (let pass = 0; pass < 2; pass++) {           // suavizado dentro del hueco
       const copy = new Uint8ClampedArray(d);
       for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -2286,6 +2422,118 @@ body::before {
     if (sigma > 0.3) for (let i = 0; i < N; i++) if (hole[i]) {
       const n = (rnd() + rnd() + rnd() - 1.5) * sigma * 1.6;
       d[i*4] += n + (rnd() - .5) * sigma * .4; d[i*4+1] += n + (rnd() - .5) * sigma * .4; d[i*4+2] += n + (rnd() - .5) * sigma * .4;
+    }
+  }
+
+  // Relleno con textura: para cada zona del hueco busca el trozo de foto de alrededor que mejor encaja
+  // (una versión simplificada de PatchMatch, la técnica de los editores profesionales) y copia sus píxeles.
+  function patchFill(d, hole, W, H) {
+    const f = Math.min(1, 150 / Math.max(W, H));
+    const w = Math.max(12, Math.round(W * f)), h = Math.max(12, Math.round(H * f));
+    const fx = W / w, fy = H / h, n = w * h;
+    const img = new Float32Array(n * 3), sh = new Uint8Array(n);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const X0 = Math.floor(x * fx), X1 = Math.max(X0 + 1, Math.floor((x + 1) * fx));
+      const Y0 = Math.floor(y * fy), Y1 = Math.max(Y0 + 1, Math.floor((y + 1) * fy));
+      let r = 0, g = 0, b = 0, c = 0, hh = 0;
+      for (let Y = Y0; Y < Y1 && Y < H; Y++) for (let X = X0; X < X1 && X < W; X++) {
+        const i = Y * W + X; r += d[i*4]; g += d[i*4+1]; b += d[i*4+2]; hh += hole[i]; c++;
+      }
+      const j = y * w + x; c = c || 1;
+      img[j*3] = r / c; img[j*3+1] = g / c; img[j*3+2] = b / c; sh[j] = hh ? 1 : 0;
+    }
+    const P = 3;                                   // parches de 7×7
+    const near = dilate(sh, w, h, P);
+    const isValid = new Uint8Array(n), valid = [], holes = [];
+    for (let y = P; y < h - P; y++) for (let x = P; x < w - P; x++) { const j = y * w + x; if (!near[j]) { isValid[j] = 1; valid.push(j); } }
+    for (let j = 0; j < n; j++) if (sh[j]) holes.push(j);
+    if (valid.length < 40 || !holes.length) return false;
+
+    let seed = 4242; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const dist = (t, sIdx, best) => {
+      const tx = t % w, ty = (t / w) | 0, sx = sIdx % w, sy = (sIdx / w) | 0;
+      let sum = 0;
+      for (let dy = -P; dy <= P; dy++) {
+        const y2 = ty + dy; if (y2 < 0 || y2 >= h) continue;
+        const rowT = y2 * w, rowS = (sy + dy) * w;
+        for (let dx = -P; dx <= P; dx++) {
+          const x2 = tx + dx; if (x2 < 0 || x2 >= w) continue;
+          const a = (rowT + x2) * 3, bb = (rowS + sx + dx) * 3;
+          const e0 = img[a] - img[bb], e1 = img[a+1] - img[bb+1], e2 = img[a+2] - img[bb+2];
+          sum += e0 * e0 + e1 * e1 + e2 * e2;
+          if (sum >= best) return sum;
+        }
+      }
+      return sum;
+    };
+    const nnf = new Int32Array(n).fill(-1), cost = new Float64Array(n);
+    for (const j of holes) { nnf[j] = valid[(rnd() * valid.length) | 0]; cost[j] = dist(j, nnf[j], Infinity); }
+    const search = iters => {
+      for (let it = 0; it < iters; it++) {
+        const step = it % 2 === 0 ? 1 : -1;
+        const order = step === 1 ? holes : holes.slice().reverse();
+        for (const j of order) {
+          const x = j % w, y = (j / w) | 0;
+          let best = nnf[j], bd = dist(j, best, Infinity);
+          const tryS = c => { if (c >= 0 && c < n && isValid[c] && c !== best) { const dd = dist(j, c, bd); if (dd < bd) { bd = dd; best = c; } } };
+          const qx = x - step;                     // propagación desde el vecino ya resuelto
+          if (qx >= 0 && qx < w) { const o = nnf[y * w + qx]; if (o >= 0 && ((o + step) / w | 0) === (o / w | 0)) tryS(o + step); }
+          const qy = y - step;
+          if (qy >= 0 && qy < h) { const o = nnf[qy * w + x]; if (o >= 0) tryS(o + step * w); }
+          for (let rad = Math.max(w, h); rad >= 1; rad >>= 1) {   // búsqueda aleatoria cada vez más cerca
+            const cx = best % w + Math.round((rnd() * 2 - 1) * rad), cy = ((best / w) | 0) + Math.round((rnd() * 2 - 1) * rad);
+            if (cx >= 0 && cx < w && cy >= 0 && cy < h) tryS(cy * w + cx);
+          }
+          nnf[j] = best; cost[j] = bd;
+        }
+      }
+    };
+    // «Votación»: cada píxel del hueco toma la media de todos los parches que lo cubren; así encaja mejor.
+    const vote = () => {
+      const acc = new Float32Array(n * 3), cnt = new Float32Array(n);
+      for (const t of holes) {
+        const tx = t % w, ty = (t / w) | 0, s0 = nnf[t], sx = s0 % w, sy = (s0 / w) | 0, wt = 1 / (1 + cost[t] / 2000);
+        for (let dy = -P; dy <= P; dy++) for (let dx = -P; dx <= P; dx++) {
+          const x2 = tx + dx, y2 = ty + dy; if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) continue;
+          const q = y2 * w + x2; if (!sh[q]) continue;
+          const sq = ((sy + dy) * w + sx + dx) * 3;
+          acc[q*3] += img[sq] * wt; acc[q*3+1] += img[sq+1] * wt; acc[q*3+2] += img[sq+2] * wt; cnt[q] += wt;
+        }
+      }
+      for (const q of holes) if (cnt[q]) { img[q*3] = acc[q*3] / cnt[q]; img[q*3+1] = acc[q*3+1] / cnt[q]; img[q*3+2] = acc[q*3+2] / cnt[q]; }
+    };
+    for (let round = 0; round < 4; round++) { search(round === 0 ? 5 : 2); vote(); }
+
+    // Resolución completa: cada píxel mezcla lo que dicen los 4 puntos pequeños más cercanos (sin bloques).
+    let copied = 0;
+    for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+      const i = Y * W + X; if (!hole[i]) continue;
+      const gx = X / fx - 0.5, gy = Y / fy - 0.5, x0 = Math.floor(gx), y0 = Math.floor(gy);
+      let r = 0, g = 0, b = 0, ws = 0;
+      for (let oy = 0; oy <= 1; oy++) for (let ox = 0; ox <= 1; ox++) {
+        const x = clamp(x0 + ox, 0, w - 1), y = clamp(y0 + oy, 0, h - 1), sIdx = nnf[y * w + x];
+        if (sIdx < 0) continue;
+        const SX = Math.round(X + (sIdx % w - x) * fx), SY = Math.round(Y + (((sIdx / w) | 0) - y) * fy);
+        if (SX < 0 || SY < 0 || SX >= W || SY >= H) continue;
+        const k = SY * W + SX; if (hole[k]) continue;
+        const wgt = (ox ? gx - x0 : 1 - (gx - x0)) * (oy ? gy - y0 : 1 - (gy - y0)) + 1e-4;
+        r += d[k*4] * wgt; g += d[k*4+1] * wgt; b += d[k*4+2] * wgt; ws += wgt;
+      }
+      if (ws > 0) { d[i*4] = r / ws; d[i*4+1] = g / ws; d[i*4+2] = b / ws; copied++; }
+    }
+    return copied > 0;
+  }
+  // Funde el borde del relleno con la foto para que no se note la costura.
+  function blendSeam(d, hole, W, H) {
+    const edge = dilate(hole.map(v => 1 - v), W, H, 2);
+    const copy = new Uint8ClampedArray(d);
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x; if (!hole[i] || !edge[i]) continue;
+      for (let ch = 0; ch < 3; ch++) {
+        let sum = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) sum += copy[((y + dy) * W + x + dx) * 4 + ch];
+        d[i*4+ch] = sum / 9;
+      }
     }
   }
 
@@ -2478,13 +2726,15 @@ body::before {
     if (history.stack.length > 80) history.stack.shift();
     history.i = history.stack.length - 1;
     syncHistory();
+    saveSoon();
   }
   function travel(d) {
     const j = history.i + d;
     if (j < 0 || j >= history.stack.length) return;
     history.i = j;
-    state = JSON.parse(history.stack[j]);
+    state = normalizeState(JSON.parse(history.stack[j]));
     applyEditsTo(state.edits);
+    saveSoon();
     syncUI(); renderThumbs(); scheduleRender();
   }
   const pristine = () => JSON.stringify({ ...defaults(), edits: state.edits });
@@ -2525,6 +2775,10 @@ body::before {
       ? `La proporción la marca el formato «${fmtLock.name}». Puedes mover y ajustar el marco; si eliges otra proporción, se quita el formato.`
       : "Arrastra las esquinas para recortar y el centro para mover el recorte.";
     $("crop-reset").disabled = !state.crop;
+    $("crop-swap").disabled = !cropRatio() || cropRatio() === 1;
+    $("straighten").value = state.straighten || 0; setFill($("straighten"));
+    $("out-straighten").textContent = fmt(+(state.straighten || 0), true, "°");
+    $("ctl-straighten").classList.toggle("changed", !!state.straighten);
     $("flip-h").setAttribute("aria-pressed", String(state.flipH));
     $("flip-v").setAttribute("aria-pressed", String(state.flipV));
 
@@ -2658,6 +2912,7 @@ body::before {
   }
   function openExport() {
     modal.hidden = false;
+    resetSaveAll();
     $("ctl-quality").hidden = exp.fmt !== "jpeg";
     buildExport();
     $("download").focus();
@@ -2696,6 +2951,85 @@ body::before {
     a.href = exp.url; a.download = exportName();
     document.body.appendChild(a); a.click(); a.remove();
   }
+  /* ---- Guardar todas las fotos ---- */
+  const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  // ZIP sin compresión (las fotos JPG ya vienen comprimidas)
+  function makeZip(entries) {
+    const enc = new TextEncoder(), parts = [], central = [];
+    let offset = 0;
+    for (const e of entries) {
+      const name = enc.encode(e.name), crc = crc32(e.data), size = e.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint16(12, 0x21, true); lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+      lh.setUint16(26, name.length, true);
+      parts.push(lh, name, e.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint16(14, 0x21, true); ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+      ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+      central.push(ch, name);
+      offset += 30 + name.length + size;
+    }
+    const cdSize = central.reduce((a, x) => a + x.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end], { type: "application/zip" });
+  }
+  let allReady = null;   // fotos ya preparadas, a la espera del segundo toque
+  function resetSaveAll() {
+    allReady = null;
+    $("save-all-row").hidden = docs.length < 2;
+    $("save-all").textContent = `Guardar todas (${docs.length})`;
+    $("save-all").classList.remove("primary");
+    $("save-all").disabled = false;
+    $("save-all-note").textContent = "";
+  }
+  const blobOf = (canvas, type, q) => new Promise(res => canvas.toBlob(res, type, q));
+  async function prepareAll() {
+    const btn = $("save-all"), back = cur, type = "image/" + exp.fmt, q = +$("quality").value / 100;
+    btn.disabled = true;
+    const out = [], used = new Set();
+    for (let i = 0; i < docs.length; i++) {
+      btn.textContent = `Preparando ${i + 1} de ${docs.length}…`;
+      await new Promise(r => setTimeout(r, 30));
+      if (i !== cur) activate(i);
+      const c = renderFinal();
+      if (exp.fmt === "jpeg") { const x = c.getContext("2d"); x.globalCompositeOperation = "destination-over"; x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); }
+      const blob = await blobOf(c, type, q);
+      let name = exportName(), k = 2;
+      while (used.has(name)) name = exportName().replace(/(\.\w+)$/, `-${k++}$1`);
+      used.add(name);
+      if (blob) out.push({ name, blob, file: new File([blob], name, { type }) });
+    }
+    if (cur !== back) activate(back);
+    allReady = out;
+    btn.disabled = false; btn.classList.add("primary");
+    btn.textContent = `Guardar las ${out.length} fotos`;
+    $("save-all-note").textContent = "Listas. Pulsa otra vez para guardarlas.";
+  }
+  async function deliverAll() {
+    const list = allReady, files = list.map(x => x.file);
+    const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (isTouch && navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files, title: "Revelado" }); $("save-all-note").textContent = "En el menú, elige «Guardar imágenes» para llevarlas a Fotos."; return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    const entries = await Promise.all(list.map(async x => ({ name: x.name, data: new Uint8Array(await x.blob.arrayBuffer()) })));
+    const zip = makeZip(entries);
+    if (downloadsApi === undefined) await Promise.race([downloadsReady, new Promise(r => setTimeout(r, 1500))]);
+    try {
+      if (downloadsApi) await downloadsApi.save({ filename: "revelado-fotos.zip", data: zip });
+      else { const u = URL.createObjectURL(zip), a = document.createElement("a"); a.href = u; a.download = "revelado-fotos.zip"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+      $("save-all-note").textContent = `Guardadas en un archivo ZIP con ${list.length} fotos.`;
+    } catch (err) {
+      $("save-all-note").textContent = err && err.code === "declined" ? "No se guardaron: cancelaste la descarga." : "No se pudieron guardar aquí. Guárdalas una a una con «Guardar imagen».";
+    }
+  }
+  $("save-all").addEventListener("click", () => { if (allReady) deliverAll(); else prepareAll(); });
+
   const manualHint = "Para guardarla a mano: haz clic derecho sobre la imagen y elige «Guardar imagen como». En el iPhone, mantén el dedo sobre la imagen y elige «Guardar en Fotos».";
   $("download").addEventListener("click", async () => {
     if (!exp.blob) return;
@@ -2895,6 +3229,97 @@ body::before {
   });
   window.addEventListener("keyup", e => { if (e.code === "Space") { spaceHeld = false; applyZoom(); } });
 
+  /* ================= Guardado automático ================= */
+  // Las fotos abiertas y su edición se guardan en el propio teléfono y se recuperan al volver a abrir la app.
+  const store = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open("revelado", 1);
+        r.onupgradeneeded = () => {
+          const db = r.result;
+          db.createObjectStore("docs", { keyPath: "id" });
+          db.createObjectStore("ops", { keyPath: "key" });
+          db.createObjectStore("meta");
+        };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    }));
+    const run = async (names, mode, fn) => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const t = db.transaction(names, mode); let out;
+        try { out = fn(t); } catch (e) { rej(e); return; }
+        t.oncomplete = () => res(out && "result" in out ? out.result : out);
+        t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+      });
+    };
+    const opRange = id => IDBKeyRange.bound(id + ":", id + ":￿");
+    return {
+      put: rec => run(["docs"], "readwrite", t => t.objectStore("docs").put(rec)),
+      putOp: (id, index, op) => run(["ops"], "readwrite", t => t.objectStore("ops").put({
+        key: id + ":" + String(index).padStart(5, "0"), index, x: op.x, y: op.y,
+        w: op.before.width, h: op.before.height, before: op.before.data, after: op.after.data })),
+      remove: id => run(["docs", "ops"], "readwrite", t => { t.objectStore("docs").delete(id); t.objectStore("ops").delete(opRange(id)); }),
+      setMeta: m => run(["meta"], "readwrite", t => t.objectStore("meta").put(m, "meta")),
+      meta: () => run(["meta"], "readonly", t => t.objectStore("meta").get("meta")),
+      docs: () => run(["docs"], "readonly", t => t.objectStore("docs").getAll()),
+      ops: id => run(["ops"], "readonly", t => t.objectStore("ops").getAll(opRange(id))),
+    };
+  })();
+
+  function docRecord(d) {
+    const live = d === docs[cur];
+    const st = live ? state : d.state, hist = live ? history : d.history;
+    const ops = live ? eraseOps : d.eraseOps, applied = live ? appliedEdits : d.appliedEdits;
+    let stack = hist.stack, i = hist.i;
+    if (stack.length > 40) { const cut = stack.length - 40; stack = stack.slice(cut); i = Math.max(0, i - cut); }
+    return { id: d.id, name: d.name, blob: d.blob, w: d.w, h: d.h, state: st, history: { stack, i }, opsCount: ops.length, applied };
+  }
+  function saveDoc(d) {
+    if (!d || d.isSample || !d.blob) return;
+    store.put(docRecord(d)).catch(() => {});
+  }
+  function saveMeta() {
+    const real = docs.filter(d => !d.isSample);
+    store.setMeta({ order: real.map(d => d.id), cur: Math.max(0, real.indexOf(docs[cur])) }).catch(() => {});
+  }
+  let saveTimer = 0, metaTimer = 0;
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveDoc(docs[cur]), 700); }
+  function saveMetaSoon() { clearTimeout(metaTimer); metaTimer = setTimeout(saveMeta, 300); }
+  // Al salir de la app (o mandarla al fondo) se guarda al momento.
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { saveDoc(docs[cur]); saveMeta(); } });
+
+  async function restoreSession() {
+    try {
+      const meta = await store.meta();
+      if (!meta || !meta.order || !meta.order.length) return false;
+      const recs = Object.fromEntries((await store.docs()).map(r => [r.id, r]));
+      const restored = [];
+      for (const id of meta.order) {
+        const r = recs[id];
+        if (!r || !r.blob) continue;
+        const res = await readImage(r.blob, r.name);
+        if (res.error) continue;
+        const d = makeDoc(res.img, r.w, r.h, r.name, false);
+        d.id = r.id; d.blob = r.blob;
+        d.state = normalizeState(r.state);
+        d.history = r.history && r.history.stack ? r.history : { stack: [JSON.stringify(d.state)], i: 0 };
+        const ops = (await store.ops(r.id)).filter(o => o.index < r.opsCount).sort((a, b) => a.index - b.index);
+        d.eraseOps = ops.map(o => ({ x: o.x, y: o.y, before: new ImageData(o.before, o.w, o.h), after: new ImageData(o.after, o.w, o.h) }));
+        d.appliedEdits = Math.min(r.applied || 0, d.eraseOps.length);
+        if (d.state.edits > d.appliedEdits) d.state.edits = d.appliedEdits;
+        restored.push(d);
+      }
+      if (!restored.length) return false;
+      if (docs.length && !docs.every(d => d.isSample)) return false;   // el usuario ya abrió fotos mientras tanto
+      stashCurrent(); docs.length = 0; docs.push(...restored); cur = -1;
+      activate(Math.min(meta.cur || 0, docs.length - 1), false);
+      toast(restored.length === 1 ? "Recuperé tu foto tal como la dejaste." : `Recuperé tus ${restored.length} fotos tal como las dejaste.`);
+      return true;
+    } catch (e) { return false; }
+  }
   /* ================= Arranque ================= */
   const sample = makeSample();
   setSource(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true);
@@ -2903,10 +3328,12 @@ body::before {
   commit(); syncUI();
   try { const t = localStorage.getItem("revelado-tab"); if (tabs.includes(t)) showTab(t); } catch (e) {}
   renderView();
+  restoreSession();
 
   /* ================= Pantalla de inicio ================= */
   const splash = $("splash"), app = document.querySelector(".app");
-  const SPLASH_MIN = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1500 : 3600;
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const SPLASH_MIN = REDUCED ? 1500 : splash.classList.contains("quick") ? 1500 : 3600;
   let splashTimer = 0;
   function hideSplash() {
     if (splash.hidden || splash.classList.contains("leaving")) return;
@@ -2917,13 +3344,14 @@ body::before {
   }
   function playSplash() {
     clearTimeout(splashTimer);
-    splash.classList.remove("leaving", "play");
+    splash.classList.remove("leaving", "play", "quick");   // al tocar el logo se ve la animación completa
     $("splash-status").textContent = "Preparando el cuarto oscuro…";
     splash.hidden = false;
     void splash.offsetWidth;
     splash.classList.add("play");
-    splashTimer = setTimeout(hideSplash, SPLASH_MIN);
-    setTimeout(() => { $("splash-status").textContent = "Listo"; }, SPLASH_MIN - 500);
+    const full = REDUCED ? 1500 : 3600;
+    splashTimer = setTimeout(hideSplash, full);
+    setTimeout(() => { $("splash-status").textContent = "Listo"; }, full - 500);
   }
   splash.addEventListener("click", hideSplash);
   const isTouchDevice = matchMedia("(pointer: coarse)").matches;
