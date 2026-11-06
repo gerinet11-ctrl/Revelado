@@ -205,6 +205,16 @@ button, input, select { font: inherit; color: inherit; }
 .zbtn:disabled { opacity: .35; cursor: default; background: none; }
 .zbtn.zval { min-width: 58px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
+.safe-zones { position: absolute; inset: 0; pointer-events: none; }
+.sz { position: absolute; left: 0; right: 0; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; }
+.sz span { font-size: calc(9px * var(--inv, 1)); font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 92%; }
+.sz-top { top: 0; height: 13%; border-bottom: calc(1.5px * var(--inv, 1)) dashed rgba(255,255,255,.7); }
+.sz-bottom { bottom: 0; height: 17.5%; border-top: calc(1.5px * var(--inv, 1)) dashed rgba(255,255,255,.7); }
+#split-orig { pointer-events: none; }
+.split-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: calc(2px * var(--inv, 1)) solid #fff; cursor: ew-resize; touch-action: none; z-index: 1; }
+.split-line::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(-20px * var(--inv, 1)); width: calc(40px * var(--inv, 1)); }
+.split-knob { position: absolute; top: 50%; left: 0; width: calc(34px * var(--inv, 1)); height: calc(34px * var(--inv, 1)); transform: translate(-50%, -50%); border-radius: 50%; background: #fff; color: #1b1a18; box-shadow: 0 2px 10px rgba(0,0,0,.45); display: grid; place-items: center; }
+.split-knob svg { width: 60%; height: 60%; }
 .stage-meta {
   position: absolute;
   left: 12px; bottom: 10px;
@@ -379,6 +389,7 @@ button, input, select { font: inherit; color: inherit; }
   min-width: 0;
 }
 .tab:hover { color: var(--fg); }
+.tab svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 6px; }
 .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
 
 .tab-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 16px 16px; }
@@ -401,6 +412,15 @@ button, input, select { font: inherit; color: inherit; }
   text-align: right;
 }
 .ctl.changed output { color: var(--accent); }
+.section-title.fold { cursor: pointer; user-select: none; -webkit-user-select: none; }
+.section-title.fold::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s; }
+.section.collapsed .section-title.fold::after { transform: rotate(-45deg); }
+.section.collapsed > :not(.section-title) { display: none !important; }
+.section.collapsed { padding-bottom: 10px; }
+.hsl-bands { gap: 10px; }
+.hsl-dot { position: relative; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 2px var(--panel); padding: 0; }
+.hsl-dot[aria-pressed="true"] { border-color: var(--fg); }
+.hsl-dot.changed::after { content: ""; position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1.5px var(--panel); }
 .ctl input { grid-column: 1 / -1; }
 .ctl.disabled { opacity: .45; }
 
@@ -463,7 +483,18 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 }
 .amount-bar + .section { border-top: 0; }
 #amount-name { color: var(--accent); font-weight: 600; }
+.text-input {
+  flex: 1 1 160px; min-width: 0; height: 34px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--well); color: var(--fg); font-size: 14px;
+}
+.text-input:focus { outline: none; border-color: var(--accent); }
+.mystyle { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.mystyle .chip { border: 0; border-radius: 0; }
+.mystyle-x { width: 28px; height: 30px; border: 0; border-left: 1px solid var(--line); background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.mystyle-x svg { width: 10px; height: 10px; }
+.mystyle-x:hover { color: var(--danger); }
 .preset .thumb { position: relative; display: block; }
+.preset { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
 .preset .badge {
   position: absolute; right: 4px; bottom: 4px;
   width: 22px; height: 22px;
@@ -842,7 +873,7 @@ body::before {
       </button>
     </div>
 
-    <button class="btn" id="compare" aria-pressed="false" title="Mantén pulsado para ver el original">
+    <button class="btn" id="compare" aria-pressed="false" title="Comparar antes y después con una línea">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
       <span class="lbl">Antes / después</span>
     </button>
@@ -863,6 +894,12 @@ body::before {
       <canvas id="smooth-paint" hidden aria-label="Zona marcada para suavizar"></canvas>
       <div class="brush" id="brush-cursor" hidden></div>
       <div class="focus-ring" id="focus-ring" hidden></div>
+      <canvas id="split-orig" hidden aria-hidden="true"></canvas>
+      <div class="split-line" id="split-line" hidden><span class="split-knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 7-5 5 5 5"/><path d="m15 7 5 5-5 5"/></svg></span></div>
+      <div class="safe-zones" id="safe-zones" hidden>
+        <div class="sz sz-top"><span>Zona del perfil</span></div>
+        <div class="sz sz-bottom"><span>Zona de respuestas</span></div>
+      </div>
       <div class="crop-layer" id="crop-layer" hidden>
         <div class="crop-box" id="crop-box">
           <span class="crop-h" data-h="nw"></span><span class="crop-h" data-h="ne"></span>
@@ -886,12 +923,12 @@ body::before {
 
   <aside class="panel" aria-label="Herramientas de edición">
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-ajustes" aria-controls="pane-ajustes" aria-selected="true">Ajustes</button>
-      <button class="tab" role="tab" id="tab-piel" aria-controls="pane-piel" aria-selected="false">Piel</button>
-      <button class="tab" role="tab" id="tab-filtros" aria-controls="pane-filtros" aria-selected="false">Filtros</button>
-      <button class="tab" role="tab" id="tab-recortar" aria-controls="pane-recortar" aria-selected="false">Recortar</button>
-      <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false">Borrar</button>
-      <button class="tab" role="tab" id="tab-tamano" aria-controls="pane-tamano" aria-selected="false">Tamaño</button>
+      <button class="tab" role="tab" id="tab-ajustes" aria-controls="pane-ajustes" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Ajustes</button>
+      <button class="tab" role="tab" id="tab-piel" aria-controls="pane-piel" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01"/><path d="M9 15c1.5 1.3 4.5 1.3 6 0"/></svg>Piel</button>
+      <button class="tab" role="tab" id="tab-filtros" aria-controls="pane-filtros" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="15" r="5.5"/></svg>Filtros</button>
+      <button class="tab" role="tab" id="tab-recortar" aria-controls="pane-recortar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Recortar</button>
+      <button class="tab" role="tab" id="tab-borrar" aria-controls="pane-borrar" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4-4a2 2 0 0 1 0-2.8l9.2-9.2a2 2 0 0 1 2.8 0l5 5a2 2 0 0 1 0 2.8L13 21z"/><path d="M7 21h14"/><path d="m9 11 6 6"/></svg>Borrar</button>
+      <button class="tab" role="tab" id="tab-tamano" aria-controls="pane-tamano" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>Tamaño</button>
     </div>
 
     <div class="tab-body">
@@ -905,6 +942,16 @@ body::before {
             <input type="range" id="preset-amount" min="0" max="150" step="1" value="100">
           </div>
           <p class="note" id="amount-note">Elige un filtro y mueve la barra: a la izquierda se aplica menos, a la derecha más.</p>
+        </div>
+        <div class="section" id="my-styles-sec">
+          <div class="section-title">Mis estilos</div>
+          <div class="row" id="my-styles"></div>
+          <div class="row" id="my-style-form" hidden>
+            <input type="text" id="my-style-name" class="text-input" maxlength="24" placeholder="Nombre, por ejemplo «Atardecer»">
+            <button class="btn primary" id="my-style-save">Guardar</button>
+            <button class="btn" id="my-style-cancel">Cancelar</button>
+          </div>
+          <p class="note" id="my-styles-note"></p>
         </div>
         <div class="section">
           <div class="section-title">Estilos de cámara</div>
@@ -993,6 +1040,7 @@ body::before {
             <button data-fit="stretch" aria-pressed="false">Redimensionar</button>
           </div>
           <p class="note" id="fit-note"></p>
+          <div class="row" id="safe-row" hidden><button class="chip text" id="safe-toggle" aria-pressed="true">Ver zonas que tapa Instagram</button></div>
           <div class="row" id="bg-row">
             <span class="mini-label">Fondo</span>
             <button class="chip text" data-bg="blur" aria-pressed="true">Difuminado</button>
@@ -1208,6 +1256,15 @@ body::before {
     { id: "3:2",  label: "3:2",  r: 3 / 2 },
   ];
 
+  const HSL_BANDS = [
+    { id: "rojo",     name: "Rojos",     c: 0,   w: 30, color: "#e5484d" },
+    { id: "naranja",  name: "Naranjas",  c: 30,  w: 25, color: "#f08a3e" },
+    { id: "amarillo", name: "Amarillos", c: 60,  w: 30, color: "#e8c547" },
+    { id: "verde",    name: "Verdes",    c: 120, w: 55, color: "#46a758" },
+    { id: "azul",     name: "Azules",    c: 215, w: 55, color: "#3e7bf0" },
+    { id: "morado",   name: "Morados",   c: 285, w: 45, color: "#9b59d0" },
+  ];
+  const hasHsl = h => !!h && Object.values(h).some(v => v && (v.s || v.l));
   const FORMATS = [
     { id: "post",       name: "Post cuadrado",   w: 1080, h: 1080, where: "Instagram, Facebook" },
     { id: "vertical",   name: "Post vertical",   w: 1080, h: 1350, where: "Instagram" },
@@ -1231,6 +1288,8 @@ body::before {
     adj: Object.fromEntries(ADJ_KEYS.map(k => [k, 0])),
     preset: "original",
     presetAmount: 100,
+    presetAmounts: {},       // intensidad recordada de cada filtro
+    hsl: Object.fromEntries(HSL_BANDS.map(b => [b.id, { s: 0, l: 0 }])),
     rotation: 0, flipH: false, flipV: false,
     crop: null, cropAspect: "libre",
     format: null, fit: "cover", fitBg: "blur",
@@ -1247,7 +1306,8 @@ body::before {
   let srcCanvas = null;   // resolución completa (aquí se aplican los borrados)
   let workCanvas = null;  // vista previa
   let thumbCanvas = null; // miniaturas de filtros
-  const procCanvas = document.createElement("canvas");
+  const procCanvas = document.createElement("canvas"), procOrig = document.createElement("canvas");
+  let previewLabel = "";
   let fileBase = "ejemplo-atardecer";
   let comparing = false;
   let activeTab = "ajustes";
@@ -1323,6 +1383,7 @@ body::before {
     out.depth = Math.min(100, out.depth);
     out.smooth = Math.min(100, out.smooth);
     out.clarity = clamp(out.clarity, -100, 100);
+    out.hsl = hasHsl(s.hsl) ? s.hsl : 0;
     return out;
   }
   const presetOnlyParams = id => effectiveParams({ ...defaults(), preset: id });
@@ -1351,6 +1412,7 @@ body::before {
     const [a0,a1,a2,a3, b0,b1,b2,b3, c0,c1,c2,c3] = colorMatrix(p);
     const sh = (p.shadows || 0) / 100 * 70, hi = (p.highlights || 0) / 100 * 70, split = (p.split || 0) / 100;
     const tone = sh || hi || split;
+    const bands = p.hsl ? HSL_BANDS.map(b => ({ c: b.c, w: b.w, s: (p.hsl[b.id] || {}).s || 0, l: (p.hsl[b.id] || {}).l || 0 })).filter(b => b.s || b.l) : [];
 
     // 0. Suavizar piel: difumina solo los tonos de piel y respeta los bordes (ojos, cejas, labios, pelo),
     //    así desaparecen granitos, manchas pequeñas y textura irregular sin dejar la cara borrosa.
@@ -1409,6 +1471,20 @@ body::before {
         const t = sh * (1 - L) * (1 - L) + hi * L * L;
         nr += t; ng += t; nb += t;
         if (split) { const q = split * (1 - L), u = split * L; nr += -14*q + 18*u; ng += 4*q + 6*u; nb += 16*q - 14*u; }
+      }
+      if (bands.length) {                          // color por tonos: saturación y brillo de cada familia de color
+        const mx = nr > ng ? (nr > nb ? nr : nb) : (ng > nb ? ng : nb), mn = nr < ng ? (nr < nb ? nr : nb) : (ng < nb ? ng : nb), c = mx - mn;
+        if (c > 4) {
+          let hh = mx === nr ? ((ng - nb) / c) % 6 : mx === ng ? (nb - nr) / c + 2 : (nr - ng) / c + 4;
+          hh *= 60; if (hh < 0) hh += 360;
+          let sA = 0, lA = 0;
+          for (const bd of bands) { let dh = Math.abs(hh - bd.c); if (dh > 180) dh = 360 - dh; const wt = 1 - dh / bd.w; if (wt > 0) { sA += wt * bd.s; lA += wt * bd.l; } }
+          if (sA || lA) {
+            const Lm = .2126 * nr + .7152 * ng + .0722 * nb, k = 1 + sA / 100;
+            const lift = lA / 100 * 55 * Math.min(1, c / (mx || 1) * 1.6);
+            nr = Lm + (nr - Lm) * k + lift; ng = Lm + (ng - Lm) * k + lift; nb = Lm + (nb - Lm) * k + lift;
+          }
+        }
       }
       d[i] = nr; d[i+1] = ng; d[i+2] = nb;
     }
@@ -1665,6 +1741,18 @@ body::before {
     } else {
       renderImage(src, p, view, state, mode !== "crop");
     }
+    const splitShow = typeof splitOn !== "undefined" && splitOn && mode === "normal";
+    const so = $("split-orig");
+    if (splitShow) {                               // antes/después: la foto original a la izquierda de la línea
+      if (state.format) {
+        renderImage(src, null, procOrig, state);
+        const f = fmtById(state.format), k = Math.min(1, (useDraft ? DRAFT_MAX : WORK_MAX) / Math.max(f.w, f.h));
+        compose(procOrig, Math.round(f.w * k), Math.round(f.h * k), state, so, false);
+      } else renderImage(src, null, so, state, true);
+      applySplit();
+    }
+    so.hidden = !splitShow; $("split-line").hidden = !splitShow;
+    updateTag();
     layoutView();
     $("crop-layer").hidden = mode !== "crop";
     $("mask").hidden = mode !== "erase";
@@ -1798,7 +1886,8 @@ body::before {
 
   function normalizeState(st) {
     const d = defaults();
-    return { ...d, ...st, adj: { ...d.adj, ...(st.adj || {}) }, size: { ...d.size, ...(st.size || {}) } };
+    return { ...d, ...st, adj: { ...d.adj, ...(st.adj || {}) }, size: { ...d.size, ...(st.size || {}) },
+             hsl: { ...d.hsl, ...(st.hsl || {}) }, presetAmounts: { ...(st.presetAmounts || {}) } };
   }
   const isPristine = st => JSON.stringify({ ...st, edits: 0 }) === JSON.stringify(defaults()) && !st.edits;
 
@@ -2036,11 +2125,26 @@ body::before {
     } else {
       b.innerHTML = `<span class="thumb"><canvas width="1" height="1" aria-hidden="true"></canvas></span><span>${pr.name}</span>`;
     }
+    let lpTimer = 0, lpDone = false;
     b.addEventListener("click", () => {
+      if (lpDone) { lpDone = false; return; }
       state.preset = pr.id;
-      if (pr.id !== "original" && state.presetAmount === 0) state.presetAmount = 100;
+      if (pr.id !== "original") state.presetAmount = (state.presetAmounts || {})[pr.id] ?? 100;
       commit(); syncUI(); scheduleRender();
     });
+    // Mantener pulsado: se ve el filtro en la foto sin aplicarlo
+    b.addEventListener("pointerdown", () => {
+      lpDone = false; clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => {
+        lpDone = true;
+        previewState = { ...state, preset: pr.id, presetAmount: pr.id === "original" ? 100 : (state.presetAmounts || {})[pr.id] ?? 100 };
+        previewLabel = "Vista previa · " + pr.name;
+        updateTag(); scheduleRender();
+      }, 380);
+    });
+    const endLP = () => { clearTimeout(lpTimer); if (previewState) { previewState = null; updateTag(); scheduleRender(); } };
+    ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, endLP));
+    b.addEventListener("contextmenu", e => e.preventDefault());
     $(pr.cam ? "presets-cam" : "presets").appendChild(b);
   });
   function renderThumbs() {
@@ -2051,6 +2155,62 @@ body::before {
 
   /* ================= Ajustes ================= */
   const pane = $("pane-ajustes");
+  pane.insertAdjacentHTML("beforeend", `
+    <div class="section auto-sec">
+      <div class="row">
+        <button class="btn primary" id="auto-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19 15 9"/><path d="m14 4 1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/><path d="m19 11 .7 1.3L21 13l-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z"/></svg>Auto
+        </button>
+        <span class="note" style="flex:1 1 160px">Mejora la luz y el color de un toque. Luego ajusta a tu gusto.</span>
+      </div>
+    </div>`);
+  let folded = {};
+  try { folded = JSON.parse(localStorage.getItem("revelado-plegados") || "{}"); } catch (e) {}
+  function makeFoldable(sec, key) {
+    const t = sec.querySelector(".section-title");
+    t.classList.add("fold"); t.setAttribute("role", "button"); t.tabIndex = 0;
+    const apply = () => { sec.classList.toggle("collapsed", !!folded[key]); t.setAttribute("aria-expanded", String(!folded[key])); };
+    const toggle = () => { folded[key] = !folded[key]; apply(); try { localStorage.setItem("revelado-plegados", JSON.stringify(folded)); } catch (e) {} };
+    t.addEventListener("click", toggle);
+    t.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    apply();
+  }
+  let hslBand = "rojo";
+  function buildHslSection() {
+    const sec = document.createElement("div");
+    sec.className = "section";
+    sec.innerHTML = `<div class="section-title">Color por tonos</div>
+      <div class="row hsl-bands" id="hsl-bands">${HSL_BANDS.map(b => `<button class="hsl-dot" data-b="${b.id}" style="--c:${b.color}" aria-pressed="false" title="${b.name}" aria-label="${b.name}"></button>`).join("")}</div>
+      <div class="ctl"><label for="hsl-s">Saturación · <span id="hsl-name">Rojos</span></label><output id="out-hsl-s">0</output>
+        <input type="range" id="hsl-s" min="-100" max="100" step="1" value="0"></div>
+      <div class="ctl"><label for="hsl-l">Brillo</label><output id="out-hsl-l">0</output>
+        <input type="range" id="hsl-l" min="-100" max="100" step="1" value="0"></div>
+      <p class="note">Elige un color y cambia solo ese: por ejemplo, un cielo más azul sin tocar la piel.</p>`;
+    sec.querySelectorAll(".hsl-dot").forEach(b => b.addEventListener("click", () => { hslBand = b.dataset.b; syncHsl(); }));
+    ["s", "l"].forEach(k => {
+      const el = sec.querySelector("#hsl-" + k);
+      el.addEventListener("input", () => {
+        state.hsl = { ...state.hsl, [hslBand]: { ...state.hsl[hslBand], [k]: +el.value } };
+        syncHsl(); scheduleRender(true);
+      });
+      el.addEventListener("change", () => { commit(); scheduleRender(); });
+    });
+    return sec;
+  }
+  function syncHsl() {
+    const v = (state.hsl || {})[hslBand] || { s: 0, l: 0 };
+    ["s", "l"].forEach(k => {
+      const el = $("hsl-" + k); el.value = v[k]; setFill(el);
+      $("out-hsl-" + k).textContent = fmt(v[k], true);
+      el.closest(".ctl").classList.toggle("changed", v[k] !== 0);
+    });
+    $("hsl-name").textContent = HSL_BANDS.find(b => b.id === hslBand).name;
+    document.querySelectorAll(".hsl-dot").forEach(b => {
+      const bv = (state.hsl || {})[b.dataset.b] || {};
+      b.setAttribute("aria-pressed", String(b.dataset.b === hslBand));
+      b.classList.toggle("changed", !!(bv.s || bv.l));
+    });
+  }
   ADJUSTMENTS.forEach(g => {
     const sec = document.createElement("div");
     sec.className = "section";
@@ -2091,6 +2251,8 @@ body::before {
         <div class="row"><button class="chip text" id="smooth-show" aria-pressed="true">Ver zona marcada</button></div>
       </div>`);
     (g.group === "Piel" ? $("pane-piel") : pane).appendChild(sec);
+    if (g.group !== "Piel") makeFoldable(sec, g.group);
+    if (g.group === "Color") { const h = buildHslSection(); pane.appendChild(h); makeFoldable(h, "tonos"); }
   });
 
   function setFill(input) {
@@ -2112,6 +2274,7 @@ body::before {
   const amount = $("preset-amount");
   amount.addEventListener("input", () => {
     state.presetAmount = +amount.value;
+    if (state.preset !== "original") state.presetAmounts = { ...(state.presetAmounts || {}), [state.preset]: state.presetAmount };
     $("out-amount").textContent = amount.value + "%"; setFill(amount); scheduleRender(true);
     if (state.preset !== "original") $("amount-note").textContent = state.presetAmount > 100 ? "Por encima de 100% el filtro se exagera." : "";
   });
@@ -2755,6 +2918,8 @@ body::before {
     ADJUSTMENTS.forEach(g => g.items.forEach(updateCtl));
     presetBox.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === state.preset)));
     amount.value = state.presetAmount; $("out-amount").textContent = state.presetAmount + "%"; setFill(amount);
+    syncHsl();
+    $("safe-row").hidden = state.format !== "historia";
     const chosen = ALL_PRESETS.find(x => x.id === state.preset);
     $("amount-name").textContent = chosen && chosen.id !== "original" ? "· " + chosen.name : "";
     $("amount-note").textContent = state.preset === "original"
@@ -2815,7 +2980,7 @@ body::before {
   const FOOT = {
     ajustes: "Con Profundidad activada, toca la foto para elegir qué queda enfocado · doble clic en un ajuste lo pone a cero",
     piel: "Con pincel: pinta solo la zona que quieras suavizar · acerca la foto con dos dedos para más precisión",
-    filtros: "Con un estilo que desenfoca el fondo, toca la foto para elegir qué queda enfocado",
+    filtros: "Mantén pulsado un filtro para verlo en la foto sin aplicarlo · cada filtro recuerda su intensidad",
     recortar: "El recorte se aplica al salir de esta pestaña",
     borrar: "Cada borrado se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>",
     tamano: "El tamaño elegido es el que tendrá la foto al guardarla",
@@ -2834,20 +2999,108 @@ body::before {
   }
   tabs.forEach(t => $("tab-" + t).addEventListener("click", () => showTab(t)));
 
-  /* ================= Comparar antes/después ================= */
+  /* ================= Comparar antes/después con una línea ================= */
   const cmp = $("compare");
-  const setCompare = on => {
-    if (comparing === on) return;
-    comparing = on;
-    cmp.setAttribute("aria-pressed", String(on));
-    $("compare-tag").hidden = !on;
+  let splitOn = false, splitPos = 50, splitDrag = false;
+  function applySplit() {
+    $("split-orig").style.clipPath = `inset(0 ${100 - splitPos}% 0 0)`;
+    $("split-line").style.left = splitPos + "%";
+  }
+  function updateTag() {
+    const t = $("compare-tag");
+    if (previewState) { t.textContent = previewLabel; t.hidden = false; }
+    else if (splitOn && viewMode() === "normal") { t.textContent = "Antes · Después"; t.hidden = false; }
+    else t.hidden = true;
+  }
+  cmp.addEventListener("click", () => {
+    splitOn = !splitOn; splitPos = 50;
+    cmp.setAttribute("aria-pressed", String(splitOn));
+    if (splitOn && viewMode() !== "normal") showTab("ajustes");
     scheduleRender();
-  };
-  cmp.addEventListener("pointerdown", e => { e.preventDefault(); cmp.setPointerCapture?.(e.pointerId); setCompare(true); });
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => cmp.addEventListener(ev, () => setCompare(false)));
-  cmp.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setCompare(true); } });
-  cmp.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") setCompare(false); });
-  cmp.addEventListener("contextmenu", e => e.preventDefault());
+  });
+  const splitLine = $("split-line");
+  const moveSplit = e => { const r = frame.getBoundingClientRect(); splitPos = clamp((e.clientX - r.left) / r.width * 100, 0, 100); applySplit(); };
+  splitLine.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); splitLine.setPointerCapture(e.pointerId); splitDrag = true; moveSplit(e); });
+  splitLine.addEventListener("pointermove", e => { if (splitDrag) moveSplit(e); });
+  ["pointerup", "pointercancel"].forEach(ev => splitLine.addEventListener(ev, () => { splitDrag = false; }));
+
+  /* ================= Zonas que tapa Instagram ================= */
+  let showSafe = true;
+  try { showSafe = localStorage.getItem("revelado-zonas") !== "0"; } catch (e) {}
+  function updateSafeZones() {
+    $("safe-zones").hidden = !(showSafe && state.format === "historia" && viewMode() === "normal" && !previewState);
+    $("safe-toggle").setAttribute("aria-pressed", String(showSafe));
+  }
+  $("safe-toggle").addEventListener("click", () => {
+    showSafe = !showSafe;
+    try { localStorage.setItem("revelado-zonas", showSafe ? "1" : "0"); } catch (e) {}
+    updateSafeZones();
+  });
+
+  /* ================= Mis estilos ================= */
+  const STYLE_KEY = "revelado-estilos";
+  const loadStyles = () => { try { return JSON.parse(localStorage.getItem(STYLE_KEY) || "[]"); } catch (e) { return []; } };
+  const saveStyles = list => { try { localStorage.setItem(STYLE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } };
+  function renderMyStyles() {
+    const box = $("my-styles"), list = loadStyles();
+    box.textContent = "";
+    list.forEach(st => {
+      const wrap = document.createElement("span"); wrap.className = "mystyle";
+      const b = document.createElement("button"); b.className = "chip text"; b.textContent = st.name; b.title = "Aplicar «" + st.name + "»";
+      b.addEventListener("click", () => {
+        state = normalizeState({ ...state, adj: { ...defaults().adj, ...st.look.adj }, preset: st.look.preset, presetAmount: st.look.presetAmount, hsl: st.look.hsl || defaults().hsl });
+        commit(); syncUI(); scheduleRender();
+        toast(`Aplicado tu estilo «${st.name}».`);
+      });
+      const x = document.createElement("button"); x.className = "mystyle-x"; x.innerHTML = ICON_X; x.setAttribute("aria-label", "Borrar el estilo " + st.name);
+      x.addEventListener("click", () => { saveStyles(loadStyles().filter(o => o.id !== st.id)); renderMyStyles(); toast(`Borrado el estilo «${st.name}».`); });
+      wrap.append(b, x); box.appendChild(wrap);
+    });
+    const add = document.createElement("button"); add.className = "chip text"; add.textContent = "+ Guardar el actual";
+    add.addEventListener("click", () => { $("my-style-form").hidden = false; $("my-style-name").value = ""; $("my-style-name").focus(); });
+    box.appendChild(add);
+    $("my-styles-note").textContent = list.length ? "" : "Guarda aquí tu combinación de ajustes, filtro y color para usarla en otras fotos.";
+  }
+  function saveMyStyle() {
+    const name = $("my-style-name").value.trim();
+    if (!name) { $("my-style-name").focus(); toast("Escribe un nombre para el estilo.", true); return; }
+    const list = loadStyles();
+    list.push({ id: Date.now().toString(36), name, look: { adj: { ...state.adj }, preset: state.preset, presetAmount: state.presetAmount, hsl: JSON.parse(JSON.stringify(state.hsl)) } });
+    if (!saveStyles(list)) { toast("No se pudo guardar el estilo en este navegador.", true); return; }
+    $("my-style-form").hidden = true; renderMyStyles();
+    toast(`Guardado tu estilo «${name}».`);
+  }
+  $("my-style-save").addEventListener("click", saveMyStyle);
+  $("my-style-name").addEventListener("keydown", e => { if (e.key === "Enter") saveMyStyle(); if (e.key === "Escape") $("my-style-form").hidden = true; });
+  $("my-style-cancel").addEventListener("click", () => { $("my-style-form").hidden = true; });
+  renderMyStyles();
+
+  /* ================= Auto ================= */
+  // Mejora automática sencilla: lleva la luz media a un punto agradable, abre el rango de tonos y neutraliza dominantes fuertes.
+  $("auto-btn").addEventListener("click", () => {
+    const tmp = document.createElement("canvas");
+    const data = renderImage(draftCanvas || workCanvas, null, tmp, state).data;
+    const lum = []; let sr = 0, sg = 0, sb = 0, n = 0;
+    for (let i = 0; i < data.length; i += 16) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      lum.push(.2126 * r + .7152 * g + .0722 * b); sr += r; sg += g; sb += b; n++;
+    }
+    lum.sort((a, b) => a - b);
+    const pct = q => lum[Math.min(lum.length - 1, Math.floor(q * lum.length))];
+    const mean = lum.reduce((a, v) => a + v, 0) / lum.length, lo = pct(0.02), hi = pct(0.98);
+    const mr = sr / n, mb = sb / n;
+    const a = state.adj;
+    a.exposure = clamp(Math.round(Math.log2(118 / Math.max(8, mean)) * 60), -45, 45);
+    a.contrast = clamp(Math.round((0.82 - (hi - lo) / 255) * 90), -10, 35);
+    a.highlights = hi > 245 ? -25 : hi > 230 ? -12 : 0;
+    a.shadows = lo < 8 ? 20 : lo < 20 ? 10 : 0;
+    a.temperature = clamp(Math.round((mb - mr) / Math.max(1, (mr + mb) / 2) * 40), -25, 25);
+    a.saturation = Math.max(a.saturation, 8);
+    a.clarity = Math.max(a.clarity, 8);
+    a.sharpen = Math.max(a.sharpen, 15);
+    commit(); syncUI(); scheduleRender();
+    toast("Auto aplicado. Si no te convence, pulsa Deshacer.");
+  });
 
   /* ================= Abrir: botón, arrastrar, pegar ================= */
   $("file-input").addEventListener("change", e => { loadFiles(e.target.files); e.target.value = ""; });
@@ -3129,7 +3382,7 @@ body::before {
     if (drag) { state.crop = drag.start; drag = null; updateCropOverlay(); updateMeta(); }
     brushCursor.hidden = true;
   }
-  const onZoomUI = t => t.closest && t.closest(".zoom-ctl");
+  const onZoomUI = t => t.closest && t.closest(".zoom-ctl, .split-line");
 
   stage.addEventListener("pointerdown", e => {
     if (onZoomUI(e.target) || !workCanvas) return;
