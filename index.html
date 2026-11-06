@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="logo/icono-192.png">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<style>:root{padding-top:var(--safe-top,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 <title>Revelado</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -612,7 +612,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0 0 auto;
-  height: env(safe-area-inset-top, 0px);
+  height: var(--safe-top, env(safe-area-inset-top, 0px));
   background: var(--bg);
   z-index: 15;
 }
@@ -621,7 +621,7 @@ body::before {
   /* En el móvil la barra de botones se queda fija arriba al desplazarte por los ajustes */
   .topbar {
     position: sticky;
-    top: env(safe-area-inset-top, 0px);
+    top: var(--safe-top, env(safe-area-inset-top, 0px));
     z-index: 14;
     background: var(--bg);
     padding-block: 10px 8px;
@@ -928,6 +928,17 @@ body::before {
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
+// Respaldo para el iPhone en modo app: si no informa del alto de la zona del reloj, se reserva igualmente.
+(() => {
+  const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  if (!standalone) return;
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
+  document.body.appendChild(probe);
+  const h = probe.getBoundingClientRect().height;
+  probe.remove();
+  if (h < 10) document.documentElement.style.setProperty("--safe-top", "54px");
+})();
 (() => {
   "use strict";
 
