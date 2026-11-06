@@ -449,6 +449,19 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   padding: 0; border: 0; background: none; cursor: pointer;
   text-align: left; font-size: 12px; color: var(--muted);
 }
+/* La barra de intensidad se queda arriba mientras se desliza la lista de filtros */
+.amount-bar {
+  position: sticky;
+  top: -6px;
+  z-index: 3;
+  background: var(--panel);
+  margin-inline: -16px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  gap: 6px;
+}
+.amount-bar + .section { border-top: 0; }
+#amount-name { color: var(--accent); font-weight: 600; }
 .preset .thumb { position: relative; display: block; }
 .preset .badge {
   position: absolute; right: 4px; bottom: 4px;
@@ -873,6 +886,13 @@ body::before {
       <div id="pane-piel" role="tabpanel" aria-labelledby="tab-piel" hidden></div>
 
       <div id="pane-filtros" role="tabpanel" aria-labelledby="tab-filtros" hidden>
+        <div class="section amount-bar">
+          <div class="ctl" id="ctl-amount">
+            <label for="preset-amount">Intensidad <span id="amount-name"></span></label><output id="out-amount">100%</output>
+            <input type="range" id="preset-amount" min="0" max="150" step="1" value="100">
+          </div>
+          <p class="note" id="amount-note">Elige un filtro y mueve la barra: a la izquierda se aplica menos, a la derecha más.</p>
+        </div>
         <div class="section">
           <div class="section-title">Estilos de cámara</div>
           <div class="presets" id="presets-cam"></div>
@@ -881,12 +901,6 @@ body::before {
         <div class="section">
           <div class="section-title">Creativos</div>
           <div class="presets" id="presets"></div>
-        </div>
-        <div class="section">
-          <div class="ctl" id="ctl-amount">
-            <label for="preset-amount">Intensidad del filtro</label><output id="out-amount">100</output>
-            <input type="range" id="preset-amount" min="0" max="100" step="1" value="100">
-          </div>
         </div>
       </div>
 
@@ -1087,8 +1101,10 @@ body::before {
     sinespejo:'<path d="M2.5 7.5h11l1.5-2h3l1.5 2h2v11h-19z"/><circle cx="10" cy="13" r="3.8"/>',
     pelicula: '<rect x="2.5" y="7" width="19" height="11" rx="1.5"/><circle cx="8.5" cy="12.5" r="3.4"/><rect x="15" y="9" width="4" height="2.5"/>',
     cine:     '<rect x="2.5" y="10" width="13" height="9" rx="1.5"/><path d="M15.5 13l6-3v9l-6-3z"/><circle cx="6" cy="6.5" r="2.8"/><circle cx="12" cy="6.5" r="2.8"/>',
+    medio:    '<rect x="4" y="5" width="16" height="15" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M8 5V3h8v2"/>',
+    telemetro:'<rect x="2.5" y="7" width="19" height="11" rx="1.5"/><circle cx="12" cy="12.5" r="3.4"/><rect x="4.5" y="9" width="3" height="2"/><rect x="16.5" y="9" width="3" height="2"/>',
   };
-  const CAMERA_TYPE = { compacta: "Compacta", reflex: "Réflex", sinespejo: "Sin espejo", pelicula: "Película", cine: "Cine" };
+  const CAMERA_TYPE = { compacta: "Compacta", reflex: "Réflex", sinespejo: "Sin espejo", pelicula: "Película", cine: "Cine", medio: "Medio formato", telemetro: "Telémetro" };
   const CAMERAS = [
     { id: "vlog-calido", name: "Vlog cálido", cam: "compacta",
       ref: "Inspirado en el color de compactas de vlog como la Canon G7 X: piel cálida y sana, contraste suave.",
@@ -1108,6 +1124,34 @@ body::before {
     { id: "cine", name: "Cine", cam: "cine",
       ref: "Look de cámara de cine: sombras turquesa, luces anaranjadas y fondo algo desenfocado.",
       p: { split: 70, contrast: 12, saturation: -6, highlights: -15, shadows: 6, depth: 25, vignette: 20, sharpen: 15 } },
+    // Nuevos: más estilos de cámaras y películas profesionales
+    { id: "neg-clasico", name: "Negativo clásico", cam: "sinespejo",
+      ref: "Inspirado en Classic Negative de Fujifilm: contraste marcado, poco color, sombras hacia el cian y luces cálidas.",
+      p: { contrast: 18, saturation: -20, split: 35, tint: 4, highlights: -12, clarity: 8, sharpen: 20 } },
+    { id: "cine-suave", name: "Cine suave", cam: "cine",
+      ref: "Inspirado en Eterna de Fujifilm, pensado para cine: contraste muy suave, color contenido y sombras que no se empastan.",
+      p: { contrast: -20, saturation: -28, shadows: 22, highlights: -22, fade: 14, temperature: -4, sharpen: 12 } },
+    { id: "retrato-suave", name: "Retrato suave", cam: "sinespejo",
+      ref: "Inspirado en Astia de Fujifilm: paso suave de luces a sombras, color presente y piel delicada.",
+      p: { contrast: -8, saturation: 8, temperature: 6, tint: 3, shadows: 12, highlights: -14, smooth: 20, sharpen: 18 } },
+    { id: "bn-intenso", name: "B/N intenso", cam: "telemetro",
+      ref: "Blanco y negro de cámara profesional (como Acros de Fujifilm o los telémetros monocromos): sombras ricas, mucha nitidez y algo de grano.",
+      p: { saturation: -100, contrast: 30, shadows: 8, clarity: 22, sharpen: 38, grain: 18, vignette: 12 } },
+    { id: "retrato-400", name: "Retrato 400", cam: "pelicula",
+      ref: "Inspirado en la película Kodak Portra 400: tonos cálidos y naturales, contraste bajo, sombras abiertas y grano fino.",
+      p: { temperature: 12, tint: 4, saturation: -10, contrast: -8, shadows: 14, highlights: -16, fade: 10, grain: 12, smooth: 10 } },
+    { id: "dorado-200", name: "Dorado 200", cam: "pelicula",
+      ref: "Inspirado en la película Kodak Gold 200: cálida, con color vivo, aire nostálgico y un grano más visible.",
+      p: { temperature: 24, saturation: 14, contrast: 8, fade: 12, grain: 22, vignette: 14, highlights: -8 } },
+    { id: "color-natural", name: "Color natural", cam: "medio",
+      ref: "Como una cámara de medio formato tipo Hasselblad: colores fieles, luces bien contenidas y mucho detalle.",
+      p: { contrast: 6, saturation: 4, highlights: -20, shadows: 10, clarity: 10, sharpen: 32 } },
+    { id: "positivo", name: "Positivo", cam: "compacta",
+      ref: "Inspirado en Positive Film de la compacta Ricoh GR: color saturado, rojos intensos, verdes algo amarillos y contraste fuerte.",
+      p: { saturation: 24, contrast: 22, temperature: 8, hue: -3, vignette: 18, clarity: 8, sharpen: 22 } },
+    { id: "paisaje", name: "Paisaje réflex", cam: "reflex",
+      ref: "Como el estilo Paisaje de las réflex: azules y verdes más vivos, mucha nitidez y detalle en el cielo.",
+      p: { saturation: 28, contrast: 14, temperature: -5, highlights: -14, clarity: 16, sharpen: 45 } },
   ];
 
   const PRESETS = [
@@ -1954,7 +1998,8 @@ body::before {
   const amount = $("preset-amount");
   amount.addEventListener("input", () => {
     state.presetAmount = +amount.value;
-    $("out-amount").textContent = amount.value; setFill(amount); scheduleRender();
+    $("out-amount").textContent = amount.value + "%"; setFill(amount); scheduleRender();
+    if (state.preset !== "original") $("amount-note").textContent = state.presetAmount > 100 ? "Por encima de 100% el filtro se exagera." : "";
   });
   amount.addEventListener("change", commit);
 
@@ -2459,7 +2504,12 @@ body::before {
   function syncUI() {
     ADJUSTMENTS.forEach(g => g.items.forEach(updateCtl));
     presetBox.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === state.preset)));
-    amount.value = state.presetAmount; $("out-amount").textContent = state.presetAmount; setFill(amount);
+    amount.value = state.presetAmount; $("out-amount").textContent = state.presetAmount + "%"; setFill(amount);
+    const chosen = ALL_PRESETS.find(x => x.id === state.preset);
+    $("amount-name").textContent = chosen && chosen.id !== "original" ? "· " + chosen.name : "";
+    $("amount-note").textContent = state.preset === "original"
+      ? "Elige un filtro y mueve la barra: a la izquierda se aplica menos, a la derecha más."
+      : state.presetAmount > 100 ? "Por encima de 100% el filtro se exagera." : "";
     $("ctl-amount").classList.toggle("disabled", state.preset === "original");
     $("smooth-mode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === state.smoothMode)));
     $("smooth-tools").hidden = state.smoothMode !== "brush";
