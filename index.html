@@ -416,7 +416,10 @@ button, label, .film, .preset { -webkit-tap-highlight-color: transparent; }
 .note:empty { display: none; }
 .note.warn { color: var(--accent); }
 
-.ctl { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; align-items: baseline; }
+.ctl { display: grid; grid-template-columns: 1fr auto auto; row-gap: 4px; align-items: baseline; }
+.ctl .zero { width: 24px; height: 24px; margin-left: 6px; padding: 0; align-self: center; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; background: none; color: var(--accent); cursor: pointer; }
+.ctl .zero svg { width: 13px; height: 13px; }
+.ctl .zero:hover { background: var(--raise); }
 .ctl label { font-size: 13px; cursor: default; }
 .ctl output {
   font-family: var(--f-mono);
@@ -709,6 +712,73 @@ kbd {
 }
 .toast.error { border-color: var(--danger); color: var(--danger); }
 
+/* ---------- Menú principal ---------- */
+.home {
+  position: fixed; inset: 0;
+  z-index: 18;
+  overflow-y: auto;
+  background: radial-gradient(ellipse 85% 50% at 50% 26%, var(--glow) 0%, var(--bg) 72%);
+  padding: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 26px) max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 28px) max(20px, env(safe-area-inset-left, 0px));
+}
+.standalone.under-bar .home { padding-top: calc(var(--safe-top, 0px) + 44px); }
+.home-inner { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; }
+.home-brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+.home-brand .mark { width: 34px; height: 34px; display: block; }
+.home-title {
+  margin: 9vh 0 0;
+  font-family: var(--f-display); font-weight: 700;
+  font-size: clamp(30px, 8.5vw, 42px); line-height: 1.08; letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+#home-step .home-title { margin-top: 3vh; }
+.home-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+.home-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  min-height: 176px; padding: 18px 16px;
+  border: 1px solid var(--line); border-radius: 18px;
+  background: var(--panel); color: var(--fg);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.home-card:hover { border-color: var(--accent); }
+.home-card:active { transform: scale(.98); }
+.home-card b { font-family: var(--f-display); font-size: 23px; line-height: 1; margin-top: auto; }
+.home-card small { font-size: 13px; line-height: 1.35; color: var(--muted); }
+.home-ico {
+  width: 56px; height: 56px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #FFE07A, #DC9421);
+  color: var(--accent-ink);
+}
+.home-ico svg { width: 28px; height: 28px; }
+.home-ico.small { width: 48px; height: 48px; border-radius: 12px; }
+.home-ico.small svg { width: 22px; height: 22px; }
+.home-ico.plain, .home-card.soon .home-ico { background: var(--raise); color: var(--muted); }
+.home-card.soon small { color: var(--accent); font-weight: 600; }
+.home-list { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.home-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line); border-radius: 16px;
+  background: var(--panel); color: var(--fg);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.home-row:hover, .home-row.primary { border-color: var(--accent); }
+.home-row > span:last-child { min-width: 0; }
+.home-row b { display: block; font-size: 16px; font-weight: 600; }
+.home-row small { display: block; font-size: 13px; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
+.home-thumbs { display: flex; flex: none; }
+.home-thumbs canvas { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; border: 2px solid var(--panel); background: var(--well); }
+.home-thumbs canvas + canvas { margin-left: -22px; }
+.home-back {
+  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  margin-top: 4vh; padding: 6px 10px 6px 0;
+  border: 0; background: none; color: var(--muted);
+  font: inherit; cursor: pointer;
+}
+.home-back svg { width: 18px; height: 18px; }
+
 /* ---------- Pantalla de inicio ---------- */
 .splash {
   position: fixed; inset: 0;
@@ -982,9 +1052,50 @@ body::before {
   } catch (e) {}
 </script>
 
+<div class="home" id="home" hidden>
+  <div class="home-inner">
+    <div class="home-brand"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Moon</div>
+
+    <div id="home-main">
+      <h1 class="home-title">¿Qué deseas editar hoy?</h1>
+      <div class="home-cards">
+        <button class="home-card" id="home-foto">
+          <span class="home-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 15-4.5-4.5L7 20"/></svg></span>
+          <b>Foto</b><small>Ajustes, piel, filtros, borrar objetos y tamaño</small>
+        </button>
+        <button class="home-card soon" id="home-video">
+          <span class="home-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="m15.5 10.5 6-3v9l-6-3z"/></svg></span>
+          <b>Video</b><small>Muy pronto</small>
+        </button>
+      </div>
+    </div>
+
+    <div id="home-step" hidden>
+      <button class="home-back" id="home-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Volver
+      </button>
+      <h1 class="home-title">Editar foto</h1>
+      <div class="home-list">
+        <button class="home-row primary" id="home-resume" hidden>
+          <span class="home-thumbs" id="home-thumbs"></span>
+          <span><b>Retomar proyecto</b><small id="home-resume-info"></small></span>
+        </button>
+        <label class="home-row" id="home-new" for="file-input">
+          <span class="home-ico small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span><b>Nuevo proyecto</b><small id="home-new-info"></small></span>
+        </label>
+        <button class="home-row" id="home-sample">
+          <span class="home-ico small plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18 9 9l4 6 3-4 5 7z"/><circle cx="17" cy="6" r="2"/></svg></span>
+          <span><b>Probar con una foto de ejemplo</b><small>Para ver cómo funciona antes de abrir las tuyas</small></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app">
   <header class="topbar">
-    <button class="brand" id="brand" title="Ver otra vez la pantalla de inicio"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Moon</button>
+    <button class="brand" id="brand" title="Volver al menú principal"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Moon</button>
 
     <label class="btn" for="file-input" title="Abrir fotos: puedes elegir varias a la vez, arrastrarlas o pegarlas">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 4v12"/><path d="m7 9 5-5 5 5"/></svg>
@@ -1041,7 +1152,7 @@ body::before {
     <div class="stage-meta"><span id="meta-name">ejemplo-atardecer.jpg</span><span class="dot"></span><span id="meta-size">1600 × 1067 px</span></div>
     <div class="drop-overlay" id="drop-overlay" hidden>Suelta las fotos para abrirlas</div>
     <button class="reset-chip" id="reset-chip" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Restablecer todo
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span id="reset-chip-label">Volver a cero</span>
     </button>
     <div class="zoom-ctl" id="zoom-ctl" title="Zoom: pellizca con dos dedos, usa la rueda del ratón o doble toque en la foto">
       <button class="zbtn" id="zoom-out" aria-label="Alejar">−</button>
@@ -1096,19 +1207,20 @@ body::before {
       <div id="pane-borrar" role="tabpanel" aria-labelledby="tab-borrar" hidden>
         <div class="section none-sec"><div class="row"><button class="btn none-btn" id="none-borrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>Sin borrados</button><span class="note" style="flex:1 1 140px">Recupera todo lo borrado en esta foto.</span></div></div>
         <div class="section">
-          <p class="lead">Pinta encima de lo que quieras quitar (una persona, un objeto, una mancha) y pulsa <b>Borrar</b>. En la foto de ejemplo, prueba con el velero.</p>
+          <p class="lead">Pasa el dedo por encima de lo que quieras quitar: una persona, un objeto, una mancha. En la foto de ejemplo, prueba con el velero.</p>
           <div class="ctl">
             <label for="brush">Tamaño del pincel</label><output id="out-brush">36 px</output>
             <input type="range" id="brush" min="8" max="120" step="1" value="36">
           </div>
           <div class="row">
+            <button class="chip text" id="erase-auto" aria-pressed="true" title="Encendido: se borra al levantar el dedo. Apagado: marca con varios trazos y pulsa Borrar.">Borrar al soltar</button>
             <button class="btn primary" id="erase-apply" disabled>Borrar</button>
             <button class="btn" id="erase-clear" disabled>Limpiar trazo</button>
           </div>
           <p class="note" id="erase-status"></p>
         </div>
         <div class="section">
-          <p class="note">Funciona mejor sobre fondos sencillos: cielo, agua, arena o una pared. Para quitar personas de fondos con mucho detalle, la versión final usará un modelo de IA.</p>
+          <p class="note">Consejo: cubre el objeto entero y un poco de su borde, y acerca la foto con dos dedos para los detalles. Sobre fondos con mucho detalle puede hacer falta repasar.</p>
         </div>
       </div>
 
@@ -2196,32 +2308,36 @@ body::before {
       img.src = url;
     });
   }
+  let replaceOnLoad = false;   // «Nuevo proyecto»: las fotos elegidas sustituyen a las que había
   async function loadFiles(list) {
     const files = [...(list || [])].filter(Boolean);
     if (!files.length) return;
-    // La foto de ejemplo se quita al abrir las tuyas.
-    if (docs.length === 1 && docs[0].isSample) { stashCurrent(); docs.length = 0; cur = -1; }
-    const firstNew = docs.length;
-    const errors = [];
+    const replace = replaceOnLoad; replaceOnLoad = false;
+    const errors = [], loaded = [];
     for (const f of files) {
       const r = await readImage(f);
-      if (r.error) { errors.push(r.error); continue; }
-      const d = makeDoc(r.img, r.img.naturalWidth, r.img.naturalHeight, f.name, false);
-      d.blob = f;
-      docs.push(d);
+      if (r.error) errors.push(r.error); else loaded.push({ f, img: r.img });
     }
-    docs.slice(firstNew).forEach(d => saveDoc(d));
-    if (docs.length > firstNew) {
+    if (loaded.length) {
+      // La foto de ejemplo se quita al abrir las tuyas; con «Nuevo proyecto» se quita también el proyecto anterior.
+      if (replace || (docs.length === 1 && docs[0].isSample)) {
+        docs.forEach(d => { if (!d.isSample) store.remove(d.id).catch(() => {}); });
+        stashCurrent(); docs.length = 0; cur = -1;
+      }
+      const firstNew = docs.length;
+      for (const { f, img } of loaded) {
+        const d = makeDoc(img, img.naturalWidth, img.naturalHeight, f.name, false);
+        d.blob = f;
+        docs.push(d);
+      }
+      docs.slice(firstNew).forEach(d => saveDoc(d));
       const keep = cur >= 0;
       if (!keep) cur = -1;
       activate(firstNew, keep);
-      const n = docs.length - firstNew;
+      const n = loaded.length;
+      hideHome();
       toast(n === 1 ? `Abierta: ${docs[firstNew].name}` : mobileMQ.matches ? `${n} fotos abiertas. Cámbialas desde «Fotos», abajo.` : `${n} fotos abiertas. Toca una miniatura de abajo para cambiar de foto.`);
       if (n > 1 && mobileMQ.matches) showTab("fotos");
-    } else if (!docs.length) {
-      const sample = makeSample();
-      docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
-      activate(0, false);
     }
     if (errors.length) toast(errors.join(". ") + ". Prueba con JPG, PNG o WebP.", true);
   }
@@ -2456,7 +2572,7 @@ body::before {
       <div class="ctl"><label for="hsl-l">Brillo</label><output id="out-hsl-l">0</output>
         <input type="range" id="hsl-l" min="-100" max="100" step="1" value="0"></div>
       <p class="note">Elige un color y cambia solo ese: por ejemplo, un cielo más azul sin tocar la piel.</p>`;
-    sec.querySelectorAll(".hsl-dot").forEach(b => b.addEventListener("click", () => { hslBand = b.dataset.b; syncHsl(); }));
+    sec.querySelectorAll(".hsl-dot").forEach(b => b.addEventListener("click", () => { hslBand = b.dataset.b; syncHsl(); syncResetChip(); }));
     ["s", "l"].forEach(k => {
       const el = sec.querySelector("#hsl-" + k);
       el.addEventListener("input", () => {
@@ -2496,15 +2612,17 @@ body::before {
       const row = document.createElement("div");
       row.className = "ctl" + (disabled ? " disabled" : "");
       row.title = disabled ? "Este navegador no permite desenfocar el lienzo" : "Doble clic para poner a cero";
-      row.innerHTML = `<label for="adj-${it.k}">${it.l}</label><output id="out-${it.k}">0</output>
+      row.innerHTML = `<label for="adj-${it.k}">${it.l}</label><output id="out-${it.k}">0</output><button class="zero" id="zero-${it.k}" hidden title="Volver a cero" aria-label="${it.l}: volver a cero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
         <input type="range" id="adj-${it.k}" min="${it.min}" max="${it.max}" step="1" value="0" ${disabled ? "disabled" : ""}>`;
       const input = row.querySelector("input");
       input.addEventListener("input", () => { state.adj[it.k] = +input.value; updateCtl(it); scheduleRender(true); });
       input.addEventListener("change", () => { commit(); scheduleRender(); });
-      row.addEventListener("dblclick", () => {
+      const toZero = () => {
         if (disabled || state.adj[it.k] === 0) return;
-        state.adj[it.k] = 0; updateCtl(it); commit(); scheduleRender();
-      });
+        state.adj[it.k] = 0; updateCtl(it); commit(); syncUI(); scheduleRender();
+      };
+      row.addEventListener("dblclick", toZero);
+      row.querySelector(".zero").addEventListener("click", toZero);
       sec.appendChild(row);
     });
     if (g.group === "Piel") sec.insertAdjacentHTML("beforeend", `
@@ -2615,6 +2733,7 @@ body::before {
     if (!$("m-adjust")) return;
     pane.classList.toggle("m-tonos", mKey === "tonos");
     pane.classList.toggle("m-enfoque", mKey === "enfoque");
+    if (typeof syncResetChip === "function" && typeof activeTab !== "undefined") try { syncResetChip(); } catch (e) {}
     document.querySelectorAll(".m-ico").forEach(b => {
       const k = b.dataset.k;
       b.setAttribute("aria-pressed", String(k === mKey));
@@ -2647,6 +2766,7 @@ body::before {
     input.value = v; setFill(input);
     $("out-" + it.k).textContent = fmt(v, it.min < 0, it.unit);
     input.closest(".ctl").classList.toggle("changed", v !== 0);
+    const z = $("zero-" + it.k); if (z) z.hidden = v === 0;
   }
 
   const amount = $("preset-amount");
@@ -2811,10 +2931,11 @@ body::before {
     mctx.beginPath(); mctx.moveTo(painting.x, painting.y); mctx.lineTo(p.x, p.y); mctx.stroke();
     painting = p;
   });
-  ["pointerup", "pointercancel"].forEach(ev => maskCv.addEventListener(ev, () => { painting = null; }));
+  maskCv.addEventListener("pointerup", () => { const was = painting; painting = null; if (was && eraseAuto && maskDirty) applyErase(); });
+  maskCv.addEventListener("pointercancel", () => { painting = null; });
   maskCv.addEventListener("pointerleave", () => { if (!painting) brushCursor.hidden = true; });
   bindTap($("erase-clear"), clearMask);
-  bindTap($("erase-apply"), () => {
+  function applyErase() {
     if (!maskDirty) return;
     $("erase-apply").disabled = true;
     $("erase-status").textContent = "Borrando…";
@@ -2823,7 +2944,22 @@ body::before {
       const ok = doErase();
       $("erase-status").textContent = ok ? `Listo. Pulsa Deshacer si quieres recuperarlo.` : "No hay nada marcado dentro de la foto.";
     }, 30);
+  }
+  bindTap($("erase-apply"), applyErase);
+  // «Borrar al soltar»: basta con pasar el dedo por encima; apagado, se pueden dar varios trazos y luego pulsar Borrar.
+  let eraseAuto = true;
+  try { eraseAuto = localStorage.getItem("revelado-borrar-auto") !== "0"; } catch (e) {}
+  const syncEraseAuto = () => {
+    $("erase-auto").setAttribute("aria-pressed", String(eraseAuto));
+    $("erase-apply").hidden = eraseAuto; $("erase-clear").hidden = eraseAuto;
+  };
+  bindTap($("erase-auto"), () => {
+    eraseAuto = !eraseAuto;
+    try { localStorage.setItem("revelado-borrar-auto", eraseAuto ? "1" : "0"); } catch (e) {}
+    syncEraseAuto();
+    if (eraseAuto && maskDirty) applyErase();
   });
+  syncEraseAuto();
 
   function maskBBox() {
     const d = mctx.getImageData(0, 0, maskCv.width, maskCv.height).data, W = maskCv.width;
@@ -2969,81 +3105,113 @@ body::before {
   // Relleno con textura: para cada zona del hueco busca el trozo de foto de alrededor que mejor encaja
   // (una versión simplificada de PatchMatch, la técnica de los editores profesionales) y copia sus píxeles.
   function patchFill(d, hole, W, H) {
-    const f = Math.min(1, 150 / Math.max(W, H));
-    const w = Math.max(12, Math.round(W * f)), h = Math.max(12, Math.round(H * f));
-    const fx = W / w, fy = H / h, n = w * h;
-    const img = new Float32Array(n * 3), sh = new Uint8Array(n);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const X0 = Math.floor(x * fx), X1 = Math.max(X0 + 1, Math.floor((x + 1) * fx));
-      const Y0 = Math.floor(y * fy), Y1 = Math.max(Y0 + 1, Math.floor((y + 1) * fy));
-      let r = 0, g = 0, b = 0, c = 0, hh = 0;
-      for (let Y = Y0; Y < Y1 && Y < H; Y++) for (let X = X0; X < X1 && X < W; X++) {
-        const i = Y * W + X; r += d[i*4]; g += d[i*4+1]; b += d[i*4+2]; hh += hole[i]; c++;
-      }
-      const j = y * w + x; c = c || 1;
-      img[j*3] = r / c; img[j*3+1] = g / c; img[j*3+2] = b / c; sh[j] = hh ? 1 : 0;
-    }
     const P = 3;                                   // parches de 7×7
-    const near = dilate(sh, w, h, P);
-    const isValid = new Uint8Array(n), valid = [], holes = [];
-    for (let y = P; y < h - P; y++) for (let x = P; x < w - P; x++) { const j = y * w + x; if (!near[j]) { isValid[j] = 1; valid.push(j); } }
-    for (let j = 0; j < n; j++) if (sh[j]) holes.push(j);
-    if (valid.length < 40 || !holes.length) return false;
-
     let seed = 4242; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const dist = (t, sIdx, best) => {
-      const tx = t % w, ty = (t / w) | 0, sx = sIdx % w, sy = (sIdx / w) | 0;
-      let sum = 0;
-      for (let dy = -P; dy <= P; dy++) {
-        const y2 = ty + dy; if (y2 < 0 || y2 >= h) continue;
-        const rowT = y2 * w, rowS = (sy + dy) * w;
-        for (let dx = -P; dx <= P; dx++) {
-          const x2 = tx + dx; if (x2 < 0 || x2 >= w) continue;
-          const a = (rowT + x2) * 3, bb = (rowS + sx + dx) * 3;
-          const e0 = img[a] - img[bb], e1 = img[a+1] - img[bb+1], e2 = img[a+2] - img[bb+2];
-          sum += e0 * e0 + e1 * e1 + e2 * e2;
-          if (sum >= best) return sum;
+
+    // Una versión reducida de la zona: colores medios, qué celdas son hueco y de dónde se puede copiar.
+    const makeLevel = maxSide => {
+      const f = Math.min(1, maxSide / Math.max(W, H));
+      const w = Math.max(12, Math.round(W * f)), h = Math.max(12, Math.round(H * f));
+      const fx = W / w, fy = H / h, n = w * h;
+      const img = new Float32Array(n * 3), sh = new Uint8Array(n);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const X0 = Math.floor(x * fx), X1 = Math.max(X0 + 1, Math.floor((x + 1) * fx));
+        const Y0 = Math.floor(y * fy), Y1 = Math.max(Y0 + 1, Math.floor((y + 1) * fy));
+        let r = 0, g = 0, b = 0, c = 0, hh = 0;
+        for (let Y = Y0; Y < Y1 && Y < H; Y++) for (let X = X0; X < X1 && X < W; X++) {
+          const i = Y * W + X; r += d[i*4]; g += d[i*4+1]; b += d[i*4+2]; hh += hole[i]; c++;
         }
+        const j = y * w + x; c = c || 1;
+        img[j*3] = r / c; img[j*3+1] = g / c; img[j*3+2] = b / c; sh[j] = hh ? 1 : 0;
       }
-      return sum;
+      const near = dilate(sh, w, h, P);
+      const isValid = new Uint8Array(n), valid = [], holes = [];
+      for (let y = P; y < h - P; y++) for (let x = P; x < w - P; x++) { const j = y * w + x; if (!near[j]) { isValid[j] = 1; valid.push(j); } }
+      for (let j = 0; j < n; j++) if (sh[j]) holes.push(j);
+      return { w, h, fx, fy, n, img, sh, isValid, valid, holes };
     };
-    const nnf = new Int32Array(n).fill(-1), cost = new Float64Array(n);
-    for (const j of holes) { nnf[j] = valid[(rnd() * valid.length) | 0]; cost[j] = dist(j, nnf[j], Infinity); }
-    const search = iters => {
-      for (let it = 0; it < iters; it++) {
-        const step = it % 2 === 0 ? 1 : -1;
-        const order = step === 1 ? holes : holes.slice().reverse();
-        for (const j of order) {
-          const x = j % w, y = (j / w) | 0;
-          let best = nnf[j], bd = dist(j, best, Infinity);
-          const tryS = c => { if (c >= 0 && c < n && isValid[c] && c !== best) { const dd = dist(j, c, bd); if (dd < bd) { bd = dd; best = c; } } };
-          const qx = x - step;                     // propagación desde el vecino ya resuelto
-          if (qx >= 0 && qx < w) { const o = nnf[y * w + qx]; if (o >= 0 && ((o + step) / w | 0) === (o / w | 0)) tryS(o + step); }
-          const qy = y - step;
-          if (qy >= 0 && qy < h) { const o = nnf[qy * w + x]; if (o >= 0) tryS(o + step * w); }
-          for (let rad = Math.max(w, h); rad >= 1; rad >>= 1) {   // búsqueda aleatoria cada vez más cerca
-            const cx = best % w + Math.round((rnd() * 2 - 1) * rad), cy = ((best / w) | 0) + Math.round((rnd() * 2 - 1) * rad);
-            if (cx >= 0 && cx < w && cy >= 0 && cy < h) tryS(cy * w + cx);
+
+    // Busca, para cada celda del hueco, el trozo de alrededor que mejor encaja (PatchMatch) y afina con «votación».
+    const solve = (L, prev, prevNnf, plan) => {
+      const { w, h, n, img, sh, isValid, valid, holes } = L;
+      const dist = (t, sIdx, best) => {
+        const tx = t % w, ty = (t / w) | 0, sx = sIdx % w, sy = (sIdx / w) | 0;
+        let sum = 0;
+        for (let dy = -P; dy <= P; dy++) {
+          const y2 = ty + dy; if (y2 < 0 || y2 >= h) continue;
+          const rowT = y2 * w, rowS = (sy + dy) * w;
+          for (let dx = -P; dx <= P; dx++) {
+            const x2 = tx + dx; if (x2 < 0 || x2 >= w) continue;
+            const a = (rowT + x2) * 3, bb = (rowS + sx + dx) * 3;
+            const e0 = img[a] - img[bb], e1 = img[a+1] - img[bb+1], e2 = img[a+2] - img[bb+2];
+            sum += e0 * e0 + e1 * e1 + e2 * e2;
+            if (sum >= best) return sum;
           }
-          nnf[j] = best; cost[j] = bd;
         }
-      }
-    };
-    // «Votación»: cada píxel del hueco toma la media de todos los parches que lo cubren; así encaja mejor.
-    const vote = () => {
-      const acc = new Float32Array(n * 3), cnt = new Float32Array(n);
-      for (const t of holes) {
-        const tx = t % w, ty = (t / w) | 0, s0 = nnf[t], sx = s0 % w, sy = (s0 / w) | 0, wt = 1 / (1 + cost[t] / 2000);
-        for (let dy = -P; dy <= P; dy++) for (let dx = -P; dx <= P; dx++) {
-          const x2 = tx + dx, y2 = ty + dy; if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) continue;
-          const q = y2 * w + x2; if (!sh[q]) continue;
-          const sq = ((sy + dy) * w + sx + dx) * 3;
-          acc[q*3] += img[sq] * wt; acc[q*3+1] += img[sq+1] * wt; acc[q*3+2] += img[sq+2] * wt; cnt[q] += wt;
+        return sum;
+      };
+      const nnf = new Int32Array(n).fill(-1), cost = new Float64Array(n);
+      for (const j of holes) {
+        let c = -1;
+        if (prev) {                                 // arranca con lo que encontró el nivel anterior, a esta escala
+          const x = j % w, y = (j / w) | 0, kx = w / prev.w, ky = h / prev.h;
+          const px = Math.min(prev.w - 1, (x / kx) | 0), py = Math.min(prev.h - 1, (y / ky) | 0), s0 = prevNnf[py * prev.w + px];
+          if (s0 >= 0) {
+            const cx = Math.round(x + (s0 % prev.w - px) * kx), cy = Math.round(y + (((s0 / prev.w) | 0) - py) * ky);
+            if (cx >= 0 && cy >= 0 && cx < w && cy < h && isValid[cy * w + cx]) c = cy * w + cx;
+          }
         }
+        if (c < 0) c = valid[(rnd() * valid.length) | 0];
+        nnf[j] = c;
       }
-      for (const q of holes) if (cnt[q]) { img[q*3] = acc[q*3] / cnt[q]; img[q*3+1] = acc[q*3+1] / cnt[q]; img[q*3+2] = acc[q*3+2] / cnt[q]; }
+      if (prev) for (const j of holes) { const c = nnf[j]; img[j*3] = img[c*3]; img[j*3+1] = img[c*3+1]; img[j*3+2] = img[c*3+2]; }
+      const search = iters => {
+        for (let it = 0; it < iters; it++) {
+          const step = it % 2 === 0 ? 1 : -1;
+          const order = step === 1 ? holes : holes.slice().reverse();
+          for (const j of order) {
+            const x = j % w, y = (j / w) | 0;
+            let best = nnf[j], bd = dist(j, best, Infinity);
+            const tryS = c => { if (c >= 0 && c < n && isValid[c] && c !== best) { const dd = dist(j, c, bd); if (dd < bd) { bd = dd; best = c; } } };
+            const qx = x - step;                   // propagación desde el vecino ya resuelto
+            if (qx >= 0 && qx < w) { const o = nnf[y * w + qx]; if (o >= 0 && ((o + step) / w | 0) === (o / w | 0)) tryS(o + step); }
+            const qy = y - step;
+            if (qy >= 0 && qy < h) { const o = nnf[qy * w + x]; if (o >= 0) tryS(o + step * w); }
+            for (let rad = prev ? Math.max(4, Math.max(w, h) >> 3) : Math.max(w, h); rad >= 1; rad >>= 1) {   // búsqueda aleatoria cada vez más cerca
+              const cx = best % w + Math.round((rnd() * 2 - 1) * rad), cy = ((best / w) | 0) + Math.round((rnd() * 2 - 1) * rad);
+              if (cx >= 0 && cx < w && cy >= 0 && cy < h) tryS(cy * w + cx);
+            }
+            nnf[j] = best; cost[j] = bd;
+          }
+        }
+      };
+      const vote = () => {
+        const acc = new Float32Array(n * 3), cnt = new Float32Array(n);
+        for (const t of holes) {
+          const tx = t % w, ty = (t / w) | 0, s0 = nnf[t], sx = s0 % w, sy = (s0 / w) | 0, wt = 1 / (1 + cost[t] / 2000);
+          for (let dy = -P; dy <= P; dy++) for (let dx = -P; dx <= P; dx++) {
+            const x2 = tx + dx, y2 = ty + dy; if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) continue;
+            const q = y2 * w + x2; if (!sh[q]) continue;
+            const sq = ((sy + dy) * w + sx + dx) * 3;
+            acc[q*3] += img[sq] * wt; acc[q*3+1] += img[sq+1] * wt; acc[q*3+2] += img[sq+2] * wt; cnt[q] += wt;
+          }
+        }
+        for (const q of holes) if (cnt[q]) { img[q*3] = acc[q*3] / cnt[q]; img[q*3+1] = acc[q*3+1] / cnt[q]; img[q*3+2] = acc[q*3+2] / cnt[q]; }
+      };
+      for (const iters of plan) { search(iters); vote(); }
+      return nnf;
     };
-    for (let round = 0; round < 4; round++) { search(round === 0 ? 5 : 2); vote(); }
+
+    // De lo grueso a lo fino: primero la forma general, luego el detalle (así continúan mejor las líneas y los dibujos).
+    let L = null, nnf = null;
+    for (const side of [80, 160, 320]) {
+      const next = makeLevel(side);
+      if (L && next.w === L.w && next.h === L.h) break;
+      if (next.valid.length < 40 || !next.holes.length) { if (!L) return false; break; }
+      nnf = solve(next, L, nnf, L ? [2, 2] : [5, 2, 2, 2]);
+      L = next;
+    }
+    const { w, h, fx, fy } = L;
 
     // Resolución completa: cada píxel mezcla lo que dicen los 4 puntos pequeños más cercanos (sin bloques).
     let copied = 0;
@@ -3062,7 +3230,66 @@ body::before {
       }
       if (ws > 0) { d[i*4] = r / ws; d[i*4+1] = g / ws; d[i*4+2] = b / ws; copied++; }
     }
-    return copied > 0;
+    if (!copied) return false;
+    matchBorderColor(d, hole, W, H, L);
+    return true;
+  }
+
+  // Corrige el color del relleno para que empalme con lo de alrededor: mide el salto de color en el borde del
+  // hueco y lo reparte suavemente hacia dentro (lo copiado de otra zona suele venir algo más claro u oscuro).
+  function matchBorderColor(d, hole, W, H, L) {
+    const { w, h, fx, fy, n, sh } = L;
+    const acc = new Float32Array(n * 3), cnt = new Float32Array(n);
+    for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+      const i = Y * W + X; if (!hole[i]) continue;
+      const c = Math.min(h - 1, (Y / fy) | 0) * w + Math.min(w - 1, (X / fx) | 0);
+      const nb = [X > 0 ? i - 1 : -1, X < W - 1 ? i + 1 : -1, Y > 0 ? i - W : -1, Y < H - 1 ? i + W : -1];
+      for (const q of nb) if (q >= 0 && !hole[q]) {
+        acc[c*3] += d[q*4] - d[i*4]; acc[c*3+1] += d[q*4+1] - d[i*4+1]; acc[c*3+2] += d[q*4+2] - d[i*4+2]; cnt[c]++;
+      }
+    }
+    const fixed = new Uint8Array(n), e = new Float32Array(n * 3), cells = [];
+    let m0 = 0, m1 = 0, m2 = 0, nf = 0;
+    for (let c = 0; c < n; c++) if (sh[c]) {
+      cells.push(c);
+      if (cnt[c] >= 2) {
+        fixed[c] = 1;
+        for (let k = 0; k < 3; k++) e[c*3+k] = clamp(acc[c*3+k] / cnt[c], -60, 60);
+        m0 += e[c*3]; m1 += e[c*3+1]; m2 += e[c*3+2]; nf++;
+      }
+    }
+    if (!nf) return;
+    m0 /= nf; m1 /= nf; m2 /= nf;
+    const around = c => { const x = c % w, y = (c / w) | 0; return [x > 0 ? c - 1 : -1, x < w - 1 ? c + 1 : -1, y > 0 ? c - w : -1, y < h - 1 ? c + w : -1]; };
+    for (let pass = 0; pass < 2; pass++) {          // el salto medido en el borde se suaviza a lo largo del borde
+      const copy = new Float32Array(e);
+      for (const c of cells) if (fixed[c]) {
+        let s0 = copy[c*3] * 2, s1 = copy[c*3+1] * 2, s2 = copy[c*3+2] * 2, k = 2;
+        for (const q of around(c)) if (q >= 0 && fixed[q]) { s0 += copy[q*3]; s1 += copy[q*3+1]; s2 += copy[q*3+2]; k++; }
+        e[c*3] = s0 / k; e[c*3+1] = s1 / k; e[c*3+2] = s2 / k;
+      }
+    }
+    for (const c of cells) if (!fixed[c]) { e[c*3] = m0; e[c*3+1] = m1; e[c*3+2] = m2; }
+    for (let it = 0; it < 220; it++) {              // se reparte hacia dentro (como una membrana tensa)
+      for (let t = 0; t < cells.length; t++) {
+        const c = cells[it & 1 ? cells.length - 1 - t : t]; if (fixed[c]) continue;
+        let s0 = 0, s1 = 0, s2 = 0, k = 0;
+        for (const q of around(c)) if (q >= 0 && sh[q]) { s0 += e[q*3]; s1 += e[q*3+1]; s2 += e[q*3+2]; k++; }
+        if (k) { e[c*3] = s0 / k; e[c*3+1] = s1 / k; e[c*3+2] = s2 / k; }
+      }
+    }
+    for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+      const i = Y * W + X; if (!hole[i]) continue;
+      const gx = X / fx - 0.5, gy = Y / fy - 0.5, x0 = Math.floor(gx), y0 = Math.floor(gy);
+      let a0 = 0, a1 = 0, a2 = 0, ws = 0;
+      for (let oy = 0; oy <= 1; oy++) for (let ox = 0; ox <= 1; ox++) {
+        const x = clamp(x0 + ox, 0, w - 1), y = clamp(y0 + oy, 0, h - 1), c = y * w + x;
+        if (!sh[c]) continue;
+        const wgt = (ox ? gx - x0 : 1 - (gx - x0)) * (oy ? gy - y0 : 1 - (gy - y0)) + 1e-4;
+        a0 += e[c*3] * wgt; a1 += e[c*3+1] * wgt; a2 += e[c*3+2] * wgt; ws += wgt;
+      }
+      if (ws > 0) { d[i*4] += a0 / ws; d[i*4+1] += a1 / ws; d[i*4+2] += a2 / ws; }
+    }
   }
   // Funde el borde del relleno con la foto para que no se note la costura.
   function blendSeam(d, hole, W, H) {
@@ -3303,7 +3530,7 @@ body::before {
     $("redo").disabled = history.i === history.stack.length - 1;
     const edited = isEdited(state);
     $("reset").disabled = !edited;
-    $("reset-chip").hidden = !edited;
+    syncResetChip();
   }
   $("undo").addEventListener("click", () => travel(-1));
   $("redo").addEventListener("click", () => travel(1));
@@ -3413,6 +3640,7 @@ body::before {
       $("pane-" + t).hidden = t !== name;
     });
     $("panel-foot").innerHTML = FOOT[name];
+    syncResetChip();
     revealInRow($("tab-" + name), $("tab-" + name).parentElement);
     brushCursor.hidden = true;
     try { localStorage.setItem("revelado-tab", name); } catch (e) {}
@@ -3423,6 +3651,7 @@ body::before {
     $("sub-recorte").hidden = sizeSub !== "recorte";
     $("sub-formato").hidden = sizeSub !== "formato";
     $("size-seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sub === sizeSub)));
+    syncResetChip();
   }
   $("size-seg").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { sizeSub = b.dataset.sub; syncSizeSub(); scheduleRender(); }));
   // En el móvil, la tira de fotos vive dentro de la pestaña «Fotos» para dejar sitio a la foto.
@@ -3479,6 +3708,32 @@ body::before {
     if (!a.has()) return;
     a.run(); commit(); syncUI(); renderThumbs(); scheduleRender();
   }));
+  // «Volver a cero»: quita solo lo que se está editando ahora (el ajuste elegido, el filtro, la piel…),
+  // sin tocar el resto de la edición.
+  function currentReset() {
+    const from = (k, name) => ({ name, has: noneActions[k].has, run: noneActions[k].run });
+    if (activeTab === "ajustes") {
+      if (mKey === "tonos") {
+        const band = HSL_BANDS.find(b => b.id === hslBand);
+        return { name: band.name, has: () => { const v = (state.hsl || {})[hslBand] || {}; return !!(v.s || v.l); },
+                 run: () => { state.hsl = { ...state.hsl, [hslBand]: { s: 0, l: 0 } }; } };
+      }
+      if (mKey === "enfoque") return from("enfoque", "Desenfoque del fondo");
+      const it = ADJ_ITEM[mKey];
+      return it ? { name: it.l, has: () => !!state.adj[mKey], run: () => { state.adj = { ...state.adj, [mKey]: 0 }; } } : null;
+    }
+    if (activeTab === "piel") return from("piel", "Suavizar piel");
+    if (activeTab === "filtros") return from("filtro", "Filtro");
+    if (activeTab === "borrar") return from("borrar", "Borrados");
+    if (activeTab === "tamano") return sizeSub === "recorte" ? from("recortar", "Recorte y giros") : from("tamano", "Tamaño");
+    return null;
+  }
+  function syncResetChip() {
+    let r = null;
+    try { r = currentReset(); } catch (e) { return; }   // durante el arranque aún no está todo preparado
+    $("reset-chip").hidden = !(r && r.has());
+    if (r) $("reset-chip").title = `Pone a cero solo «${r.name}»`;
+  }
   function syncNone() {
     Object.entries(noneActions).forEach(([k, a]) => { $("none-" + k).disabled = !a.has(); });
     const mc = document.querySelector('#m-fcats [data-c="none"]'); if (mc) mc.disabled = !noneActions.filtro.has();
@@ -3805,7 +4060,12 @@ body::before {
     brushCursor.hidden = true;
   }
   const onZoomUI = t => t.closest && t.closest(".zoom-ctl, .split-line, .reset-chip");
-  bindTap($("reset-chip"), resetAll);
+  bindTap($("reset-chip"), () => {
+    const r = currentReset();
+    if (!r || !r.has()) return;
+    r.run(); commit(); syncUI(); renderThumbs(); scheduleRender();
+    toast(`${r.name}: a cero. Pulsa Deshacer si quieres recuperarlo.`);
+  });
 
   stage.addEventListener("pointerdown", e => {
     if (onZoomUI(e.target) || !workCanvas) return;
@@ -3994,7 +4254,6 @@ body::before {
       if (docs.length && !docs.every(d => d.isSample)) return false;   // el usuario ya abrió fotos mientras tanto
       stashCurrent(); docs.length = 0; docs.push(...restored); cur = -1;
       activate(Math.min(meta.cur || 0, docs.length - 1), false);
-      toast(restored.length === 1 ? "Recuperé tu foto tal como la dejaste." : `Recuperé tus ${restored.length} fotos tal como las dejaste.`);
       return true;
     } catch (e) { return false; }
   }
@@ -4009,24 +4268,64 @@ body::before {
   renderFavorites();
   const sessionReady = restoreSession();
 
+  /* ================= Menú principal ================= */
+  const home = $("home");
+  function renderHome() {
+    const real = docs.filter(d => !d.isSample);
+    $("home-resume").hidden = !real.length;
+    $("home-sample").hidden = !!real.length;
+    $("home-resume-info").textContent = real.length === 1 ? real[0].name : `${real.length} fotos, tal como las dejaste`;
+    $("home-new-info").textContent = real.length ? "Elige fotos nuevas. Sustituyen al proyecto guardado." : "Elige una o varias fotos de tu galería";
+    const box = $("home-thumbs"); box.textContent = "";
+    real.slice(0, 3).forEach(d => {
+      if (!d.thumb.width || !d.thumb.height) return;
+      const c = document.createElement("canvas"); c.width = d.thumb.width; c.height = d.thumb.height;
+      c.getContext("2d").drawImage(d.thumb, 0, 0); box.appendChild(c);
+    });
+  }
+  function showHome(step = "main") {
+    $("home-main").hidden = step !== "main";
+    $("home-step").hidden = step !== "foto";
+    renderHome();
+    home.hidden = false; home.scrollTop = 0;
+  }
+  let tipShown = false;
+  function hideHome() {
+    if (home.hidden) return;
+    home.hidden = true;
+    scheduleRender();
+    if (!tipShown) {
+      tipShown = true;
+      setTimeout(() => {
+        try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
+        toast(matchMedia("(pointer: coarse)").matches ? "Pellizca la foto con dos dedos para acercarla. Doble toque para volver." : "Usa la rueda del ratón o los botones + y − para acercar la foto.");
+      }, 2600);
+    }
+  }
+  $("home-foto").addEventListener("click", () => showHome("foto"));
+  $("home-video").addEventListener("click", () => toast("La edición de video llegará pronto. Por ahora, Moon edita fotos."));
+  $("home-back").addEventListener("click", () => showHome("main"));
+  $("home-resume").addEventListener("click", hideHome);
+  $("home-sample").addEventListener("click", hideHome);
+  // Solo «Nuevo proyecto» sustituye lo que había; los demás botones de abrir añaden fotos.
+  document.addEventListener("click", e => {
+    const l = e.target.closest && e.target.closest('label[for="file-input"]');
+    if (l) replaceOnLoad = l.id === "home-new";
+  }, true);
+  showHome("main");
+  sessionReady.then(renderHome);
+
   /* ================= Pantalla de inicio ================= */
   const splash = $("splash"), app = document.querySelector(".app");
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const readTime = quick => REDUCED ? 1500 : quick ? 1300 : 3300;   // tiempo para leer el lema antes del despegue
-  let splashTimer = 0, splashRun = 0, tipShown = false;
+  let splashTimer = 0, splashRun = 0;
   function hideSplash() {
     if (splash.hidden || splash.classList.contains("leaving")) return;
     splashRun++; clearTimeout(splashTimer);
     splash.classList.add("leaving");
     app.classList.remove("entering"); void app.offsetWidth; app.classList.add("entering");
     setTimeout(() => { splash.hidden = true; splash.classList.remove("leaving", "play", "launch"); scheduleRender(); }, 450);
-    if (!tipShown) {
-      tipShown = true;
-      setTimeout(() => {
-        try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
-        toast(matchMedia("(pointer: coarse)").matches ? "Pellizca la foto con dos dedos para acercarla. Doble toque para volver." : "Usa la rueda del ratón o los botones + y − para acercar la foto.");
-      }, 1100);
-    }
   }
   // Fases: 1) aparecen el logo y el lema; 2) cuando la app está lista y ha dado tiempo a leer, despega el cohete;
   // 3) se abre la app. `ready` es una promesa que se cumple cuando la app terminó de preparar las fotos.
@@ -4056,7 +4355,7 @@ body::before {
     runSplash(readTime(quick), Promise.resolve());
   }
   splash.addEventListener("click", hideSplash);
-  $("brand").addEventListener("click", () => { if (!brandLong) playSplash(false); brandLong = false; });
+  $("brand").addEventListener("click", () => { if (!brandLong) showHome("main"); brandLong = false; });
   // Mantener pulsado el logo 1 segundo muestra las medidas de la pantalla (para ajustar el diseño al iPhone).
   let brandLong = false, brandTimer = 0;
   $("brand").addEventListener("pointerdown", () => {
