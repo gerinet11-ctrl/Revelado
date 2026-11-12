@@ -735,21 +735,22 @@ kbd {
 }
 .vplay svg { width: 30px; height: 30px; margin-left: 3px; }
 .vtime {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
-  padding: 12px max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
   font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.trim { position: relative; height: 46px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
+.vtime-row { display: flex; justify-content: space-between; padding: 0 2px 8px; }
+.vtime-row span:first-child { color: var(--fg); }
+.trim { position: relative; height: 58px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
 .trim canvas { display: block; width: 100%; height: 100%; border-radius: 8px; }
-.trim-dim { position: absolute; top: 0; bottom: 0; background: rgba(8,7,6,.7); pointer-events: none; }
-#trim-dim-l { left: 0; border-radius: 8px 0 0 8px; } #trim-dim-r { right: 0; border-radius: 0 8px 8px 0; }
-.trim-sel { position: absolute; top: -3px; bottom: -3px; border: 3px solid var(--accent); border-radius: 9px; pointer-events: none; }
-.trim-h { position: absolute; top: -3px; bottom: -3px; width: 14px; background: var(--accent); pointer-events: auto; cursor: ew-resize; }
+.trim-gap { position: absolute; top: 0; bottom: 0; background: rgba(8,7,6,.78); pointer-events: none; }
+.trim-seg { position: absolute; top: -2px; bottom: -2px; border: 2px solid rgba(231,162,64,.6); border-radius: 8px; pointer-events: none; }
+.trim-seg.sel { top: -3px; bottom: -3px; border: 3px solid var(--accent); border-radius: 9px; z-index: 1; }
+.trim-h { position: absolute; top: -3px; bottom: -3px; width: 16px; background: var(--accent); pointer-events: auto; cursor: ew-resize; }
 .trim-h[data-h="s"] { left: -3px; border-radius: 7px 0 0 7px; }
 .trim-h[data-h="e"] { right: -3px; border-radius: 0 7px 7px 0; }
-.trim-h::before { content: ""; position: absolute; inset: -8px -14px; }
-.trim-h::after { content: ""; position: absolute; left: 6px; top: 32%; bottom: 32%; width: 2px; border-radius: 1px; background: var(--accent-ink); }
-.trim-head { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45); pointer-events: none; }
+.trim-h::before { content: ""; position: absolute; inset: -10px -14px; }
+.trim-h::after { content: ""; position: absolute; left: 7px; top: 32%; bottom: 32%; width: 2px; border-radius: 1px; background: var(--accent-ink); }
+.trim-head { position: absolute; top: -7px; bottom: -7px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; z-index: 2; }
 .vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; }
 .vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
 .vrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
@@ -1183,14 +1184,12 @@ body::before {
     <button class="vplay" id="v-play" aria-label="Reproducir"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg></button>
   </div>
   <div class="vtime">
-    <span id="v-cur">0:00</span>
+    <div class="vtime-row"><span id="v-cur">0:00</span><span id="v-dur">0:00</span></div>
     <div class="trim" id="trim">
-      <canvas id="trim-thumbs" width="640" height="60" aria-hidden="true"></canvas>
-      <div class="trim-dim" id="trim-dim-l"></div><div class="trim-dim" id="trim-dim-r"></div>
-      <div class="trim-sel" id="trim-sel"><span class="trim-h" data-h="s" aria-label="Inicio"></span><span class="trim-h" data-h="e" aria-label="Fin"></span></div>
+      <canvas id="trim-thumbs" width="800" height="70" aria-hidden="true"></canvas>
+      <div id="trim-segs"></div>
       <div class="trim-head" id="trim-head"></div>
     </div>
-    <span id="v-dur">0:00</span>
   </div>
   <div class="vpanel">
     <div class="vbody" id="vbody"></div>
@@ -4435,12 +4434,27 @@ body::before {
   ];
   const VADJ = ["exposure", "contrast", "highlights", "shadows", "saturation", "temperature", "tint", "fade", "vignette", "grain"];
   const VMAX = 1920, VMIN_LEN = 0.3;
-  const vDefaults = () => ({ adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, start: 0, end: 0, speed: 1, muted: false, format: "original", fit: "cover" });
+  const vDefaults = () => ({ adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, segs: [], speed: 1, muted: false, format: "original", fit: "cover" });
   let vs = vDefaults(), vfile = null, vname = "video", vdur = 0, vurl = null, vposter = "";
   let vtab = "recorte", vkey = "exposure", vdirty = true, vraf = 0, vrun = null, savedVideo = null;
+  let vsel = 0, vhist = [];   // trozo elegido y pasos para deshacer cortes
   const vThumbSrc = document.createElement("canvas");
 
   const fmtTime = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), sec = t - m * 60; return m + ":" + (sec < 10 ? "0" : "") + sec.toFixed(1); };
+  // El video se guarda como una lista de trozos que se conservan (inicio y fin de cada uno, en segundos del original).
+  // Dividir parte un trozo en dos; borrar quita uno; al reproducir y al guardar, los trozos van seguidos.
+  const vTotal = () => vs.segs.reduce((a, g) => a + (g.e - g.s), 0);
+  const vFirst = () => (vs.segs[0] ? vs.segs[0].s : 0);
+  function vSegAt(t) { for (let i = vs.segs.length - 1; i >= 0; i--) { const g = vs.segs[i]; if (t >= g.s - 0.001 && t < g.e) return i; } return -1; }
+  function vOutTime(t) { let acc = 0; for (const g of vs.segs) { if (t >= g.e) acc += g.e - g.s; else { if (t > g.s) acc += t - g.s; break; } } return acc; }
+  function vNextStart(t) { for (const g of vs.segs) if (g.s >= t - 0.001) return g.s; return vFirst(); }
+  function vNearestKept(t) {
+    if (vSegAt(t) >= 0) return t;
+    let best = vFirst(), bd = Infinity;
+    for (const g of vs.segs) for (const c of [g.s, g.e - 0.05]) { const d = Math.abs(c - t); if (d < bd) { bd = d; best = c; } }
+    return best;
+  }
+  const vPushHist = () => { vhist.push(JSON.stringify(vs.segs)); if (vhist.length > 40) vhist.shift(); };
   const once = (el, ev, ms) => new Promise((res, rej) => {
     const ok = () => { clean(); res(); }, bad = () => { clean(); rej(new Error(ev)); };
     const timer = setTimeout(bad, ms);
@@ -4581,27 +4595,43 @@ void main(){
   }
   vvideo.addEventListener("seeked", () => { vdirty = true; if (pendingSeek !== null) { const t = pendingSeek; pendingSeek = null; try { vvideo.currentTime = t; } catch (e) {} } });
   vvideo.addEventListener("loadeddata", () => { vdirty = true; });
-  vvideo.addEventListener("ended", () => { if (!vrun) { vvideo.currentTime = vs.start; syncPlayBtn(); } });
+  vvideo.addEventListener("ended", () => { if (!vrun) { vvideo.currentTime = vFirst(); syncPlayBtn(); } });
   vvideo.addEventListener("play", () => syncPlayBtn()); vvideo.addEventListener("pause", () => syncPlayBtn());
 
   function syncPlayBtn() { $("v-play").hidden = !vvideo.paused || !!vrun; }
   function vSyncTime() {
     if (!vdur) return;
     $("trim-head").style.left = clamp(vvideo.currentTime / vdur, 0, 1) * 100 + "%";
-    $("v-cur").textContent = fmtTime(Math.max(0, vvideo.currentTime - vs.start));
+    $("v-cur").textContent = fmtTime(vOutTime(vvideo.currentTime) / vs.speed);
   }
   function vSyncTrim() {
     if (!vdur) return;
-    const a = vs.start / vdur * 100, b = vs.end / vdur * 100;
-    $("trim-sel").style.left = a + "%"; $("trim-sel").style.width = (b - a) + "%";
-    $("trim-dim-l").style.width = a + "%"; $("trim-dim-r").style.width = (100 - b) + "%";
-    $("v-dur").textContent = fmtTime((vs.end - vs.start) / vs.speed);
+    vsel = clamp(vsel, 0, vs.segs.length - 1);
+    const pct = t => (t / vdur * 100).toFixed(3) + "%";
+    let html = "", prev = 0;
+    vs.segs.forEach((g, i) => {
+      if (g.s > prev + 0.001) html += `<div class="trim-gap" style="left:${pct(prev)};width:${pct(g.s - prev)}"></div>`;
+      html += `<div class="trim-seg${i === vsel ? " sel" : ""}" style="left:${pct(g.s)};width:${pct(g.e - g.s)}">${i === vsel ? '<span class="trim-h" data-h="s"></span><span class="trim-h" data-h="e"></span>' : ""}</div>`;
+      prev = g.e;
+    });
+    if (prev < vdur - 0.001) html += `<div class="trim-gap" style="left:${pct(prev)};width:${pct(vdur - prev)}"></div>`;
+    $("trim-segs").innerHTML = html;
+    $("v-dur").textContent = fmtTime(vTotal() / vs.speed);
     const info = $("v-trim-info");
-    if (info) info.innerHTML = `Trozo elegido: <b>${fmtTime(vs.end - vs.start)}</b> (de ${fmtTime(vs.start)} a ${fmtTime(vs.end)})` + (vs.speed !== 1 ? ` · a ×${vs.speed} dura <b>${fmtTime((vs.end - vs.start) / vs.speed)}</b>` : "");
+    if (info) {
+      const n = vs.segs.length, g = vs.segs[vsel];
+      info.innerHTML = (n === 1 ? "Un trozo" : `<b>${n} trozos</b> unidos`) + ` · duración <b>${fmtTime(vTotal() / vs.speed)}</b>`
+        + (n > 1 ? ` · elegido: el ${vsel + 1}.º (${fmtTime(g.e - g.s)})` : ` (de ${fmtTime(g.s)} a ${fmtTime(g.e)})`);
+    }
+    const del = $("v-seg-del"); if (del) del.disabled = vs.segs.length < 2;
+    const un = $("v-seg-undo"); if (un) un.disabled = !vhist.length;
+    const all = $("v-trim-reset"); if (all) all.disabled = vs.segs.length === 1 && vs.segs[0].s <= 0.001 && vs.segs[0].e >= vdur - 0.001;
   }
   async function vPlay() {
     if (vrun || !vdur) return;
-    if (vvideo.currentTime < vs.start - 0.05 || vvideo.currentTime >= vs.end - 0.08) await vSeek(vs.start);
+    const t = vvideo.currentTime, i = vSegAt(t), last = vs.segs[vs.segs.length - 1];
+    if (i < 0) await vSeek(vNextStart(t));
+    else if (i === vs.segs.length - 1 && t >= last.e - 0.08) await vSeek(vFirst());
     vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
     if (vaudio) { try { vaudio.ctx.resume(); } catch (e) {} }
     try { await vvideo.play(); } catch (e) { vvideo.muted = true; try { await vvideo.play(); } catch (e2) {} }
@@ -4612,37 +4642,68 @@ void main(){
     if (vapp.hidden && !vrun) { vraf = 0; return; }
     vraf = requestAnimationFrame(vLoop);
     if (vrun) { vDraw(); vExportTick(); return; }
-    if (!vvideo.paused && vvideo.currentTime >= vs.end - 0.03) vvideo.currentTime = vs.start;   // repite el trozo elegido
+    if (!vvideo.paused && !vvideo.seeking) {         // al llegar al final de un trozo salta al siguiente; tras el último, vuelve al primero
+      const t = vvideo.currentTime, i = vSegAt(t);
+      if (i < 0) vvideo.currentTime = vNextStart(t);
+      else if (t >= vs.segs[i].e - 0.03) { const nx = vs.segs[i + 1] || vs.segs[0]; if (Math.abs(nx.s - t) > 0.06) vvideo.currentTime = nx.s; }
+    }
     if (!vvideo.paused || vdirty) { vDraw(); vdirty = false; vSyncTime(); }
   }
   const vStartLoop = () => { if (!vraf) vraf = requestAnimationFrame(vLoop); };
 
-  // Recorte: arrastrar los extremos o tocar la tira para moverse por el video.
+  // Tira: tocar un trozo lo elige; arrastrar sus extremos lo acorta o alarga; tocar o arrastrar mueve el punto de reproducción.
   const trim = $("trim");
   let tdrag = null;
   const trimTime = e => { const r = trim.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * vdur; };
   function trimMove(e) {
-    const t = trimTime(e);
-    if (tdrag === "s") { vs.start = clamp(t, 0, vs.end - VMIN_LEN); vScrub(vs.start); }
-    else if (tdrag === "e") { vs.end = clamp(t, vs.start + VMIN_LEN, vdur); vScrub(vs.end - 0.05); }
-    else vScrub(clamp(t, vs.start, vs.end - 0.05));
+    const t = trimTime(e), g = vs.segs[vsel];
+    if (tdrag === "s") { const lo = vsel > 0 ? vs.segs[vsel - 1].e : 0; g.s = clamp(t, lo, g.e - VMIN_LEN); vScrub(g.s); }
+    else if (tdrag === "e") { const hi = vsel < vs.segs.length - 1 ? vs.segs[vsel + 1].s : vdur; g.e = clamp(t, g.s + VMIN_LEN, hi); vScrub(g.e - 0.05); }
+    else vScrub(vNearestKept(t));
     vSyncTrim(); vSyncTime();
   }
   trim.addEventListener("pointerdown", e => {
     if (vrun || !vdur) return;
     e.preventDefault(); vvideo.pause();
     tdrag = e.target.dataset.h || "seek";
+    if (tdrag === "seek") { const i = vSegAt(trimTime(e)); if (i >= 0) vsel = i; } else vPushHist();
     trim.setPointerCapture(e.pointerId); trimMove(e);
   });
   trim.addEventListener("pointermove", e => { if (tdrag) trimMove(e); });
   ["pointerup", "pointercancel"].forEach(ev => trim.addEventListener(ev, () => {
     if (!tdrag) return;
     const was = tdrag; tdrag = null;
-    if (was !== "seek") { vScrub(vs.start); vSaveSoon(); }
+    if (was !== "seek") { vScrub(vs.segs[vsel].s); vSyncTrim(); vSaveSoon(); }
   }));
+  function vSplit() {
+    const t = vvideo.currentTime, i = vSegAt(t);
+    if (i < 0) { toast("Mueve la línea blanca a un punto dentro del video para dividir ahí."); return; }
+    const g = vs.segs[i];
+    if (t - g.s < VMIN_LEN || g.e - t < VMIN_LEN) { toast("Ese punto está demasiado cerca del borde del trozo. Muévete un poco más adentro."); return; }
+    vPushHist();
+    vs.segs.splice(i, 1, { s: g.s, e: t }, { s: t, e: g.e });
+    vsel = i + 1;
+    vSyncTrim(); vSaveSoon();
+    toast("Dividido en dos trozos.");
+  }
+  function vDeleteSeg() {
+    if (vs.segs.length < 2) { toast("Tiene que quedar al menos un trozo. Divide primero el video."); return; }
+    vPushHist();
+    vs.segs.splice(vsel, 1);
+    vsel = clamp(vsel, 0, vs.segs.length - 1);
+    vvideo.pause(); vScrub(vs.segs[vsel].s);
+    vSyncTrim(); vSyncTime(); vSaveSoon();
+  }
+  function vUndoCut() {
+    if (!vhist.length) return;
+    vs.segs = JSON.parse(vhist.pop());
+    vsel = clamp(vsel, 0, vs.segs.length - 1);
+    vvideo.pause(); vScrub(vNearestKept(vvideo.currentTime));
+    vSyncTrim(); vSyncTime(); vSaveSoon();
+  }
 
   async function buildTrimThumbs() {
-    const cv = $("trim-thumbs"), c = cv.getContext("2d"), N = 8, cw = cv.width / N, ch = cv.height;
+    const cv = $("trim-thumbs"), c = cv.getContext("2d"), N = 10, cw = cv.width / N, ch = cv.height;
     c.fillStyle = "#0c0b0a"; c.fillRect(0, 0, cv.width, cv.height);
     const vw = vvideo.videoWidth, vh = vvideo.videoHeight;
     for (let i = 0; i < N; i++) {
@@ -4678,11 +4739,17 @@ void main(){
     const body = $("vbody");
     if (vtab === "recorte") {
       body.innerHTML = `<div class="vinfo" id="v-trim-info"></div>
-        <div class="vrow"><button class="btn" id="v-set-start">Empezar aquí</button><button class="btn" id="v-set-end">Terminar aquí</button><button class="btn" id="v-trim-reset">Video entero</button></div>
-        <div class="vinfo">Arrastra los extremos dorados de la tira, o reproduce y marca el inicio y el fin.</div>`;
-      $("v-set-start").onclick = () => { vs.start = clamp(vvideo.currentTime, 0, vs.end - VMIN_LEN); vSyncTrim(); vSaveSoon(); };
-      $("v-set-end").onclick = () => { vs.end = clamp(vvideo.currentTime, vs.start + VMIN_LEN, vdur); vvideo.pause(); vSyncTrim(); vSaveSoon(); };
-      $("v-trim-reset").onclick = () => { vs.start = 0; vs.end = vdur; vSyncTrim(); vSaveSoon(); };
+        <div class="vrow">
+          <button class="btn primary" id="v-split">${VI('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>')}Dividir aquí</button>
+          <button class="btn" id="v-seg-del">Borrar trozo</button>
+          <button class="btn" id="v-seg-undo">Deshacer</button>
+          <button class="btn" id="v-trim-reset">Video entero</button>
+        </div>
+        <div class="vinfo">Lleva la línea blanca al punto de corte y pulsa «Dividir aquí». Toca un trozo para elegirlo: puedes borrarlo o arrastrar sus extremos. Los trozos que queden se unen.</div>`;
+      $("v-split").onclick = vSplit;
+      $("v-seg-del").onclick = vDeleteSeg;
+      $("v-seg-undo").onclick = vUndoCut;
+      $("v-trim-reset").onclick = () => { vPushHist(); vs.segs = [{ s: 0, e: vdur }]; vsel = 0; vSyncTrim(); vSaveSoon(); };
       vSyncTrim();
     } else if (vtab === "filtros") {
       body.innerHTML = `<div class="ctl"><label for="v-amount">Intensidad <span id="v-amount-name" style="color:var(--accent);font-weight:600"></span></label><output id="v-amount-out"></output>
@@ -4762,7 +4829,7 @@ void main(){
   }
   function syncVSpeed() {
     const el = $("v-speed-info"); if (!el) return;
-    el.innerHTML = vs.speed === 1 ? "Velocidad normal." : `${vs.speed < 1 ? "Cámara lenta" : "Cámara rápida"}: el trozo de ${fmtTime(vs.end - vs.start)} durará <b>${fmtTime((vs.end - vs.start) / vs.speed)}</b>.`;
+    el.innerHTML = vs.speed === 1 ? "Velocidad normal." : `${vs.speed < 1 ? "Cámara lenta" : "Cámara rápida"}: el video de ${fmtTime(vTotal())} durará <b>${fmtTime(vTotal() / vs.speed)}</b>.`;
   }
 
   /* ---- Abrir, guardar el proyecto y volver a él ---- */
@@ -4794,11 +4861,15 @@ void main(){
       vfile = file; vname = name.replace(/\.[^.]+$/, "") || "video"; vdur = dur;
       const st = saved && saved.state ? saved.state : null;
       vs = st ? { ...vDefaults(), ...st, adj: { ...vDefaults().adj, ...(st.adj || {}) } } : vDefaults();
-      if (!st || !(vs.end > 0)) vs.end = vdur;
-      vs.end = clamp(vs.end, VMIN_LEN, vdur); vs.start = clamp(vs.start, 0, Math.max(0, vs.end - VMIN_LEN));
+      let segs = Array.isArray(vs.segs) ? vs.segs : [];
+      if (!segs.length && st && st.end > 0) segs = [{ s: st.start || 0, e: st.end }];      // proyectos de la versión anterior
+      segs = segs.map(g => ({ s: clamp(+g.s || 0, 0, vdur), e: clamp(+g.e || 0, 0, vdur) })).filter(g => g.e - g.s >= VMIN_LEN * 0.9).sort((x, y) => x.s - y.s);
+      vs.segs = segs.length ? segs : [{ s: 0, e: vdur }];
+      delete vs["start"]; delete vs["end"];
+      vsel = 0; vhist = [];
       vResize();
       await buildTrimThumbs();
-      await vSeek(vs.start);
+      await vSeek(vFirst());
       $("v-name").textContent = name;
       if (!saved) {
         store.kvPut("video-state", vs).catch(() => {});
@@ -4860,26 +4931,45 @@ void main(){
       }
       rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 });
     } catch (e) { toast("No se pudo empezar a guardar el video en este navegador.", true); if (vaudio) vaudio.mon.gain.value = 1; return; }
-    const run = { rec, chunks: [], mime: rec.mimeType || mime || "video/mp4", withAudio, cancelled: false, done: false, t0: 0, deadline: 0 };
+    const run = { rec, chunks: [], mime: rec.mimeType || mime || "video/mp4", withAudio, cancelled: false, done: false, t0: 0, deadline: 0, seg: 0, jumping: false };
     rec.ondataavailable = e => { if (e.data && e.data.size) run.chunks.push(e.data); };
     rec.onstop = () => finishExport(run);
     rec.onerror = () => { run.cancelled = true; };
     vBusy("Guardando el video…", "No cierres la app ni cambies a otra hasta que termine. Tarda lo que dura el video.", { bar: true, cancel: true });
-    await vSeek(vs.start);
+    await vSeek(vFirst());
     vvideo.muted = withAudio ? false : true;
     vvideo.playbackRate = vs.speed;
     vrun = run; syncPlayBtn(); vStartLoop();
     try { rec.start(500); await vvideo.play(); }
     catch (e) { run.cancelled = true; stopExport(); toast("No se pudo reproducir el video para guardarlo.", true); return; }
     run.t0 = performance.now();
-    run.deadline = run.t0 + (vs.end - vs.start) / vs.speed * 1000 * 1.5 + 6000;
+    run.deadline = run.t0 + vTotal() / vs.speed * 1000 * 1.5 + 6000 + 3000 * vs.segs.length;
   }
   function vExportTick() {
-    const run = vrun; if (!run || run.done || !run.t0) return;
-    const prog = clamp((vvideo.currentTime - vs.start) / Math.max(0.05, vs.end - vs.start), 0, 1);
+    const run = vrun; if (!run || run.done || !run.t0 || run.jumping) return;
+    const prog = clamp(vOutTime(vvideo.currentTime) / Math.max(0.05, vTotal()), 0, 1);
     $("vbusy-fill").style.width = Math.round(prog * 100) + "%";
     $("vbusy-text").textContent = `Guardando el video… ${Math.round(prog * 100)}%`;
-    if (vvideo.ended || vvideo.currentTime >= vs.end - 0.02 || performance.now() > run.deadline) stopExport();
+    if (performance.now() > run.deadline) { stopExport(); return; }
+    const g = vs.segs[run.seg];
+    if (vvideo.ended || vvideo.currentTime >= g.e - 0.02) {
+      const nx = vs.segs[run.seg + 1];
+      if (!nx) stopExport();
+      else if (nx.s - g.e < 0.06 && !vvideo.ended) run.seg++;       // trozos pegados: sigue sin parar
+      else exportJump(run, run.seg + 1);
+    }
+  }
+  // Salto al siguiente trozo: la grabación se detiene un instante para que el corte quede limpio.
+  async function exportJump(run, i) {
+    run.jumping = true;
+    try { if (run.rec.state === "recording" && run.rec.pause) run.rec.pause(); } catch (e) {}
+    vvideo.pause();
+    await vSeek(vs.segs[i].s);
+    if (vrun !== run || run.done) return;
+    run.seg = i;
+    try { await vvideo.play(); } catch (e) {}
+    try { if (run.rec.state === "paused") run.rec.resume(); } catch (e) {}
+    run.jumping = false;
   }
   function stopExport() {
     const run = vrun; if (!run || run.done) return;
@@ -4892,7 +4982,7 @@ void main(){
     vrun = null;
     if (vaudio) vaudio.mon.gain.value = 1;
     vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
-    vBusyOff(); syncPlayBtn(); vSeek(vs.start);
+    vBusyOff(); syncPlayBtn(); vSeek(vFirst());
     if (run.cancelled) { toast("Guardado cancelado."); return; }
     const type = (run.mime || "video/mp4").split(";")[0];
     const blob = new Blob(run.chunks, { type });
@@ -4903,7 +4993,7 @@ void main(){
     vresult = { blob, name: `${vname}-moon.${ext}`, type };
     const rv = $("v-result-video"); rv.src = vresultUrl;
     $("v-res-size").textContent = `${vcanvas.width} × ${vcanvas.height} px`;
-    $("v-res-dur").textContent = fmtTime((vs.end - vs.start) / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido");
+    $("v-res-dur").textContent = fmtTime(vTotal() / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido") + (vs.segs.length > 1 ? ` · ${vs.segs.length} trozos` : "");
     $("v-res-weight").textContent = humanBytes(blob.size);
     $("v-res-name").textContent = vresult.name;
     $("v-res-note").textContent = ext === "webm" ? "Este navegador guarda el video en formato WebM. En el iPhone se guarda en MP4." : "En el iPhone se abre el menú de compartir: elige «Guardar video» y va a Fotos.";
