@@ -5046,7 +5046,7 @@ void main(){
     brandTimer = setTimeout(() => {
       brandLong = true;
       const f = window.__fitInfo || {}, rt = getComputedStyle(document.documentElement);
-      const tabsBottom = Math.round(document.querySelector(".tabs").getBoundingClientRect().bottom);
+      const tabsBottom = Math.round(document.querySelector(".panel .tabs").getBoundingClientRect().bottom);
       toast(`Medidas · modo app: ${document.documentElement.classList.contains("standalone") ? "sí" : "no"} · alto informado ${f.innerHeight ?? innerHeight} · fijo ${f.fijo ?? "-"} · pantalla ${f.pantalla ?? screen.height} · reloj ${f.reloj ?? 0} · usado ${f.usado ?? "-"} · pestañas terminan en ${tabsBottom}`);
     }, 1000);
   });
