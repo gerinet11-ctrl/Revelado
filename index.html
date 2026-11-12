@@ -712,6 +712,65 @@ kbd {
 }
 .toast.error { border-color: var(--danger); color: var(--danger); }
 
+/* ---------- Editor de video ---------- */
+.vapp {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--app-h, 100%);
+  z-index: 17;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto;
+  background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.standalone.under-bar .vapp { padding-top: calc(var(--safe-top, 0px) + 24px); }
+.vtop { display: flex; align-items: center; gap: 8px; padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); }
+.vtitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--f-display); font-weight: 600; font-size: 17px; }
+.vstage { position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--well); overflow: hidden; cursor: pointer; }
+.vstage canvas { display: block; max-width: 100%; max-height: 100%; }
+#vvideo { position: absolute; left: 0; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.vplay {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(12,11,10,.62); color: #fff; cursor: pointer;
+}
+.vplay svg { width: 30px; height: 30px; margin-left: 3px; }
+.vtime {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 12px max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
+  font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.trim { position: relative; height: 46px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
+.trim canvas { display: block; width: 100%; height: 100%; border-radius: 8px; }
+.trim-dim { position: absolute; top: 0; bottom: 0; background: rgba(8,7,6,.7); pointer-events: none; }
+#trim-dim-l { left: 0; border-radius: 8px 0 0 8px; } #trim-dim-r { right: 0; border-radius: 0 8px 8px 0; }
+.trim-sel { position: absolute; top: -3px; bottom: -3px; border: 3px solid var(--accent); border-radius: 9px; pointer-events: none; }
+.trim-h { position: absolute; top: -3px; bottom: -3px; width: 14px; background: var(--accent); pointer-events: auto; cursor: ew-resize; }
+.trim-h[data-h="s"] { left: -3px; border-radius: 7px 0 0 7px; }
+.trim-h[data-h="e"] { right: -3px; border-radius: 0 7px 7px 0; }
+.trim-h::before { content: ""; position: absolute; inset: -8px -14px; }
+.trim-h::after { content: ""; position: absolute; left: 6px; top: 32%; bottom: 32%; width: 2px; border-radius: 1px; background: var(--accent-ink); }
+.trim-head { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45); pointer-events: none; }
+.vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; }
+.vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.vrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.vrow::-webkit-scrollbar { display: none; }
+.vrow > * { flex: none; }
+.vrow .presets-v { display: flex; gap: 8px; }
+.vrow .preset { width: 68px; }
+.vinfo { font-size: 13px; color: var(--muted); }
+.vinfo b { color: var(--fg); font-weight: 600; }
+.vtabs { border-bottom: 0; border-top: 1px solid var(--line); }
+.vtabs .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 10px 6px; font-size: 11px; border-bottom: 0; border-top: 2px solid transparent; }
+.vtabs .tab svg { width: 20px; height: 20px; margin: 0; }
+.vtabs .tab[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
+.vbusy { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 24px; background: rgba(5,5,4,.78); }
+.vbusy-card { width: min(340px, 100%); display: flex; flex-direction: column; gap: 12px; align-items: stretch; text-align: center; padding: 22px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.vbusy-card small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.vbusy-card small:empty { display: none; }
+.vbusy-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.vbusy-bar i { display: block; height: 100%; width: 0%; background: var(--accent); }
+#v-result-video { display: block; max-width: 100%; max-height: 52vh; background: #000; }
+
 /* ---------- Menú principal ---------- */
 .home {
   position: fixed; inset: 0;
@@ -771,6 +830,7 @@ kbd {
 .home-thumbs { display: flex; flex: none; }
 .home-thumbs canvas { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; border: 2px solid var(--panel); background: var(--well); }
 .home-thumbs canvas + canvas { margin-left: -22px; }
+.home-poster { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; display: block; }
 .home-back {
   display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
   margin-top: 4vh; padding: 6px 10px 6px 0;
@@ -1063,10 +1123,28 @@ body::before {
           <span class="home-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 15-4.5-4.5L7 20"/></svg></span>
           <b>Foto</b><small>Ajustes, piel, filtros, borrar objetos y tamaño</small>
         </button>
-        <button class="home-card soon" id="home-video">
+        <button class="home-card" id="home-video">
           <span class="home-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="m15.5 10.5 6-3v9l-6-3z"/></svg></span>
-          <b>Video</b><small>Muy pronto</small>
+          <b>Video</b><small>Recortar, filtros, velocidad, sonido y formato</small>
         </button>
+      </div>
+    </div>
+
+    <div id="home-step-video" hidden>
+      <button class="home-back" id="home-back-v">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Volver
+      </button>
+      <h1 class="home-title">Editar video</h1>
+      <div class="home-list">
+        <button class="home-row primary" id="home-vresume" hidden>
+          <span class="home-thumbs" id="home-vthumb"></span>
+          <span><b>Retomar proyecto</b><small id="home-vresume-info"></small></span>
+        </button>
+        <label class="home-row" id="home-vnew" for="video-input">
+          <span class="home-ico small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span><b>Nuevo proyecto</b><small id="home-vnew-info">Elige un video de tu galería</small></span>
+        </label>
+        <p class="note">Primera versión: un video a la vez. Puedes recortarlo, ponerle filtros y ajustes, cambiar la velocidad, quitar el sonido y elegir el formato.</p>
       </div>
     </div>
 
@@ -1093,6 +1171,64 @@ body::before {
   </div>
 </div>
 
+<div class="vapp" id="vapp" hidden>
+  <header class="vtop">
+    <button class="btn icon" id="v-back" aria-label="Volver al menú" title="Volver al menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+    <span class="vtitle" id="v-name">Video</span>
+    <button class="btn primary" id="v-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 16V4"/><path d="m7 11 5 5 5-5"/></svg><span>Guardar</span></button>
+  </header>
+  <div class="vstage" id="vstage">
+    <canvas id="vcanvas" width="16" height="9" aria-label="Video en edición"></canvas>
+    <video id="vvideo" playsinline webkit-playsinline preload="auto"></video>
+    <button class="vplay" id="v-play" aria-label="Reproducir"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg></button>
+  </div>
+  <div class="vtime">
+    <span id="v-cur">0:00</span>
+    <div class="trim" id="trim">
+      <canvas id="trim-thumbs" width="640" height="60" aria-hidden="true"></canvas>
+      <div class="trim-dim" id="trim-dim-l"></div><div class="trim-dim" id="trim-dim-r"></div>
+      <div class="trim-sel" id="trim-sel"><span class="trim-h" data-h="s" aria-label="Inicio"></span><span class="trim-h" data-h="e" aria-label="Fin"></span></div>
+      <div class="trim-head" id="trim-head"></div>
+    </div>
+    <span id="v-dur">0:00</span>
+  </div>
+  <div class="vpanel">
+    <div class="vbody" id="vbody"></div>
+    <div class="tabs vtabs" id="vtabs" role="tablist"></div>
+  </div>
+</div>
+
+<div class="vbusy" id="vbusy" hidden>
+  <div class="vbusy-card">
+    <b id="vbusy-text">Preparando el video…</b>
+    <div class="vbusy-bar" id="vbusy-bar" hidden><i id="vbusy-fill"></i></div>
+    <small id="vbusy-note"></small>
+    <button class="btn" id="vbusy-cancel" hidden>Cancelar</button>
+  </div>
+</div>
+
+<div class="modal" id="v-result" hidden role="dialog" aria-modal="true" aria-labelledby="v-result-title">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="v-result-title">Video listo</h2>
+      <button class="btn icon" id="v-result-close" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="sheet-body">
+      <div class="export-preview"><video id="v-result-video" controls playsinline webkit-playsinline></video></div>
+      <div class="export-opts">
+        <dl class="facts">
+          <dt>Tamaño</dt><dd id="v-res-size">—</dd>
+          <dt>Duración</dt><dd id="v-res-dur">—</dd>
+          <dt>Peso</dt><dd id="v-res-weight">—</dd>
+          <dt>Archivo</dt><dd id="v-res-name">—</dd>
+        </dl>
+        <div class="row"><button class="btn primary" id="v-download">Guardar video</button></div>
+        <p class="note" id="v-res-note">En el iPhone se abre el menú de compartir: elige «Guardar video» y va a Fotos.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app">
   <header class="topbar">
     <button class="brand" id="brand" title="Volver al menú principal"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Moon</button>
@@ -1102,6 +1238,7 @@ body::before {
       <span class="lbl">Abrir fotos</span>
     </label>
     <input type="file" id="file-input" accept="image/*" multiple hidden>
+    <input type="file" id="video-input" accept="video/*" hidden>
 
     <div class="group">
       <button class="btn icon" id="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">
@@ -2347,6 +2484,7 @@ body::before {
       if (!keep) cur = -1;
       activate(firstNew, keep);
       const n = loaded.length;
+      closeVideoEditor();
       hideHome();
       toast(n === 1 ? `Abierta: ${docs[firstNew].name}` : mobileMQ.matches ? `${n} fotos abiertas. Cámbialas desde «Fotos», abajo.` : `${n} fotos abiertas. Toca una miniatura de abajo para cambiar de foto.`);
       if (n > 1 && mobileMQ.matches) showTab("fotos");
@@ -4213,6 +4351,9 @@ body::before {
         w: op.before.width, h: op.before.height, before: op.before.data, after: op.after.data })),
       remove: id => run(["docs", "ops"], "readwrite", t => { t.objectStore("docs").delete(id); t.objectStore("ops").delete(opRange(id)); }),
       setMeta: m => run(["meta"], "readwrite", t => t.objectStore("meta").put(m, "meta")),
+      kvPut: (k, v) => run(["meta"], "readwrite", t => t.objectStore("meta").put(v, k)),
+      kvGet: k => run(["meta"], "readonly", t => t.objectStore("meta").get(k)),
+      kvDel: k => run(["meta"], "readwrite", t => t.objectStore("meta").delete(k)),
       meta: () => run(["meta"], "readonly", t => t.objectStore("meta").get("meta")),
       docs: () => run(["docs"], "readonly", t => t.objectStore("docs").getAll()),
       ops: id => run(["ops"], "readonly", t => t.objectStore("ops").getAll(opRange(id))),
@@ -4280,6 +4421,520 @@ body::before {
   renderFavorites();
   const sessionReady = restoreSession();
 
+  /* ================= Video ================= */
+  // Primera versión: un video. Se recorta el inicio y el fin, se le ponen filtros y ajustes de color,
+  // se cambia la velocidad, el sonido y el formato, y se guarda. Los fotogramas se procesan en la gráfica
+  // del dispositivo (WebGL) para que vaya fluido.
+  const vapp = $("vapp"), vvideo = $("vvideo"), vcanvas = $("vcanvas");
+  const VFORMATS = [
+    { id: "original", label: "Original" },
+    { id: "9:16", label: "9:16 · Historia", r: 9 / 16 },
+    { id: "1:1",  label: "1:1 · Post", r: 1 },
+    { id: "4:5",  label: "4:5", r: 4 / 5 },
+    { id: "16:9", label: "16:9 · YouTube", r: 16 / 9 },
+  ];
+  const VADJ = ["exposure", "contrast", "highlights", "shadows", "saturation", "temperature", "tint", "fade", "vignette", "grain"];
+  const VMAX = 1920, VMIN_LEN = 0.3;
+  const vDefaults = () => ({ adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, start: 0, end: 0, speed: 1, muted: false, format: "original", fit: "cover" });
+  let vs = vDefaults(), vfile = null, vname = "video", vdur = 0, vurl = null, vposter = "";
+  let vtab = "recorte", vkey = "exposure", vdirty = true, vraf = 0, vrun = null, savedVideo = null;
+  const vThumbSrc = document.createElement("canvas");
+
+  const fmtTime = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), sec = t - m * 60; return m + ":" + (sec < 10 ? "0" : "") + sec.toFixed(1); };
+  const once = (el, ev, ms) => new Promise((res, rej) => {
+    const ok = () => { clean(); res(); }, bad = () => { clean(); rej(new Error(ev)); };
+    const timer = setTimeout(bad, ms);
+    const clean = () => { clearTimeout(timer); el.removeEventListener(ev, ok); el.removeEventListener("error", bad); };
+    el.addEventListener(ev, ok); el.addEventListener("error", bad);
+  });
+
+  /* ---- Gráfica ---- */
+  const V_VS = "attribute vec2 a_pos; varying vec2 v_uv; void main(){ v_uv = vec2(a_pos.x * .5 + .5, .5 - a_pos.y * .5); gl_Position = vec4(a_pos, 0., 1.); }";
+  const V_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 v_uv;
+uniform sampler2D u_tex; uniform vec2 u_scale; uniform vec2 u_res;
+uniform mat3 u_m; uniform vec3 u_o;
+uniform float u_sh; uniform float u_hi; uniform float u_split; uniform float u_vig; uniform float u_grain; uniform float u_flash; uniform float u_seed;
+float luma(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
+float shoulder(float v){ float k = 205. / 255.; float w = 50. / 255.; return v <= k ? v : k + w * (1. - exp(-(v - k) / w)); }
+void main(){
+  vec2 uv = (v_uv - .5) * u_scale + .5;
+  if (uv.x < 0. || uv.x > 1. || uv.y < 0. || uv.y > 1.) { gl_FragColor = vec4(0., 0., 0., 1.); return; }
+  vec3 c = texture2D(u_tex, uv).rgb;
+  c = u_m * c + u_o;
+  float L = clamp(luma(c), 0., 1.);
+  c += u_sh * (1. - L) * (1. - L) + u_hi * L * L;
+  float q = u_split * (1. - L); float u = u_split * L;
+  c += vec3(-14. * q + 18. * u, 4. * q + 6. * u, 16. * q - 14. * u) / 255.;
+  c = clamp(c, 0., 1.);
+  if (u_flash > 0.) {
+    vec2 dp = (v_uv - vec2(.5, .42)) * u_res;
+    float t = min(1., length(dp) / (max(u_res.x, u_res.y) * .75));
+    float near = (1. - t) * sqrt(1. - t);
+    float L0 = luma(c);
+    vec3 f = c * (1. + u_flash * (.14 + .26 * near));
+    f += u_flash * (34. / 255.) * (1. - L0) * (1. - L0) * (.55 + .45 * near);
+    float L2 = luma(f);
+    if (L2 > .6) { float sp = u_flash * (22. / 255.) * (L2 - .6) * near; f += vec3(sp, sp, sp * 1.06); }
+    f.b += u_flash * (4. / 255.) * near;
+    c = vec3(shoulder(f.r), shoulder(f.g), shoulder(f.b));
+  }
+  if (u_vig > 0.) { vec2 d = (v_uv - .5) * 2.; float t2 = clamp((length(d) / 1.4142 - .3) / .7, 0., 1.); c *= 1. - u_vig * t2 * t2 * (3. - 2. * t2); }
+  if (u_grain > 0.) { float n = fract(sin(dot(gl_FragCoord.xy + u_seed, vec2(12.9898, 78.233))) * 43758.5453) - .5; c += n * u_grain; }
+  gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+}`;
+  let gl = null, glu = null, gltex = null;
+  function initGL() {
+    if (gl) return true;
+    try {
+      const g = vcanvas.getContext("webgl", { alpha: false, premultipliedAlpha: false, antialias: false }) || vcanvas.getContext("experimental-webgl");
+      if (!g) return false;
+      const mk = (type, src) => { const o = g.createShader(type); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
+      const prog = g.createProgram();
+      g.attachShader(prog, mk(g.VERTEX_SHADER, V_VS)); g.attachShader(prog, mk(g.FRAGMENT_SHADER, V_FS)); g.linkProgram(prog);
+      if (!g.getProgramParameter(prog, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(prog));
+      g.useProgram(prog);
+      g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+      const loc = g.getAttribLocation(prog, "a_pos"); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
+      gltex = g.createTexture(); g.bindTexture(g.TEXTURE_2D, gltex);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+      glu = {};
+      ["u_tex", "u_scale", "u_res", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
+      g.uniform1i(glu.u_tex, 0);
+      gl = g;
+      return true;
+    } catch (e) { gl = null; return false; }
+  }
+  vcanvas.addEventListener("webglcontextlost", e => { e.preventDefault(); gl = null; });
+  vcanvas.addEventListener("webglcontextrestored", () => { initGL(); vdirty = true; });
+
+  function vParams() {
+    const p = effectiveParams({ adj: { ...defaults().adj, ...vs.adj }, preset: vs.preset, presetAmount: vs.presetAmount, hsl: null });
+    ["clarity", "sharpen", "smooth", "depth", "focusArea"].forEach(k => { p[k] = 0; });   // en video solo color y luz
+    return p;
+  }
+  const even = v => Math.max(2, Math.round(v / 2) * 2);
+  function vOutDims() {
+    const vw = vvideo.videoWidth || 16, vh = vvideo.videoHeight || 9;
+    let W = vw, H = vh;
+    const f = VFORMATS.find(x => x.id === vs.format);
+    if (f && f.r) {
+      const wide = vw / vh > f.r;
+      if (vs.fit === "cover") { if (wide) { H = vh; W = vh * f.r; } else { W = vw; H = vw / f.r; } }
+      else { if (wide) { W = vw; H = vw / f.r; } else { H = vh; W = vh * f.r; } }
+    }
+    const k = Math.min(1, VMAX / Math.max(W, H));
+    return { w: even(W * k), h: even(H * k) };
+  }
+  function vResize() {
+    const o = vOutDims();
+    if (vcanvas.width !== o.w || vcanvas.height !== o.h) { vcanvas.width = o.w; vcanvas.height = o.h; }
+    vdirty = true;
+  }
+  function vDraw() {
+    if (!gl && !initGL()) return;
+    if (vvideo.readyState < 2 || !vvideo.videoWidth) return;
+    const p = vParams(), M = colorMatrix(p);
+    const W = vcanvas.width, H = vcanvas.height;
+    gl.viewport(0, 0, W, H);
+    gl.bindTexture(gl.TEXTURE_2D, gltex);
+    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vvideo); } catch (e) { return; }
+    const av = vvideo.videoWidth / vvideo.videoHeight, ao = W / H;
+    let sx = 1, sy = 1;
+    if (vs.fit === "contain" && vs.format !== "original") { if (av > ao) sy = av / ao; else sx = ao / av; }
+    else { if (av > ao) sx = ao / av; else sy = av / ao; }
+    gl.uniform2f(glu.u_scale, sx, sy);
+    gl.uniform2f(glu.u_res, W, H);
+    gl.uniformMatrix3fv(glu.u_m, false, [M[0], M[4], M[8], M[1], M[5], M[9], M[2], M[6], M[10]]);
+    gl.uniform3f(glu.u_o, M[3] / 255, M[7] / 255, M[11] / 255);
+    gl.uniform1f(glu.u_sh, (p.shadows || 0) / 100 * 70 / 255);
+    gl.uniform1f(glu.u_hi, (p.highlights || 0) / 100 * 70 / 255);
+    gl.uniform1f(glu.u_split, (p.split || 0) / 100);
+    gl.uniform1f(glu.u_vig, (p.vignette || 0) / 100 * 0.85);
+    gl.uniform1f(glu.u_grain, (p.grain || 0) * 0.55 / 255);
+    gl.uniform1f(glu.u_flash, Math.min(1, (p.flash || 0) / 100));
+    gl.uniform1f(glu.u_seed, (performance.now() % 1000) / 7);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  /* ---- Reproducción y línea de tiempo ---- */
+  let pendingSeek = null;
+  function vSeek(t) {
+    return new Promise(res => {
+      let done = false;
+      const fin = () => { if (done) return; done = true; vvideo.removeEventListener("seeked", fin); vdirty = true; res(); };
+      vvideo.addEventListener("seeked", fin); setTimeout(fin, 1800);
+      try { vvideo.currentTime = clamp(t, 0, Math.max(0, vdur - 0.02)); } catch (e) { fin(); }
+    });
+  }
+  function vScrub(t) {       // mover el punto de reproducción sin amontonar saltos
+    t = clamp(t, 0, Math.max(0, vdur - 0.02));
+    if (vvideo.seeking) pendingSeek = t; else { try { vvideo.currentTime = t; } catch (e) {} }
+    vdirty = true;
+  }
+  vvideo.addEventListener("seeked", () => { vdirty = true; if (pendingSeek !== null) { const t = pendingSeek; pendingSeek = null; try { vvideo.currentTime = t; } catch (e) {} } });
+  vvideo.addEventListener("loadeddata", () => { vdirty = true; });
+  vvideo.addEventListener("ended", () => { if (!vrun) { vvideo.currentTime = vs.start; syncPlayBtn(); } });
+  vvideo.addEventListener("play", () => syncPlayBtn()); vvideo.addEventListener("pause", () => syncPlayBtn());
+
+  function syncPlayBtn() { $("v-play").hidden = !vvideo.paused || !!vrun; }
+  function vSyncTime() {
+    if (!vdur) return;
+    $("trim-head").style.left = clamp(vvideo.currentTime / vdur, 0, 1) * 100 + "%";
+    $("v-cur").textContent = fmtTime(Math.max(0, vvideo.currentTime - vs.start));
+  }
+  function vSyncTrim() {
+    if (!vdur) return;
+    const a = vs.start / vdur * 100, b = vs.end / vdur * 100;
+    $("trim-sel").style.left = a + "%"; $("trim-sel").style.width = (b - a) + "%";
+    $("trim-dim-l").style.width = a + "%"; $("trim-dim-r").style.width = (100 - b) + "%";
+    $("v-dur").textContent = fmtTime((vs.end - vs.start) / vs.speed);
+    const info = $("v-trim-info");
+    if (info) info.innerHTML = `Trozo elegido: <b>${fmtTime(vs.end - vs.start)}</b> (de ${fmtTime(vs.start)} a ${fmtTime(vs.end)})` + (vs.speed !== 1 ? ` · a ×${vs.speed} dura <b>${fmtTime((vs.end - vs.start) / vs.speed)}</b>` : "");
+  }
+  async function vPlay() {
+    if (vrun || !vdur) return;
+    if (vvideo.currentTime < vs.start - 0.05 || vvideo.currentTime >= vs.end - 0.08) await vSeek(vs.start);
+    vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
+    if (vaudio) { try { vaudio.ctx.resume(); } catch (e) {} }
+    try { await vvideo.play(); } catch (e) { vvideo.muted = true; try { await vvideo.play(); } catch (e2) {} }
+  }
+  const vToggle = () => { if (vrun) return; if (vvideo.paused) vPlay(); else vvideo.pause(); };
+  $("vstage").addEventListener("click", vToggle);
+  function vLoop() {
+    if (vapp.hidden && !vrun) { vraf = 0; return; }
+    vraf = requestAnimationFrame(vLoop);
+    if (vrun) { vDraw(); vExportTick(); return; }
+    if (!vvideo.paused && vvideo.currentTime >= vs.end - 0.03) vvideo.currentTime = vs.start;   // repite el trozo elegido
+    if (!vvideo.paused || vdirty) { vDraw(); vdirty = false; vSyncTime(); }
+  }
+  const vStartLoop = () => { if (!vraf) vraf = requestAnimationFrame(vLoop); };
+
+  // Recorte: arrastrar los extremos o tocar la tira para moverse por el video.
+  const trim = $("trim");
+  let tdrag = null;
+  const trimTime = e => { const r = trim.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * vdur; };
+  function trimMove(e) {
+    const t = trimTime(e);
+    if (tdrag === "s") { vs.start = clamp(t, 0, vs.end - VMIN_LEN); vScrub(vs.start); }
+    else if (tdrag === "e") { vs.end = clamp(t, vs.start + VMIN_LEN, vdur); vScrub(vs.end - 0.05); }
+    else vScrub(clamp(t, vs.start, vs.end - 0.05));
+    vSyncTrim(); vSyncTime();
+  }
+  trim.addEventListener("pointerdown", e => {
+    if (vrun || !vdur) return;
+    e.preventDefault(); vvideo.pause();
+    tdrag = e.target.dataset.h || "seek";
+    trim.setPointerCapture(e.pointerId); trimMove(e);
+  });
+  trim.addEventListener("pointermove", e => { if (tdrag) trimMove(e); });
+  ["pointerup", "pointercancel"].forEach(ev => trim.addEventListener(ev, () => {
+    if (!tdrag) return;
+    const was = tdrag; tdrag = null;
+    if (was !== "seek") { vScrub(vs.start); vSaveSoon(); }
+  }));
+
+  async function buildTrimThumbs() {
+    const cv = $("trim-thumbs"), c = cv.getContext("2d"), N = 8, cw = cv.width / N, ch = cv.height;
+    c.fillStyle = "#0c0b0a"; c.fillRect(0, 0, cv.width, cv.height);
+    const vw = vvideo.videoWidth, vh = vvideo.videoHeight;
+    for (let i = 0; i < N; i++) {
+      await vSeek((i + 0.5) / N * vdur);
+      try {
+        const k = Math.max(cw / vw, ch / vh), sw = cw / k, sh = ch / k;
+        c.drawImage(vvideo, (vw - sw) / 2, (vh - sh) / 2, sw, sh, i * cw, 0, cw, ch);
+        if (i === 1) {      // un fotograma pequeño para las miniaturas de filtros y para el menú
+          const t = 132 / Math.min(vw, vh);
+          vThumbSrc.width = Math.max(1, Math.round(vw * t)); vThumbSrc.height = Math.max(1, Math.round(vh * t));
+          vThumbSrc.getContext("2d").drawImage(vvideo, 0, 0, vThumbSrc.width, vThumbSrc.height);
+          try { vposter = vThumbSrc.toDataURL("image/jpeg", 0.7); } catch (e) { vposter = ""; }
+        }
+      } catch (e) {}
+    }
+  }
+
+  /* ---- Panel de herramientas ---- */
+  const VI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const VTABS = [
+    ["recorte", "Recortar", '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>'],
+    ["filtros", "Filtros", '<circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="15" r="5.5"/>'],
+    ["ajustes", "Ajustes", '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'],
+    ["velocidad", "Velocidad", '<path d="M5 18a8 8 0 1 1 14 0"/><path d="m12 13 4-5"/>'],
+    ["sonido", "Sonido", '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/>'],
+    ["formato", "Formato", '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>'],
+  ];
+  $("vtabs").innerHTML = VTABS.map(([id, name, ic]) => `<button class="tab" role="tab" data-vt="${id}" aria-selected="false">${VI(ic)}${name}</button>`).join("");
+  $("vtabs").querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { vtab = b.dataset.vt; renderVPanel(); }));
+
+  function renderVPanel() {
+    $("vtabs").querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.vt === vtab)));
+    const body = $("vbody");
+    if (vtab === "recorte") {
+      body.innerHTML = `<div class="vinfo" id="v-trim-info"></div>
+        <div class="vrow"><button class="btn" id="v-set-start">Empezar aquí</button><button class="btn" id="v-set-end">Terminar aquí</button><button class="btn" id="v-trim-reset">Video entero</button></div>
+        <div class="vinfo">Arrastra los extremos dorados de la tira, o reproduce y marca el inicio y el fin.</div>`;
+      $("v-set-start").onclick = () => { vs.start = clamp(vvideo.currentTime, 0, vs.end - VMIN_LEN); vSyncTrim(); vSaveSoon(); };
+      $("v-set-end").onclick = () => { vs.end = clamp(vvideo.currentTime, vs.start + VMIN_LEN, vdur); vvideo.pause(); vSyncTrim(); vSaveSoon(); };
+      $("v-trim-reset").onclick = () => { vs.start = 0; vs.end = vdur; vSyncTrim(); vSaveSoon(); };
+      vSyncTrim();
+    } else if (vtab === "filtros") {
+      body.innerHTML = `<div class="ctl"><label for="v-amount">Intensidad <span id="v-amount-name" style="color:var(--accent);font-weight:600"></span></label><output id="v-amount-out"></output>
+          <input type="range" id="v-amount" min="0" max="150" step="1"></div>
+        <div class="vrow"><div class="presets-v" id="v-presets"></div></div>`;
+      const box = $("v-presets");
+      ALL_PRESETS.slice().sort((a, b) => (a.id === "original" ? -1 : b.id === "original" ? 1 : 0)).forEach(pr => {
+        const b = document.createElement("button");
+        b.className = "preset"; b.dataset.id = pr.id; b.setAttribute("aria-pressed", String(pr.id === vs.preset));
+        b.innerHTML = `<span class="thumb"><canvas width="1" height="1" aria-hidden="true"></canvas></span><span>${pr.name}</span>`;
+        b.addEventListener("click", () => { vs.preset = pr.id; if (pr.id !== "original" && !vs.presetAmount) vs.presetAmount = 100; vdirty = true; syncVFilters(); vSaveSoon(); });
+        box.appendChild(b);
+        if (vThumbSrc.width > 1) {
+          const pp = presetOnlyParams(pr.id); ["clarity", "sharpen", "smooth", "depth", "focusArea"].forEach(k => { pp[k] = 0; });
+          try { renderImage(vThumbSrc, pp, b.querySelector("canvas"), defaults(), false); } catch (e) {}
+        }
+      });
+      const am = $("v-amount");
+      am.addEventListener("input", () => { vs.presetAmount = +am.value; vdirty = true; syncVFilters(); });
+      am.addEventListener("change", vSaveSoon);
+      syncVFilters();
+    } else if (vtab === "ajustes") {
+      body.innerHTML = `<div id="v-adj-slider"><div class="m-adj-head"><span id="v-adj-name"></span><span><output id="v-adj-out"></output> <button class="chip text" id="v-adj-zero" hidden>A cero</button></span></div>
+          <input type="range" id="v-adj-range" min="-100" max="100" step="1" value="0"></div>
+        <div class="m-icons" id="v-adj-icons"></div>`;
+      const box = $("v-adj-icons");
+      VADJ.forEach(k => {
+        const it = ADJ_ITEM[k], b = document.createElement("button");
+        b.className = "m-ico"; b.dataset.k = k;
+        b.innerHTML = `<span class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${M_ICONS[k] || ""}</svg></span>${it.l}`;
+        b.addEventListener("click", () => { vkey = k; syncVAdjust(); });
+        box.appendChild(b);
+      });
+      const r = $("v-adj-range");
+      r.addEventListener("input", () => { vs.adj[vkey] = +r.value; vdirty = true; syncVAdjust(true); });
+      r.addEventListener("change", vSaveSoon);
+      $("v-adj-zero").onclick = () => { vs.adj[vkey] = 0; vdirty = true; syncVAdjust(); vSaveSoon(); };
+      syncVAdjust();
+    } else if (vtab === "velocidad") {
+      body.innerHTML = `<div class="vrow">${[0.5, 0.75, 1, 1.5, 2].map(v => `<button class="chip" data-sp="${v}" aria-pressed="${vs.speed === v}">×${v}</button>`).join("")}</div>
+        <div class="vinfo" id="v-speed-info"></div>`;
+      body.querySelectorAll("[data-sp]").forEach(b => b.addEventListener("click", () => {
+        vs.speed = +b.dataset.sp; vvideo.playbackRate = vs.speed;
+        body.querySelectorAll("[data-sp]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+        syncVSpeed(); vSyncTrim(); vSaveSoon();
+      }));
+      syncVSpeed();
+    } else if (vtab === "sonido") {
+      body.innerHTML = `<div class="seg text" id="v-sound"><button data-m="0" aria-pressed="${!vs.muted}">Con sonido</button><button data-m="1" aria-pressed="${vs.muted}">Sin sonido</button></div>
+        <div class="vinfo">${vs.muted ? "El video se guardará sin sonido." : "El video se guarda con su sonido original."}</div>`;
+      body.querySelectorAll("#v-sound button").forEach(b => b.addEventListener("click", () => { vs.muted = b.dataset.m === "1"; vvideo.muted = vs.muted; vSaveSoon(); renderVPanel(); }));
+    } else if (vtab === "formato") {
+      body.innerHTML = `<div class="vrow">${VFORMATS.map(f => `<button class="chip text" data-f="${f.id}" aria-pressed="${vs.format === f.id}">${f.label}</button>`).join("")}</div>
+        <div class="seg text" id="v-fit" ${vs.format === "original" ? "hidden" : ""}><button data-fit="cover" aria-pressed="${vs.fit === "cover"}">Recortar para llenar</button><button data-fit="contain" aria-pressed="${vs.fit === "contain"}">Entero con fondo negro</button></div>
+        <div class="vinfo" id="v-format-info"></div>`;
+      body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vSaveSoon(); renderVPanel(); }));
+      body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vSaveSoon(); renderVPanel(); }));
+      const o = vOutDims(); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
+    }
+  }
+  function syncVFilters() {
+    const am = $("v-amount"); if (!am) return;
+    am.value = vs.presetAmount; setFill(am); am.disabled = vs.preset === "original";
+    $("v-amount-out").textContent = vs.presetAmount + "%";
+    const pr = ALL_PRESETS.find(x => x.id === vs.preset);
+    $("v-amount-name").textContent = pr && pr.id !== "original" ? "· " + pr.name : "";
+    $("v-presets").querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === vs.preset)));
+  }
+  function syncVAdjust(fromSlider = false) {
+    const r = $("v-adj-range"); if (!r) return;
+    const it = ADJ_ITEM[vkey], v = vs.adj[vkey] || 0;
+    r.min = it.min; r.max = it.max; if (!fromSlider) r.value = v; setFill(r);
+    $("v-adj-name").textContent = it.l;
+    const out = $("v-adj-out"); out.textContent = fmt(v, it.min < 0, it.unit); out.classList.toggle("changed", v !== 0);
+    $("v-adj-zero").hidden = v === 0;
+    $("v-adj-icons").querySelectorAll(".m-ico").forEach(b => { b.setAttribute("aria-pressed", String(b.dataset.k === vkey)); b.classList.toggle("changed", !!vs.adj[b.dataset.k]); });
+  }
+  function syncVSpeed() {
+    const el = $("v-speed-info"); if (!el) return;
+    el.innerHTML = vs.speed === 1 ? "Velocidad normal." : `${vs.speed < 1 ? "Cámara lenta" : "Cámara rápida"}: el trozo de ${fmtTime(vs.end - vs.start)} durará <b>${fmtTime((vs.end - vs.start) / vs.speed)}</b>.`;
+  }
+
+  /* ---- Abrir, guardar el proyecto y volver a él ---- */
+  function vBusy(text, note = "", opts = {}) {
+    $("vbusy-text").textContent = text; $("vbusy-note").textContent = note;
+    $("vbusy-bar").hidden = !opts.bar; $("vbusy-cancel").hidden = !opts.cancel; $("vbusy-fill").style.width = "0%";
+    $("vbusy").hidden = false;
+  }
+  const vBusyOff = () => { $("vbusy").hidden = true; };
+  let vSaveTimer = 0;
+  function vSaveSoon() { clearTimeout(vSaveTimer); vSaveTimer = setTimeout(() => { if (vfile) store.kvPut("video-state", vs).catch(() => {}); }, 600); }
+
+  async function loadVideo(file, saved) {
+    if (!file) return;
+    const name = file.name || (saved && saved.name) || "video";
+    if (!(file.type || "").startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(name)) { toast(`«${name}» no es un video. Prueba con MP4 o MOV.`, true); return; }
+    vBusy("Preparando el video…");
+    try {
+      vvideo.pause();
+      if (vurl) URL.revokeObjectURL(vurl);
+      vurl = URL.createObjectURL(file);
+      vvideo.muted = true; vvideo.src = vurl; vvideo.load();
+      await once(vvideo, "loadedmetadata", 20000);
+      try { await vvideo.play(); vvideo.pause(); } catch (e) {}      // en el iPhone hace falta para que cargue el primer fotograma
+      if (vvideo.readyState < 2) { try { await once(vvideo, "loadeddata", 8000); } catch (e) {} }
+      const dur = vvideo.duration;
+      if (!isFinite(dur) || dur <= 0 || !vvideo.videoWidth) throw new Error("sin datos");
+      if (!initGL()) { vBusyOff(); toast("Este dispositivo no permite el editor de video.", true); return; }
+      vfile = file; vname = name.replace(/\.[^.]+$/, "") || "video"; vdur = dur;
+      const st = saved && saved.state ? saved.state : null;
+      vs = st ? { ...vDefaults(), ...st, adj: { ...vDefaults().adj, ...(st.adj || {}) } } : vDefaults();
+      if (!st || !(vs.end > 0)) vs.end = vdur;
+      vs.end = clamp(vs.end, VMIN_LEN, vdur); vs.start = clamp(vs.start, 0, Math.max(0, vs.end - VMIN_LEN));
+      vResize();
+      await buildTrimThumbs();
+      await vSeek(vs.start);
+      $("v-name").textContent = name;
+      if (!saved) {
+        store.kvPut("video-state", vs).catch(() => {});
+        if (file.size <= 600 * 1048576) store.kvPut("video-file", { blob: file, name, poster: vposter }).then(() => { savedVideo = { blob: file, name, poster: vposter }; }).catch(() => {});
+        else { store.kvDel("video-file").catch(() => {}); toast("El video es muy grande: se puede editar, pero no quedará guardado para retomarlo.", false); }
+        savedVideo = { blob: file, name, poster: vposter };
+      }
+      openVideoEditor();
+    } catch (e) {
+      toast(`No se pudo abrir «${name}». Puede que este navegador no lea ese formato de video.`, true);
+    } finally { vBusyOff(); }
+  }
+  function openVideoEditor() {
+    vapp.hidden = false; vtab = vtab || "recorte";
+    renderVPanel(); vSyncTrim(); vSyncTime(); syncPlayBtn();
+    vdirty = true; vStartLoop();
+    hideHome();
+  }
+  function closeVideoEditor() { if (!vapp.hidden) { vvideo.pause(); vapp.hidden = true; } }
+  $("v-back").addEventListener("click", () => { vvideo.pause(); showHome("main"); });
+  $("video-input").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; loadVideo(f, null); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && !vrun) vvideo.pause(); });
+  const videoReady = (async () => {
+    try { const r = await store.kvGet("video-file"); if (r && r.blob) savedVideo = { ...r, state: await store.kvGet("video-state") }; } catch (e) {}
+  })();
+
+  /* ---- Guardar el video ---- */
+  // Se reproduce el trozo elegido con todo aplicado y se graba lo que sale por pantalla (y el sonido).
+  // Tarda lo mismo que dura el video y hay que dejar la app abierta mientras tanto.
+  let vaudio = null, vresultUrl = null, vresult = null;
+  function pickMime() {
+    if (!window.MediaRecorder) return null;
+    // MP4 (H.264) siempre que se pueda: es lo que acepta Fotos en el iPhone. Fuera de Apple, si no hay H.264, WebM.
+    const ua = navigator.userAgent;
+    const apple = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (/Safari/.test(ua) && !/Chrome|Chromium|Edg|Android/.test(ua));
+    const c = apple
+      ? ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"]
+      : ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+    for (const t of c) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (e) {} }
+    return "";
+  }
+  function ensureAudio() {
+    if (vaudio) return vaudio;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC(), src = ctx.createMediaElementSource(vvideo), mon = ctx.createGain(), dest = ctx.createMediaStreamDestination();
+    src.connect(mon); mon.connect(ctx.destination); src.connect(dest);
+    return (vaudio = { ctx, mon, dest });
+  }
+  async function exportVideo() {
+    if (vrun || !vdur) return;
+    const mime = pickMime();
+    if (mime === null || !vcanvas.captureStream) { toast("Este navegador todavía no permite guardar video desde la app.", true); return; }
+    vvideo.pause();
+    let stream, rec, withAudio = false;
+    try {
+      stream = vcanvas.captureStream(30);
+      if (!vs.muted) {
+        try { const a = ensureAudio(); await a.ctx.resume(); const tr = a.dest.stream.getAudioTracks()[0]; if (tr) { stream.addTrack(tr); a.mon.gain.value = 0; withAudio = true; } } catch (e) { withAudio = false; }
+      }
+      rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 });
+    } catch (e) { toast("No se pudo empezar a guardar el video en este navegador.", true); if (vaudio) vaudio.mon.gain.value = 1; return; }
+    const run = { rec, chunks: [], mime: rec.mimeType || mime || "video/mp4", withAudio, cancelled: false, done: false, t0: 0, deadline: 0 };
+    rec.ondataavailable = e => { if (e.data && e.data.size) run.chunks.push(e.data); };
+    rec.onstop = () => finishExport(run);
+    rec.onerror = () => { run.cancelled = true; };
+    vBusy("Guardando el video…", "No cierres la app ni cambies a otra hasta que termine. Tarda lo que dura el video.", { bar: true, cancel: true });
+    await vSeek(vs.start);
+    vvideo.muted = withAudio ? false : true;
+    vvideo.playbackRate = vs.speed;
+    vrun = run; syncPlayBtn(); vStartLoop();
+    try { rec.start(500); await vvideo.play(); }
+    catch (e) { run.cancelled = true; stopExport(); toast("No se pudo reproducir el video para guardarlo.", true); return; }
+    run.t0 = performance.now();
+    run.deadline = run.t0 + (vs.end - vs.start) / vs.speed * 1000 * 1.5 + 6000;
+  }
+  function vExportTick() {
+    const run = vrun; if (!run || run.done || !run.t0) return;
+    const prog = clamp((vvideo.currentTime - vs.start) / Math.max(0.05, vs.end - vs.start), 0, 1);
+    $("vbusy-fill").style.width = Math.round(prog * 100) + "%";
+    $("vbusy-text").textContent = `Guardando el video… ${Math.round(prog * 100)}%`;
+    if (vvideo.ended || vvideo.currentTime >= vs.end - 0.02 || performance.now() > run.deadline) stopExport();
+  }
+  function stopExport() {
+    const run = vrun; if (!run || run.done) return;
+    run.done = true;
+    vvideo.pause();
+    try { if (run.rec.state !== "inactive") run.rec.stop(); else finishExport(run); } catch (e) { finishExport(run); }
+  }
+  function finishExport(run) {
+    if (vrun !== run) return;
+    vrun = null;
+    if (vaudio) vaudio.mon.gain.value = 1;
+    vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
+    vBusyOff(); syncPlayBtn(); vSeek(vs.start);
+    if (run.cancelled) { toast("Guardado cancelado."); return; }
+    const type = (run.mime || "video/mp4").split(";")[0];
+    const blob = new Blob(run.chunks, { type });
+    if (!blob.size) { toast("No se pudo grabar el video. Prueba otra vez o con un trozo más corto.", true); return; }
+    const ext = type.includes("webm") ? "webm" : "mp4";
+    if (vresultUrl) URL.revokeObjectURL(vresultUrl);
+    vresultUrl = URL.createObjectURL(blob);
+    vresult = { blob, name: `${vname}-moon.${ext}`, type };
+    const rv = $("v-result-video"); rv.src = vresultUrl;
+    $("v-res-size").textContent = `${vcanvas.width} × ${vcanvas.height} px`;
+    $("v-res-dur").textContent = fmtTime((vs.end - vs.start) / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido");
+    $("v-res-weight").textContent = humanBytes(blob.size);
+    $("v-res-name").textContent = vresult.name;
+    $("v-res-note").textContent = ext === "webm" ? "Este navegador guarda el video en formato WebM. En el iPhone se guarda en MP4." : "En el iPhone se abre el menú de compartir: elige «Guardar video» y va a Fotos.";
+    $("v-result").hidden = false;
+  }
+  $("v-save").addEventListener("click", exportVideo);
+  $("vbusy-cancel").addEventListener("click", () => { if (vrun) { vrun.cancelled = true; stopExport(); } });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && vrun && !vrun.done) { vrun.cancelled = true; stopExport(); setTimeout(() => toast("El guardado se canceló porque saliste de la app. Vuelve a pulsar Guardar y déjala abierta.", true), 400); }
+  });
+  const closeVResult = () => { $("v-result").hidden = true; try { $("v-result-video").pause(); } catch (e) {} };
+  $("v-result-close").addEventListener("click", closeVResult);
+  $("v-result").addEventListener("click", e => { if (e.target === $("v-result")) closeVResult(); });
+  $("v-download").addEventListener("click", async () => {
+    if (!vresult) return;
+    const btn = $("v-download"); btn.disabled = true;
+    try {
+      const file = new File([vresult.blob], vresult.name, { type: vresult.type });
+      const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (isTouch && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: "Moon" }); } catch (e) { if (!(e && e.name === "AbortError")) throw e; }
+        return;
+      }
+      if (downloadsApi === undefined) await Promise.race([downloadsReady, new Promise(r => setTimeout(r, 1500))]);
+      if (downloadsApi) { await downloadsApi.save({ filename: vresult.name, data: vresult.blob }); toast(`Video guardado: ${vresult.name}`); }
+      else { const a = document.createElement("a"); a.href = vresultUrl; a.download = vresult.name; document.body.appendChild(a); a.click(); a.remove(); toast(`Guardando ${vresult.name}`); }
+    } catch (err) {
+      toast(err && err.code === "declined" ? "No se guardó: cancelaste la descarga." : "No se pudo guardar aquí. Mantén pulsado el video y elige «Guardar».", true);
+    } finally { btn.disabled = false; }
+  });
+
   /* ================= Menú principal ================= */
   const home = $("home");
   function renderHome() {
@@ -4288,6 +4943,14 @@ body::before {
     $("home-sample").hidden = !!real.length;
     $("home-resume-info").textContent = real.length === 1 ? real[0].name : `${real.length} fotos, tal como las dejaste`;
     $("home-new-info").textContent = real.length ? "Elige fotos nuevas. Sustituyen al proyecto guardado." : "Elige una o varias fotos de tu galería";
+    // Video
+    const hasVideo = !!vfile || !!(savedVideo && savedVideo.blob);
+    $("home-vresume").hidden = !hasVideo;
+    $("home-vresume-info").textContent = hasVideo ? (vfile ? (vfile.name || vname) : savedVideo.name) || "Tu video, tal como lo dejaste" : "";
+    $("home-vnew-info").textContent = hasVideo ? "Elige otro video. Sustituye al proyecto guardado." : "Elige un video de tu galería";
+    const vbox = $("home-vthumb"); vbox.textContent = "";
+    const poster = vposter || (savedVideo && savedVideo.poster);
+    if (hasVideo && poster) { const im = new Image(); im.src = poster; im.alt = ""; im.className = "home-poster"; vbox.appendChild(im); }
     const box = $("home-thumbs"); box.textContent = "";
     real.slice(0, 3).forEach(d => {
       if (!d.thumb.width || !d.thumb.height) return;
@@ -4298,6 +4961,7 @@ body::before {
   function showHome(step = "main") {
     $("home-main").hidden = step !== "main";
     $("home-step").hidden = step !== "foto";
+    $("home-step-video").hidden = step !== "video";
     renderHome();
     home.hidden = false; home.scrollTop = 0;
   }
@@ -4309,16 +4973,22 @@ body::before {
     if (!tipShown) {
       tipShown = true;
       setTimeout(() => {
+        if (!vapp.hidden || !home.hidden) { tipShown = false; return; }   // el consejo es del editor de fotos
         try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
         toast(matchMedia("(pointer: coarse)").matches ? "Pellizca la foto con dos dedos para acercarla. Doble toque para volver." : "Usa la rueda del ratón o los botones + y − para acercar la foto.");
       }, 2600);
     }
   }
   $("home-foto").addEventListener("click", () => showHome("foto"));
-  $("home-video").addEventListener("click", () => toast("La edición de video llegará pronto. Por ahora, Moon edita fotos."));
+  $("home-video").addEventListener("click", () => showHome("video"));
+  $("home-back-v").addEventListener("click", () => showHome("main"));
+  $("home-vresume").addEventListener("click", () => {
+    if (vfile) openVideoEditor();
+    else if (savedVideo && savedVideo.blob) loadVideo(savedVideo.blob, savedVideo);
+  });
   $("home-back").addEventListener("click", () => showHome("main"));
-  $("home-resume").addEventListener("click", hideHome);
-  $("home-sample").addEventListener("click", hideHome);
+  $("home-resume").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
+  $("home-sample").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
   // Solo «Nuevo proyecto» sustituye lo que había; los demás botones de abrir añaden fotos.
   document.addEventListener("click", e => {
     const l = e.target.closest && e.target.closest('label[for="file-input"]');
@@ -4326,6 +4996,7 @@ body::before {
   }, true);
   showHome("main");
   sessionReady.then(renderHome);
+  videoReady.then(renderHome);
 
   /* ================= Pantalla de inicio ================= */
   const splash = $("splash"), app = document.querySelector(".app");
@@ -4390,7 +5061,7 @@ body::before {
   let hiddenAt = 0;
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
-    if (hiddenAt && Date.now() - hiddenAt > 3 * 60e3 && splash.hidden && $("export-modal").hidden) playSplash(true);
+    if (hiddenAt && Date.now() - hiddenAt > 3 * 60e3 && splash.hidden && $("export-modal").hidden && $("v-result").hidden && !vrun) playSplash(true);
     hiddenAt = 0;
   });
   window.__appReady = true;
