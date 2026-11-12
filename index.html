@@ -16,7 +16,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: Moon. Barra superior, la foto en el centro y el panel de herramientas a la derecha (debajo en el móvil). */
 :root {
@@ -191,6 +191,19 @@ button, label, .film, .preset { -webkit-tap-highlight-color: transparent; }
   border-radius: 8px;
   overflow: hidden;
 }
+.reset-chip {
+  display: none;   /* solo en el móvil; en el ordenador está el botón Restablecer de arriba */
+  position: absolute;
+  left: max(10px, env(safe-area-inset-left, 0px));
+  bottom: 8px;
+  z-index: 2;
+  align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(12,11,10,.82); color: var(--fg);
+  font-size: 13px; cursor: pointer;
+}
+.reset-chip svg { width: 15px; height: 15px; }
 .zbtn {
   height: 32px;
   min-width: 34px;
@@ -744,12 +757,11 @@ kbd {
 .splash.play .splash-word { animation: develop 1.25s .3s cubic-bezier(.3,.7,.3,1) both; }
 .splash.play .splash-tag  { animation: rise .6s .95s ease-out both; }
 .splash.play .splash-foot { animation: rise .5s .2s ease-out both; }
-.splash.play .splash-bar i { animation: load 4.1s .1s cubic-bezier(.4,0,.2,1) both; }
-.splash.play .ic-rocket { animation: rocket-launch 1.6s 2.9s linear both; }
-.splash.play .ic-fire { animation: fire .12s 3.45s 10 alternate ease-in-out both; }
-.splash.quick.play .ic-rocket { animation-delay: 1.1s; animation-duration: 1.2s; }
-.splash.quick.play .ic-fire { animation-delay: 1.45s; }
-.splash.quick.play .splash-bar i { animation-duration: 2.3s; }
+.splash.play .splash-bar i { animation: load var(--read, 3.3s) .1s cubic-bezier(.4,0,.2,1) both; }
+/* El cohete no despega por reloj: despega cuando la app avisa de que está lista (clase «launch»),
+   así la animación se ve siempre entera aunque la carga tarde más o menos. */
+.splash.launch .ic-rocket { animation: rocket-launch 1.25s linear both; }
+.splash.launch .ic-fire { animation: fire .12s 10 alternate ease-in-out both; }
 .splash.quick.play .splash-tag { animation-delay: .25s; }
 .splash.leaving { animation: splash-out .45s ease forwards; pointer-events: none; }
 .app.entering { animation: app-in .55s .05s cubic-bezier(.2,.8,.2,1) both; }
@@ -757,11 +769,11 @@ kbd {
 @keyframes icon-pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
 /* El cohete se enciende, vibra y despega hacia arriba a la derecha hasta salir de la pantalla. */
 @keyframes rocket-launch {
-  0%, 36% { transform: translate(0, 0); }
-  40% { transform: translate(-16px, 16px); }
-  44% { transform: translate(14px, -8px); }
-  48% { transform: translate(-12px, 12px); }
-  52% { transform: translate(0, 0); animation-timing-function: cubic-bezier(.6, 0, .9, .45); }
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-16px, 16px); }
+  20% { transform: translate(14px, -8px); }
+  30% { transform: translate(-12px, 12px); }
+  40% { transform: translate(0, 0); animation-timing-function: cubic-bezier(.6, 0, .9, .45); }
   100% { transform: translate(3200px, -3200px); }
 }
 @keyframes fire { from { opacity: 1; } to { opacity: .2; } }
@@ -824,6 +836,7 @@ body::before {
   .topbar #export-open .lbl { display: inline; }
   .stage { grid-row: 2; grid-column: 1; border-radius: 0; padding: 0 0 46px; background-image: none; }
   .stage-meta { display: none; }
+  .reset-chip { display: inline-flex; }
   .app > .strip { display: none; }
   .strip { padding: 6px 0 2px; }
   .film, .film-add { height: 54px; }
@@ -886,7 +899,7 @@ body::before {
   * { transition: none !important; }
   .splash.play *, .splash.play .splash-bar i, .app.entering { animation-duration: .01s !important; animation-delay: 0s !important; }
   .splash.leaving { animation-duration: .2s; }
-  .splash.play .ic-rocket, .splash.play .ic-fire { animation: none !important; }
+  .splash.launch .ic-rocket, .splash.launch .ic-fire { animation: none !important; }
 }
 </style>
 </head>
@@ -1027,6 +1040,9 @@ body::before {
     <div class="sample-hint" id="sample-hint"><b>Foto de ejemplo.</b> Abre las tuyas con «Añadir fotos»; puedes elegir varias.</div>
     <div class="stage-meta"><span id="meta-name">ejemplo-atardecer.jpg</span><span class="dot"></span><span id="meta-size">1600 × 1067 px</span></div>
     <div class="drop-overlay" id="drop-overlay" hidden>Suelta las fotos para abrirlas</div>
+    <button class="reset-chip" id="reset-chip" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Restablecer todo
+    </button>
     <div class="zoom-ctl" id="zoom-ctl" title="Zoom: pellizca con dos dedos, usa la rueda del ratón o doble toque en la foto">
       <button class="zbtn" id="zoom-out" aria-label="Alejar">−</button>
       <button class="zbtn zval" id="zoom-fit" aria-label="Ajustar a la pantalla" title="Ajustar a la pantalla">100%</button>
@@ -2062,7 +2078,14 @@ body::before {
     return { ...d, ...st, adj, size: { ...d.size, ...(st.size || {}) },
              hsl: { ...d.hsl, ...(st.hsl || {}) }, presetAmounts: { ...(st.presetAmounts || {}) } };
   }
-  const isPristine = st => JSON.stringify({ ...st, edits: 0 }) === JSON.stringify(defaults()) && !st.edits;
+  // ¿La foto tiene algo aplicado? (no cuentan preferencias como la intensidad recordada o el punto de enfoque)
+  function isEdited(st) {
+    return Object.values(st.adj || {}).some(v => v) || hasHsl(st.hsl) || st.preset !== "original"
+      || !!st.crop || !!st.rotation || st.flipH || st.flipV || !!st.straighten
+      || !!st.format || (st.size && st.size.mode !== "original") || st.edits > 0
+      || (st.smoothStrokes || []).length > 0 || (st.focusStrokes || []).length > 0;
+  }
+  const isPristine = st => !isEdited(st);
 
   // Desplaza solo la fila (pestañas, miniaturas) para mostrar un elemento, sin mover la pantalla entera.
   function revealInRow(el, row) {
@@ -2790,15 +2813,15 @@ body::before {
   });
   ["pointerup", "pointercancel"].forEach(ev => maskCv.addEventListener(ev, () => { painting = null; }));
   maskCv.addEventListener("pointerleave", () => { if (!painting) brushCursor.hidden = true; });
-  $("erase-clear").addEventListener("click", clearMask);
-  $("erase-apply").addEventListener("click", () => {
+  bindTap($("erase-clear"), clearMask);
+  bindTap($("erase-apply"), () => {
     if (!maskDirty) return;
     $("erase-apply").disabled = true;
     $("erase-status").textContent = "Borrando…";
     setTimeout(() => {
       const t0 = performance.now();
       const ok = doErase();
-      $("erase-status").textContent = ok ? `Listo en ${Math.round(performance.now() - t0)} ms. Ctrl+Z lo deshace.` : "No hay nada marcado dentro de la foto.";
+      $("erase-status").textContent = ok ? `Listo. Pulsa Deshacer si quieres recuperarlo.` : "No hay nada marcado dentro de la foto.";
     }, 30);
   });
 
@@ -2850,7 +2873,7 @@ body::before {
     if (docs[cur] && !docs[cur].isSample) store.putOp(docs[cur].id, eraseOps.length - 1, eraseOps[eraseOps.length - 1]).catch(() => {});
     appliedEdits++;
     state.edits = appliedEdits;
-    rebuildDerived(); clearMask(); commit(); renderThumbs(); scheduleRender();
+    rebuildDerived(); clearMask(); commit(); syncUI(); renderThumbs(); scheduleRender();
     return true;
   }
 
@@ -3079,15 +3102,15 @@ body::before {
     focusPainting = state.focusMode === "sujeto";  // al elegir «Marcar sujeto» se puede pintar enseguida
     commit(); syncUI(); scheduleRender();
   }));
-  $("focus-paint").addEventListener("click", () => { focusPainting = !focusPainting; syncUI(); scheduleRender(); });
+  bindTap($("focus-paint"), () => { focusPainting = !focusPainting; syncUI(); scheduleRender(); });
   const toggleZone = () => {
     showZone = !showZone;
     ["smooth-show", "focus-show"].forEach(id => $(id).setAttribute("aria-pressed", String(showZone)));
     scheduleRender();
   };
   $("focus-show").addEventListener("click", toggleZone);
-  $("focus-undo").addEventListener("click", () => { state.focusStrokes = state.focusStrokes.slice(0, -1); commit(); syncUI(); scheduleRender(); });
-  $("focus-clear").addEventListener("click", () => { state.focusStrokes = []; commit(); syncUI(); scheduleRender(); });
+  bindTap($("focus-undo"), () => { state.focusStrokes = state.focusStrokes.slice(0, -1); commit(); syncUI(); scheduleRender(); });
+  bindTap($("focus-clear"), () => { state.focusStrokes = []; commit(); syncUI(); scheduleRender(); });
   setFill(smoothSize);
   smoothSize.addEventListener("input", () => { $("out-smooth-size").textContent = smoothSize.value + " px"; setFill(smoothSize); });
   $("smooth-mode").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
@@ -3096,10 +3119,10 @@ body::before {
     commit(); syncUI(); scheduleRender();
   }));
   $("smooth-show").addEventListener("click", toggleZone);
-  $("smooth-undo").addEventListener("click", () => {
+  bindTap($("smooth-undo"), () => {
     state.smoothStrokes = state.smoothStrokes.slice(0, -1); commit(); syncUI(); scheduleRender();
   });
-  $("smooth-clear").addEventListener("click", () => {
+  bindTap($("smooth-clear"), () => {
     state.smoothStrokes = []; commit(); syncUI(); scheduleRender();
   });
 
@@ -3275,19 +3298,25 @@ body::before {
     saveSoon();
     syncUI(); renderThumbs(); scheduleRender();
   }
-  const pristine = () => JSON.stringify({ ...defaults(), edits: state.edits });
   function syncHistory() {
     $("undo").disabled = history.i === 0;
     $("redo").disabled = history.i === history.stack.length - 1;
-    $("reset").disabled = JSON.stringify(state) === pristine();
+    const edited = isEdited(state);
+    $("reset").disabled = !edited;
+    $("reset-chip").hidden = !edited;
   }
   $("undo").addEventListener("click", () => travel(-1));
   $("redo").addEventListener("click", () => travel(1));
-  $("reset").addEventListener("click", () => {
-    state = { ...defaults(), edits: state.edits };
+  // Restablecer todo: la foto vuelve a como se abrió (ajustes, piel, filtro, desenfoque, recorte, tamaño y borrados).
+  function resetAll() {
+    if (!isEdited(state)) return;
+    state = defaults();
+    applyEditsTo(0); clearMask();
+    focusPainting = false;
     geometryChanged();
-    toast("Ajustes, filtro, recorte y tamaño restablecidos. Ctrl+Z para recuperarlos.");
-  });
+    toast("Todo restablecido: la foto está como al abrirla. Pulsa Deshacer si quieres recuperar la edición.");
+  }
+  $("reset").addEventListener("click", resetAll);
 
   function syncUI() {
     ADJUSTMENTS.forEach(g => g.items.forEach(updateCtl));
@@ -3775,7 +3804,8 @@ body::before {
     if (drag) { state.crop = drag.start; drag = null; updateCropOverlay(); updateMeta(); }
     brushCursor.hidden = true;
   }
-  const onZoomUI = t => t.closest && t.closest(".zoom-ctl, .split-line");
+  const onZoomUI = t => t.closest && t.closest(".zoom-ctl, .split-line, .reset-chip");
+  bindTap($("reset-chip"), resetAll);
 
   stage.addEventListener("pointerdown", e => {
     if (onZoomUI(e.target) || !workCanvas) return;
@@ -3977,33 +4007,56 @@ body::before {
   try { const t = localStorage.getItem("revelado-tab"); if (tabs.includes(t) || t === "recortar") showTab(t); } catch (e) {}
   renderView();
   renderFavorites();
-  restoreSession();
+  const sessionReady = restoreSession();
 
   /* ================= Pantalla de inicio ================= */
   const splash = $("splash"), app = document.querySelector(".app");
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const SPLASH_MIN = REDUCED ? 2500 : splash.classList.contains("quick") ? 2500 : 4600;
-  let splashTimer = 0;
+  const readTime = quick => REDUCED ? 1500 : quick ? 1300 : 3300;   // tiempo para leer el lema antes del despegue
+  let splashTimer = 0, splashRun = 0, tipShown = false;
   function hideSplash() {
     if (splash.hidden || splash.classList.contains("leaving")) return;
-    clearTimeout(splashTimer);
+    splashRun++; clearTimeout(splashTimer);
     splash.classList.add("leaving");
     app.classList.remove("entering"); void app.offsetWidth; app.classList.add("entering");
-    setTimeout(() => { splash.hidden = true; splash.classList.remove("leaving", "play"); scheduleRender(); }, 450);
+    setTimeout(() => { splash.hidden = true; splash.classList.remove("leaving", "play", "launch"); scheduleRender(); }, 450);
+    if (!tipShown) {
+      tipShown = true;
+      setTimeout(() => {
+        try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
+        toast(matchMedia("(pointer: coarse)").matches ? "Pellizca la foto con dos dedos para acercarla. Doble toque para volver." : "Usa la rueda del ratón o los botones + y − para acercar la foto.");
+      }, 1100);
+    }
   }
-  function playSplash() {
+  // Fases: 1) aparecen el logo y el lema; 2) cuando la app está lista y ha dado tiempo a leer, despega el cohete;
+  // 3) se abre la app. `ready` es una promesa que se cumple cuando la app terminó de preparar las fotos.
+  function runSplash(readMs, ready) {
+    const run = ++splashRun;
     clearTimeout(splashTimer);
-    splash.classList.remove("leaving", "play", "quick");   // al tocar el logo se ve la animación completa
+    splash.style.setProperty("--read", readMs + "ms");
+    const t0 = performance.now();
+    const launch = () => {
+      if (run !== splashRun || splash.hidden) return;
+      $("splash-status").textContent = "Listo";
+      splash.classList.add("launch");
+      splashTimer = setTimeout(hideSplash, REDUCED ? 300 : 1300);
+    };
+    Promise.race([ready, new Promise(r => setTimeout(r, 7000))]).then(() => {
+      if (run !== splashRun) return;
+      splashTimer = setTimeout(launch, Math.max(0, readMs - (performance.now() - t0)));
+    });
+  }
+  function playSplash(quick = false) {
+    splash.classList.remove("leaving", "play", "launch");
+    splash.classList.toggle("quick", quick);
     $("splash-status").textContent = "Preparando el despegue…";
     splash.hidden = false;
     void splash.offsetWidth;
     splash.classList.add("play");
-    const full = REDUCED ? 2500 : 4600;
-    splashTimer = setTimeout(hideSplash, full);
-    setTimeout(() => { $("splash-status").textContent = "Listo"; }, full - 500);
+    runSplash(readTime(quick), Promise.resolve());
   }
   splash.addEventListener("click", hideSplash);
-  $("brand").addEventListener("click", () => { if (!brandLong) playSplash(); brandLong = false; });
+  $("brand").addEventListener("click", () => { if (!brandLong) playSplash(false); brandLong = false; });
   // Mantener pulsado el logo 1 segundo muestra las medidas de la pantalla (para ajustar el diseño al iPhone).
   let brandLong = false, brandTimer = 0;
   $("brand").addEventListener("pointerdown", () => {
@@ -4017,15 +4070,21 @@ body::before {
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach(ev => $("brand").addEventListener(ev, () => clearTimeout(brandTimer)));
   $("brand").addEventListener("contextmenu", e => e.preventDefault());
-  const isTouchDevice = matchMedia("(pointer: coarse)").matches;
-  setTimeout(() => {
-    try { if (localStorage.getItem("revelado-zoom-tip")) return; localStorage.setItem("revelado-zoom-tip", "1"); } catch (e) {}
-    toast(isTouchDevice ? "Pellizca la foto con dos dedos para acercarla. Doble toque para volver." : "Usa la rueda del ratón o los botones + y − para acercar la foto.");
-  }, SPLASH_MIN + 700);
-  setTimeout(() => { $("splash-status").textContent = "Listo"; }, Math.max(0, SPLASH_MIN - 500 - performance.now()));
-  splashTimer = setTimeout(hideSplash, Math.max(300, SPLASH_MIN - performance.now()));
+  // Primer arranque: el reloj empieza cuando la pantalla de inicio ya se ha pintado (no cuando empezó a cargar la página).
+  let splashStarted = false;
+  const startSplash = () => { if (splashStarted) return; splashStarted = true; runSplash(readTime(splash.classList.contains("quick")), sessionReady); };
+  requestAnimationFrame(() => requestAnimationFrame(startSplash));
+  setTimeout(startSplash, 1200);
+  // El iPhone mantiene la app abierta en segundo plano: al volver después de un rato se repite la animación corta.
+  let hiddenAt = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > 3 * 60e3 && splash.hidden && $("export-modal").hidden) playSplash(true);
+    hiddenAt = 0;
+  });
   window.__appReady = true;
 })();
 </script>
+<script>if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
 </body>
 </html>
