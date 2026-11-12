@@ -717,28 +717,41 @@ kbd {
   position: fixed; top: 0; left: 0; right: 0;
   height: var(--app-h, 100%);
   z-index: 17;
-  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-columns: minmax(0, 1fr);
   background: var(--bg);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .standalone.under-bar .vapp { padding-top: calc(var(--safe-top, 0px) + 24px); }
 .vtop { display: flex; align-items: center; gap: 8px; padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); }
-.vtitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--f-display); font-weight: 600; font-size: 17px; }
-.vstage { position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--well); overflow: hidden; cursor: pointer; }
+.vtitle { flex: 1 1 0; width: 0; min-width: 0; height: 34px; padding: 0 2px; border: 0; border-radius: 0; background: none; color: var(--fg); outline: none; text-overflow: ellipsis; font-family: var(--f-display); font-weight: 600; font-size: 17px; }
+.vtitle:focus { box-shadow: 0 1px 0 var(--accent); }
+.vstage { position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--well); overflow: hidden; cursor: pointer; touch-action: none; }
 .vstage canvas { display: block; max-width: 100%; max-height: 100%; }
-#vvideo { position: absolute; left: 0; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.vpool video { position: absolute; left: 0; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.vtext-box { position: absolute; border: 1.5px dashed #fff; border-radius: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; }
 .vplay {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%;
   display: grid; place-items: center;
-  background: rgba(12,11,10,.62); color: #fff; cursor: pointer;
+  background: rgba(12,11,10,.62); color: #fff; pointer-events: none;
 }
+.vplay[hidden] { display: none; }
 .vplay svg { width: 30px; height: 30px; margin-left: 3px; }
 .vtime {
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
   font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.vtime-row { display: flex; justify-content: space-between; padding: 0 2px 8px; }
+.vtime-row { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 8px; }
+.vtime-row span { min-width: 64px; }
+.vtime-row span:last-child { text-align: right; }
+.vpp { width: 52px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg); cursor: pointer; }
+.vpp svg { width: 15px; height: 15px; }
+.trim.dragging .trim-head { display: none; }
+.trim-tr { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; transform: rotate(45deg); z-index: 2; pointer-events: none; }
+.trim-marks { position: relative; height: 11px; margin-top: 7px; }
+.tm { position: absolute; top: 0; height: 4px; min-width: 3px; border-radius: 2px; background: var(--muted); opacity: .75; }
+.tm.sel { background: var(--accent); opacity: 1; }
+.tm.mus { top: 7px; background: #4da3ff; opacity: .85; }
 .vtime-row span:first-child { color: var(--fg); }
 .trim { position: relative; height: 58px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
 .trim canvas { display: block; width: 100%; height: 100%; border-radius: 8px; }
@@ -752,7 +765,7 @@ kbd {
 .trim-h::after { content: ""; position: absolute; left: 7px; top: 32%; bottom: 32%; width: 2px; border-radius: 1px; background: var(--accent-ink); }
 .trim-head { position: absolute; top: -7px; bottom: -7px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; z-index: 2; }
 .vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; }
-.vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
 .vrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .vrow::-webkit-scrollbar { display: none; }
 .vrow > * { flex: none; }
@@ -760,8 +773,24 @@ kbd {
 .vrow .preset { width: 68px; }
 .vinfo { font-size: 13px; color: var(--muted); }
 .vinfo b { color: var(--fg); font-weight: 600; }
+.vrow > .vinput { flex: 1 1 140px; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--well); color: var(--fg); font: inherit; font-size: 16px; }
+.vrow > .vinput:focus { outline: none; border-color: var(--accent); }
+#v-text-look { padding: 3px; }
+.vsw { width: 28px; height: 28px; padding: 0; border: 2px solid var(--line); border-radius: 50%; cursor: pointer; }
+.vsw[aria-pressed="true"] { border-color: var(--panel); box-shadow: 0 0 0 2px var(--accent); }
+.vsep { width: 1px; height: 22px; background: var(--line); }
+.home-sub { margin: 10px 0 0; font-family: var(--f-ui); font-size: 13px; font-weight: 600; color: var(--muted); }
+.home-list.tight { margin-top: 0; }
+.vproj { padding: 0; gap: 0; cursor: default; }
+.vproj-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.vproj-open > span:last-child { min-width: 0; }
+.vproj-del { flex: none; display: flex; align-items: center; gap: 6px; height: 40px; min-width: 40px; margin-right: 10px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.vproj-del svg { width: 18px; height: 18px; }
+.vproj-del span { display: none; }
+.vproj-del.armed { border-color: #e2574c; color: #ff8a80; }
+.vproj-del.armed span { display: inline; }
 .vtabs { border-bottom: 0; border-top: 1px solid var(--line); }
-.vtabs .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 10px 6px; font-size: 11px; border-bottom: 0; border-top: 2px solid transparent; }
+.vtabs .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 5px 6px; font-size: 11px; border-bottom: 0; border-top: 2px solid transparent; }
 .vtabs .tab svg { width: 20px; height: 20px; margin: 0; }
 .vtabs .tab[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
 .vbusy { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 24px; background: rgba(5,5,4,.78); }
@@ -1126,7 +1155,7 @@ body::before {
         </button>
         <button class="home-card" id="home-video">
           <span class="home-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="m15.5 10.5 6-3v9l-6-3z"/></svg></span>
-          <b>Video</b><small>Recortar, filtros, velocidad, sonido y formato</small>
+          <b>Video</b><small>Unir clips, texto, música, transiciones y filtros</small>
         </button>
       </div>
     </div>
@@ -1137,15 +1166,13 @@ body::before {
       </button>
       <h1 class="home-title">Editar video</h1>
       <div class="home-list">
-        <button class="home-row primary" id="home-vresume" hidden>
-          <span class="home-thumbs" id="home-vthumb"></span>
-          <span><b>Retomar proyecto</b><small id="home-vresume-info"></small></span>
-        </button>
-        <label class="home-row" id="home-vnew" for="video-input">
+        <label class="home-row primary" id="home-vnew" for="video-input">
           <span class="home-ico small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
-          <span><b>Nuevo proyecto</b><small id="home-vnew-info">Elige un video de tu galería</small></span>
+          <span><b>Nuevo proyecto</b><small id="home-vnew-info">Elige uno o varios videos de tu galería</small></span>
         </label>
-        <p class="note">Primera versión: un video a la vez. Puedes recortarlo, ponerle filtros y ajustes, cambiar la velocidad, quitar el sonido y elegir el formato.</p>
+        <h2 class="home-sub" id="home-vlist-title" hidden>Tus proyectos</h2>
+        <div class="home-list tight" id="home-vlist"></div>
+        <p class="note">Une varios videos, divídelos y ponles texto, música, transiciones y filtros. Los proyectos se guardan en este dispositivo.</p>
       </div>
     </div>
 
@@ -1174,22 +1201,26 @@ body::before {
 
 <div class="vapp" id="vapp" hidden>
   <header class="vtop">
-    <button class="btn icon" id="v-back" aria-label="Volver al menú" title="Volver al menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-    <span class="vtitle" id="v-name">Video</span>
+    <button class="btn icon" id="v-back" aria-label="Volver a los proyectos" title="Volver a los proyectos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+    <input class="vtitle" id="v-name" type="text" maxlength="60" value="Video" aria-label="Nombre del proyecto" autocomplete="off" enterkeyhint="done">
+    <button class="btn icon" id="v-undo" aria-label="Deshacer" title="Deshacer" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+    <button class="btn icon" id="v-redo" aria-label="Rehacer" title="Rehacer" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
     <button class="btn primary" id="v-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/><path d="M12 16V4"/><path d="m7 11 5 5 5-5"/></svg><span>Guardar</span></button>
   </header>
   <div class="vstage" id="vstage">
     <canvas id="vcanvas" width="16" height="9" aria-label="Video en edición"></canvas>
-    <video id="vvideo" playsinline webkit-playsinline preload="auto"></video>
-    <button class="vplay" id="v-play" aria-label="Reproducir"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg></button>
+    <div class="vpool" id="vpool" aria-hidden="true"></div>
+    <div class="vtext-box" id="vtext-box" hidden></div>
+    <div class="vplay" id="v-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg></div>
   </div>
   <div class="vtime">
-    <div class="vtime-row"><span id="v-cur">0:00</span><span id="v-dur">0:00</span></div>
+    <div class="vtime-row"><span id="v-cur">0:00</span><button class="vpp" id="v-pp" aria-label="Reproducir"></button><span id="v-dur">0:00</span></div>
     <div class="trim" id="trim">
       <canvas id="trim-thumbs" width="800" height="70" aria-hidden="true"></canvas>
       <div id="trim-segs"></div>
       <div class="trim-head" id="trim-head"></div>
     </div>
+    <div class="trim-marks" id="trim-marks"></div>
   </div>
   <div class="vpanel">
     <div class="vbody" id="vbody"></div>
@@ -1237,7 +1268,9 @@ body::before {
       <span class="lbl">Abrir fotos</span>
     </label>
     <input type="file" id="file-input" accept="image/*" multiple hidden>
-    <input type="file" id="video-input" accept="video/*" hidden>
+    <input type="file" id="video-input" accept="video/*" multiple hidden>
+    <input type="file" id="video-add" accept="video/*" multiple hidden>
+    <input type="file" id="music-input" accept="audio/*,.mp3,.m4a,.aac,.wav" hidden>
 
     <div class="group">
       <button class="btn icon" id="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">
@@ -4421,10 +4454,10 @@ body::before {
   const sessionReady = restoreSession();
 
   /* ================= Video ================= */
-  // Primera versión: un video. Se recorta el inicio y el fin, se le ponen filtros y ajustes de color,
-  // se cambia la velocidad, el sonido y el formato, y se guarda. Los fotogramas se procesan en la gráfica
-  // del dispositivo (WebGL) para que vaya fluido.
-  const vapp = $("vapp"), vvideo = $("vvideo"), vcanvas = $("vcanvas");
+  // Un proyecto de video es una lista de clips (trozos de uno o varios videos) que van seguidos, con transiciones
+  // entre ellos, textos encima, música, y filtros y ajustes de color. Los fotogramas se procesan en la gráfica del
+  // dispositivo (WebGL). Al guardar se reproduce todo de principio a fin y se graba lo que sale.
+  const vapp = $("vapp"), vcanvas = $("vcanvas"), vstage = $("vstage"), vpool = $("vpool");
   const VFORMATS = [
     { id: "original", label: "Original" },
     { id: "9:16", label: "9:16 · Historia", r: 9 / 16 },
@@ -4433,34 +4466,67 @@ body::before {
     { id: "16:9", label: "16:9 · YouTube", r: 16 / 9 },
   ];
   const VADJ = ["exposure", "contrast", "highlights", "shadows", "saturation", "temperature", "tint", "fade", "vignette", "grain"];
-  const VMAX = 1920, VMIN_LEN = 0.3;
-  const vDefaults = () => ({ adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, segs: [], speed: 1, muted: false, format: "original", fit: "cover" });
-  let vs = vDefaults(), vfile = null, vname = "video", vdur = 0, vurl = null, vposter = "";
-  let vtab = "recorte", vkey = "exposure", vdirty = true, vraf = 0, vrun = null, savedVideo = null;
-  let vsel = 0, vhist = [];   // trozo elegido y pasos para deshacer cortes
-  const vThumbSrc = document.createElement("canvas");
+  const VMAX = 1920, VMIN_LEN = 0.3, VTHUMBS = 10, VALL = 1e6, VBIG = 600 * 1048576;
+  const VTRANS = [["none", "Ninguna"], ["fade", "Disolver"], ["black", "A negro"], ["white", "A blanco"], ["slide", "Deslizar"], ["zoom", "Zoom"]];
+  const VTMODE = { fade: 1, slide: 2, zoom: 3 };
+  const VCOLORS = ["#ffffff", "#111111", "#ffd84a", "#e7a240", "#ff5a4d", "#4da3ff", "#ff7ac8", "#5fe08a"];
+  const VFONT = {
+    display: { l: "Titular", w: 700, fam: '"Bricolage Grotesque", "Figtree", system-ui, sans-serif' },
+    ui: { l: "Sencilla", w: 600, fam: '"Figtree", system-ui, sans-serif' },
+    serif: { l: "Clásica", w: 700, fam: 'Georgia, "Times New Roman", serif' },
+    mono: { l: "Máquina", w: 500, fam: '"IBM Plex Mono", ui-monospace, Menlo, monospace' },
+  };
+  const VSTYLES = [["outline", "Borde"], ["plain", "Sombra"], ["box", "Fondo"]];
+  const vDefaults = () => ({ ver: 2, adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, speed: 1, vol: 100, format: "original", fit: "cover", trDur: 0.5, clips: [], texts: [], music: null });
+
+  let vs = vDefaults();            // lo que se guarda del proyecto (y lo que deshacer/rehacer restaura)
+  let vproj = null, vindex = [];   // proyecto abierto y lista de proyectos guardados
+  const vsrc = new Map();          // videos del proyecto: id → { el, dur, w, h, miniaturas… }
+  const vmus = new Map();          // canciones del proyecto: id → { blob, name }
+  let vlay = { starts: [], total: 0 };
+  let vci = 0, vsel = 0, vtsel = null;               // clip que se está viendo, clip elegido y texto elegido
+  let vtab = "clips", vkey = "exposure", vdirty = true, vraf = 0, vrun = null;
+  let vplaying = false, vjump = false, vjumpId = 0, vpre = false, vstarting = false, vsilent = false, vquiet = 0;
+  let vundo = [], vredo = [], vsnap = "";
+  const vuid = () => Math.random().toString(36).slice(2, 9);
 
   const fmtTime = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), sec = t - m * 60; return m + ":" + (sec < 10 ? "0" : "") + sec.toFixed(1); };
-  // El video se guarda como una lista de trozos que se conservan (inicio y fin de cada uno, en segundos del original).
-  // Dividir parte un trozo en dos; borrar quita uno; al reproducir y al guardar, los trozos van seguidos.
-  const vTotal = () => vs.segs.reduce((a, g) => a + (g.e - g.s), 0);
-  const vFirst = () => (vs.segs[0] ? vs.segs[0].s : 0);
-  function vSegAt(t) { for (let i = vs.segs.length - 1; i >= 0; i--) { const g = vs.segs[i]; if (t >= g.s - 0.001 && t < g.e) return i; } return -1; }
-  function vOutTime(t) { let acc = 0; for (const g of vs.segs) { if (t >= g.e) acc += g.e - g.s; else { if (t > g.s) acc += t - g.s; break; } } return acc; }
-  function vNextStart(t) { for (const g of vs.segs) if (g.s >= t - 0.001) return g.s; return vFirst(); }
-  function vNearestKept(t) {
-    if (vSegAt(t) >= 0) return t;
-    let best = vFirst(), bd = Infinity;
-    for (const g of vs.segs) for (const c of [g.s, g.e - 0.05]) { const d = Math.abs(c - t); if (d < bd) { bd = d; best = c; } }
-    return best;
-  }
-  const vPushHist = () => { vhist.push(JSON.stringify(vs.segs)); if (vhist.length > 40) vhist.shift(); };
   const once = (el, ev, ms) => new Promise((res, rej) => {
     const ok = () => { clean(); res(); }, bad = () => { clean(); rej(new Error(ev)); };
     const timer = setTimeout(bad, ms);
     const clean = () => { clearTimeout(timer); el.removeEventListener(ev, ok); el.removeEventListener("error", bad); };
     el.addEventListener(ev, ok); el.addEventListener("error", bad);
   });
+
+  /* ---- Clips y tiempo ---- */
+  // El tiempo del proyecto (T) son los segundos desde el principio, con los clips puestos uno tras otro.
+  const clipLen = c => c.e - c.s;
+  const srcOf = c => vsrc.get(c.src);
+  function vRelayout() { let acc = 0; vlay.starts = vs.clips.map(c => { const s = acc; acc += clipLen(c); return s; }); vlay.total = acc; }
+  const curClip = () => vs.clips[Math.min(vci, vs.clips.length - 1)];
+  const vel = () => { const c = curClip(); return c ? srcOf(c).el : null; };
+  function vNow() { const c = curClip(), el = vel(); if (!c || !el) return 0; return vlay.starts[Math.min(vci, vs.clips.length - 1)] + clamp(el.currentTime - c.s, 0, clipLen(c)); }
+  function vLocate(T) {
+    const n = vs.clips.length; T = clamp(T, 0, Math.max(0, vlay.total - 0.03));
+    for (let i = 0; i < n; i++) if (i === n - 1 || T < vlay.starts[i] + clipLen(vs.clips[i])) return { i, t: vs.clips[i].s + (T - vlay.starts[i]) };
+    return { i: 0, t: 0 };
+  }
+  function elSeek(el, t) {
+    return new Promise(res => {
+      let done = false;
+      const fin = () => { if (done) return; done = true; el.removeEventListener("seeked", fin); vdirty = true; res(); };
+      el.addEventListener("seeked", fin); setTimeout(fin, 1800);
+      try { el._pend = null; el.currentTime = clamp(t, 0, Math.max(0, el.duration - 0.02)); } catch (e) { fin(); }
+    });
+  }
+  function elScrub(el, t) {       // mover el punto de reproducción sin amontonar saltos
+    t = clamp(t, 0, Math.max(0, el.duration - 0.02));
+    if (el.seeking) el._pend = t; else { try { el.currentTime = t; } catch (e) {} }
+    vdirty = true;
+  }
+  function vSetClip(i) { const old = vel(); vci = clamp(i, 0, vs.clips.length - 1); const S = srcOf(vs.clips[vci]); if (old && old !== S.el) { vsrc.forEach(X => { if (X.el === old) mPause(X); }); } vpre = false; }
+  function vScrubTo(T) { if (!vs.clips.length) return; const p = vLocate(T); vSetClip(p.i); vprevFor = null; elScrub(vel(), p.t); }
+  async function vSeekTo(T) { if (!vs.clips.length) return; const p = vLocate(T); vSetClip(p.i); vprevFor = null; await elSeek(vel(), p.t); }
 
   /* ---- Gráfica ---- */
   const V_VS = "attribute vec2 a_pos; varying vec2 v_uv; void main(){ v_uv = vec2(a_pos.x * .5 + .5, .5 - a_pos.y * .5); gl_Position = vec4(a_pos, 0., 1.); }";
@@ -4471,58 +4537,88 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 v_uv;
-uniform sampler2D u_tex; uniform vec2 u_scale; uniform vec2 u_res;
+uniform sampler2D u_tex; uniform sampler2D u_prev; uniform vec2 u_scale; uniform vec2 u_pscale; uniform vec2 u_res;
+uniform float u_mode; uniform float u_k; uniform vec4 u_dip;
 uniform mat3 u_m; uniform vec3 u_o;
 uniform float u_sh; uniform float u_hi; uniform float u_split; uniform float u_vig; uniform float u_grain; uniform float u_flash; uniform float u_seed;
 float luma(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
 float shoulder(float v){ float k = 205. / 255.; float w = 50. / 255.; return v <= k ? v : k + w * (1. - exp(-(v - k) / w)); }
+vec4 pick(sampler2D t, vec2 p, vec2 sc){
+  vec2 q = (p - .5) * sc + .5;
+  if (q.x < 0. || q.x > 1. || q.y < 0. || q.y > 1.) return vec4(0.);
+  return vec4(texture2D(t, q).rgb, 1.);
+}
 void main(){
-  vec2 uv = (v_uv - .5) * u_scale + .5;
-  if (uv.x < 0. || uv.x > 1. || uv.y < 0. || uv.y > 1.) { gl_FragColor = vec4(0., 0., 0., 1.); return; }
-  vec3 c = texture2D(u_tex, uv).rgb;
-  c = u_m * c + u_o;
-  float L = clamp(luma(c), 0., 1.);
-  c += u_sh * (1. - L) * (1. - L) + u_hi * L * L;
-  float q = u_split * (1. - L); float u = u_split * L;
-  c += vec3(-14. * q + 18. * u, 4. * q + 6. * u, 16. * q - 14. * u) / 255.;
-  c = clamp(c, 0., 1.);
-  if (u_flash > 0.) {
-    vec2 dp = (v_uv - vec2(.5, .42)) * u_res;
-    float t = min(1., length(dp) / (max(u_res.x, u_res.y) * .75));
-    float near = (1. - t) * sqrt(1. - t);
-    float L0 = luma(c);
-    vec3 f = c * (1. + u_flash * (.14 + .26 * near));
-    f += u_flash * (34. / 255.) * (1. - L0) * (1. - L0) * (.55 + .45 * near);
-    float L2 = luma(f);
-    if (L2 > .6) { float sp = u_flash * (22. / 255.) * (L2 - .6) * near; f += vec3(sp, sp, sp * 1.06); }
-    f.b += u_flash * (4. / 255.) * near;
-    c = vec3(shoulder(f.r), shoulder(f.g), shoulder(f.b));
+  vec4 s;
+  if (u_mode < .5) s = pick(u_tex, v_uv, u_scale);
+  else if (u_mode < 1.5) s = mix(pick(u_prev, v_uv, u_pscale), pick(u_tex, v_uv, u_scale), u_k);
+  else if (u_mode < 2.5) {
+    float e = 1. - u_k;
+    if (v_uv.x < e) s = pick(u_prev, vec2(v_uv.x + u_k, v_uv.y), u_pscale);
+    else s = pick(u_tex, vec2(v_uv.x - e, v_uv.y), u_scale);
+  } else {
+    s = mix(pick(u_prev, (v_uv - .5) / (1. + .6 * u_k) + .5, u_pscale), pick(u_tex, (v_uv - .5) * (.72 + .28 * u_k) + .5, u_scale), smoothstep(.1, .9, u_k));
   }
-  if (u_vig > 0.) { vec2 d = (v_uv - .5) * 2.; float t2 = clamp((length(d) / 1.4142 - .3) / .7, 0., 1.); c *= 1. - u_vig * t2 * t2 * (3. - 2. * t2); }
-  if (u_grain > 0.) { float n = fract(sin(dot(gl_FragCoord.xy + u_seed, vec2(12.9898, 78.233))) * 43758.5453) - .5; c += n * u_grain; }
-  gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+  vec3 c = s.rgb;
+  if (s.a > 0.) {
+    c = u_m * c + u_o;
+    float L = clamp(luma(c), 0., 1.);
+    c += u_sh * (1. - L) * (1. - L) + u_hi * L * L;
+    float q = u_split * (1. - L); float u = u_split * L;
+    c += vec3(-14. * q + 18. * u, 4. * q + 6. * u, 16. * q - 14. * u) / 255.;
+    c = clamp(c, 0., 1.);
+    if (u_flash > 0.) {
+      vec2 dp = (v_uv - vec2(.5, .42)) * u_res;
+      float t = min(1., length(dp) / (max(u_res.x, u_res.y) * .75));
+      float near = (1. - t) * sqrt(1. - t);
+      float L0 = luma(c);
+      vec3 f = c * (1. + u_flash * (.14 + .26 * near));
+      f += u_flash * (34. / 255.) * (1. - L0) * (1. - L0) * (.55 + .45 * near);
+      float L2 = luma(f);
+      if (L2 > .6) { float sp = u_flash * (22. / 255.) * (L2 - .6) * near; f += vec3(sp, sp, sp * 1.06); }
+      f.b += u_flash * (4. / 255.) * near;
+      c = vec3(shoulder(f.r), shoulder(f.g), shoulder(f.b));
+    }
+    if (u_vig > 0.) { vec2 d = (v_uv - .5) * 2.; float t2 = clamp((length(d) / 1.4142 - .3) / .7, 0., 1.); c *= 1. - u_vig * t2 * t2 * (3. - 2. * t2); }
+    if (u_grain > 0.) { float n = fract(sin(dot(gl_FragCoord.xy + u_seed, vec2(12.9898, 78.233))) * 43758.5453) - .5; c += n * u_grain; }
+    c = clamp(c, 0., 1.) * s.a;
+  }
+  c = mix(c, u_dip.rgb, u_dip.a);
+  gl_FragColor = vec4(c, 1.);
 }`;
-  let gl = null, glu = null, gltex = null;
+  const T_FS = "precision mediump float; varying vec2 v_uv; uniform sampler2D u_t; void main(){ gl_FragColor = texture2D(u_t, v_uv); }";
+  let gl = null, glu = null, glp = null, glt = null, gltex = null, gltext = null, glcur = 0, glscale = [[1, 1], [1, 1]];
+  let vprevFor = null;      // id del clip cuya entrada puede usar el último fotograma del clip anterior (para las transiciones)
   function initGL() {
     if (gl) return true;
     try {
       const g = vcanvas.getContext("webgl", { alpha: false, premultipliedAlpha: false, antialias: false }) || vcanvas.getContext("experimental-webgl");
       if (!g) return false;
       const mk = (type, src) => { const o = g.createShader(type); g.shaderSource(o, src); g.compileShader(o); if (!g.getShaderParameter(o, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(o)); return o; };
-      const prog = g.createProgram();
-      g.attachShader(prog, mk(g.VERTEX_SHADER, V_VS)); g.attachShader(prog, mk(g.FRAGMENT_SHADER, V_FS)); g.linkProgram(prog);
-      if (!g.getProgramParameter(prog, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(prog));
-      g.useProgram(prog);
+      const link = (a, b) => {
+        const p = g.createProgram();
+        g.attachShader(p, mk(g.VERTEX_SHADER, a)); g.attachShader(p, mk(g.FRAGMENT_SHADER, b)); g.bindAttribLocation(p, 0, "a_pos"); g.linkProgram(p);
+        if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p));
+        return p;
+      };
+      const prog = link(V_VS, V_FS), progT = link(V_VS, T_FS);
       g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
       g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
-      const loc = g.getAttribLocation(prog, "a_pos"); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
-      gltex = g.createTexture(); g.bindTexture(g.TEXTURE_2D, gltex);
-      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
-      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+      g.enableVertexAttribArray(0); g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+      const mkTex = px => {
+        const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t);
+        g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+        g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+        g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, 1, 1, 0, g.RGBA, g.UNSIGNED_BYTE, new Uint8Array(px));
+        return t;
+      };
+      gltex = [mkTex([0, 0, 0, 255]), mkTex([0, 0, 0, 255])]; gltext = mkTex([0, 0, 0, 0]);
+      g.useProgram(progT); g.uniform1i(g.getUniformLocation(progT, "u_t"), 2);
+      g.useProgram(prog);
       glu = {};
-      ["u_tex", "u_scale", "u_res", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
-      g.uniform1i(glu.u_tex, 0);
-      gl = g;
+      ["u_tex", "u_prev", "u_scale", "u_pscale", "u_res", "u_mode", "u_k", "u_dip", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
+      g.uniform1i(glu.u_tex, 0); g.uniform1i(glu.u_prev, 1);
+      glp = prog; glt = progT; gl = g; glcur = 0; vtextSig = "?"; vprevFor = null;
       return true;
     } catch (e) { gl = null; return false; }
   }
@@ -4535,8 +4631,8 @@ void main(){
     return p;
   }
   const even = v => Math.max(2, Math.round(v / 2) * 2);
-  function vOutDims() {
-    const vw = vvideo.videoWidth || 16, vh = vvideo.videoHeight || 9;
+  function vOutDims() {       // el tamaño lo marca el primer clip, o el formato elegido
+    const S = vs.clips[0] ? srcOf(vs.clips[0]) : null, vw = S ? S.w : 16, vh = S ? S.h : 9;
     let W = vw, H = vh;
     const f = VFORMATS.find(x => x.id === vs.format);
     if (f && f.r) {
@@ -4552,19 +4648,44 @@ void main(){
     if (vcanvas.width !== o.w || vcanvas.height !== o.h) { vcanvas.width = o.w; vcanvas.height = o.h; }
     vdirty = true;
   }
+  const vMixed = () => { const r = vs.clips.map(c => { const S = srcOf(c); return S.w / S.h; }); return r.some(x => Math.abs(x - r[0]) > 0.01); };
+  function vScaleFor(S) {
+    const av = S.w / S.h, ao = vcanvas.width / vcanvas.height;
+    let sx = 1, sy = 1;
+    if (vs.fit === "contain") { if (av > ao) sy = av / ao; else sx = ao / av; }
+    else { if (av > ao) sx = ao / av; else sy = av / ao; }
+    return [sx, sy];
+  }
+  // Transición en el instante T: mezcla con el último fotograma del clip anterior, o paso por negro/blanco.
+  function vTrans(T) {
+    const i = Math.min(vci, vs.clips.length - 1), c = vs.clips[i], sp = vs.speed;
+    const dt = (T - vlay.starts[i]) / sp, rem = (vlay.starts[i] + clipLen(c) - T) / sp, D = Math.min(vs.trDur, clipLen(c) / sp * 0.5);
+    const out = { mode: 0, k: 1, dip: [0, 0, 0, 0] };
+    const dipCol = id => (id === "white" ? 1 : 0);
+    if (i > 0 && c.tr && c.tr !== "none") {
+      if (c.tr === "black" || c.tr === "white") { const h = D / 2; if (dt < h) { const v = dipCol(c.tr); out.dip = [v, v, v, 1 - dt / h]; } }
+      else if (dt < D && vprevFor === c.id) { const x = clamp(dt / D, 0, 1); out.mode = VTMODE[c.tr] || 0; out.k = x * x * (3 - 2 * x); }
+    }
+    const nx = vs.clips[i + 1];
+    if (nx && (nx.tr === "black" || nx.tr === "white")) {
+      const h = Math.min(vs.trDur, clipLen(nx) / sp * 0.5, clipLen(c) / sp) / 2;
+      if (rem < h) { const v = dipCol(nx.tr); out.dip = [v, v, v, clamp(1 - rem / h, 0, 1)]; }
+    }
+    return out;
+  }
   function vDraw() {
     if (!gl && !initGL()) return;
-    if (vvideo.readyState < 2 || !vvideo.videoWidth) return;
+    const c = curClip(); if (!c) return;
+    const S = srcOf(c), el = S.el, W = vcanvas.width, H = vcanvas.height, T = vNow();
     const p = vParams(), M = colorMatrix(p);
-    const W = vcanvas.width, H = vcanvas.height;
     gl.viewport(0, 0, W, H);
-    gl.bindTexture(gl.TEXTURE_2D, gltex);
-    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vvideo); } catch (e) { return; }
-    const av = vvideo.videoWidth / vvideo.videoHeight, ao = W / H;
-    let sx = 1, sy = 1;
-    if (vs.fit === "contain" && vs.format !== "original") { if (av > ao) sy = av / ao; else sx = ao / av; }
-    else { if (av > ao) sx = ao / av; else sy = av / ao; }
-    gl.uniform2f(glu.u_scale, sx, sy);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur]);
+    if (el.readyState >= 2 && el.videoWidth) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); glscale[glcur] = vScaleFor(S); } catch (e) {} }
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur ^ 1]);
+    const tr = vTrans(T);
+    gl.uniform2f(glu.u_scale, glscale[glcur][0], glscale[glcur][1]);
+    gl.uniform2f(glu.u_pscale, glscale[glcur ^ 1][0], glscale[glcur ^ 1][1]);
+    gl.uniform1f(glu.u_mode, tr.mode); gl.uniform1f(glu.u_k, tr.k); gl.uniform4f(glu.u_dip, tr.dip[0], tr.dip[1], tr.dip[2], tr.dip[3]);
     gl.uniform2f(glu.u_res, W, H);
     gl.uniformMatrix3fv(glu.u_m, false, [M[0], M[4], M[8], M[1], M[5], M[9], M[2], M[6], M[10]]);
     gl.uniform3f(glu.u_o, M[3] / 255, M[7] / 255, M[11] / 255);
@@ -4576,200 +4697,546 @@ void main(){
     gl.uniform1f(glu.u_flash, Math.min(1, (p.flash || 0) / 100));
     gl.uniform1f(glu.u_seed, (performance.now() % 1000) / 7);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  }
-
-  /* ---- Reproducción y línea de tiempo ---- */
-  let pendingSeek = null;
-  function vSeek(t) {
-    return new Promise(res => {
-      let done = false;
-      const fin = () => { if (done) return; done = true; vvideo.removeEventListener("seeked", fin); vdirty = true; res(); };
-      vvideo.addEventListener("seeked", fin); setTimeout(fin, 1800);
-      try { vvideo.currentTime = clamp(t, 0, Math.max(0, vdur - 0.02)); } catch (e) { fin(); }
-    });
-  }
-  function vScrub(t) {       // mover el punto de reproducción sin amontonar saltos
-    t = clamp(t, 0, Math.max(0, vdur - 0.02));
-    if (vvideo.seeking) pendingSeek = t; else { try { vvideo.currentTime = t; } catch (e) {} }
-    vdirty = true;
-  }
-  vvideo.addEventListener("seeked", () => { vdirty = true; if (pendingSeek !== null) { const t = pendingSeek; pendingSeek = null; try { vvideo.currentTime = t; } catch (e) {} } });
-  vvideo.addEventListener("loadeddata", () => { vdirty = true; });
-  vvideo.addEventListener("ended", () => { if (!vrun) { vvideo.currentTime = vFirst(); syncPlayBtn(); } });
-  vvideo.addEventListener("play", () => syncPlayBtn()); vvideo.addEventListener("pause", () => syncPlayBtn());
-
-  function syncPlayBtn() { $("v-play").hidden = !vvideo.paused || !!vrun; }
-  function vSyncTime() {
-    if (!vdur) return;
-    $("trim-head").style.left = clamp(vvideo.currentTime / vdur, 0, 1) * 100 + "%";
-    $("v-cur").textContent = fmtTime(vOutTime(vvideo.currentTime) / vs.speed);
-  }
-  function vSyncTrim() {
-    if (!vdur) return;
-    vsel = clamp(vsel, 0, vs.segs.length - 1);
-    const pct = t => (t / vdur * 100).toFixed(3) + "%";
-    let html = "", prev = 0;
-    vs.segs.forEach((g, i) => {
-      if (g.s > prev + 0.001) html += `<div class="trim-gap" style="left:${pct(prev)};width:${pct(g.s - prev)}"></div>`;
-      html += `<div class="trim-seg${i === vsel ? " sel" : ""}" style="left:${pct(g.s)};width:${pct(g.e - g.s)}">${i === vsel ? '<span class="trim-h" data-h="s"></span><span class="trim-h" data-h="e"></span>' : ""}</div>`;
-      prev = g.e;
-    });
-    if (prev < vdur - 0.001) html += `<div class="trim-gap" style="left:${pct(prev)};width:${pct(vdur - prev)}"></div>`;
-    $("trim-segs").innerHTML = html;
-    $("v-dur").textContent = fmtTime(vTotal() / vs.speed);
-    const info = $("v-trim-info");
-    if (info) {
-      const n = vs.segs.length, g = vs.segs[vsel];
-      info.innerHTML = (n === 1 ? "Un trozo" : `<b>${n} trozos</b> unidos`) + ` · duración <b>${fmtTime(vTotal() / vs.speed)}</b>`
-        + (n > 1 ? ` · elegido: el ${vsel + 1}.º (${fmtTime(g.e - g.s)})` : ` (de ${fmtTime(g.s)} a ${fmtTime(g.e)})`);
+    if (vDrawTexts(T)) {
+      gl.useProgram(glt); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.disable(gl.BLEND); gl.useProgram(glp);
     }
-    const del = $("v-seg-del"); if (del) del.disabled = vs.segs.length < 2;
-    const un = $("v-seg-undo"); if (un) un.disabled = !vhist.length;
-    const all = $("v-trim-reset"); if (all) all.disabled = vs.segs.length === 1 && vs.segs[0].s <= 0.001 && vs.segs[0].e >= vdur - 0.001;
   }
-  async function vPlay() {
-    if (vrun || !vdur) return;
-    const t = vvideo.currentTime, i = vSegAt(t), last = vs.segs[vs.segs.length - 1];
-    if (i < 0) await vSeek(vNextStart(t));
-    else if (i === vs.segs.length - 1 && t >= last.e - 0.08) await vSeek(vFirst());
-    vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
-    if (vaudio) { try { vaudio.ctx.resume(); } catch (e) {} }
-    try { await vvideo.play(); } catch (e) { vvideo.muted = true; try { await vvideo.play(); } catch (e2) {} }
+  // Al pasar al clip siguiente, el último fotograma del anterior queda guardado para la transición.
+  function vHoldPrev(id) { glcur ^= 1; vprevFor = id; }
+
+  /* ---- Textos ---- */
+  // Los textos se dibujan en un lienzo aparte que se pone encima del video, así salen también en el video guardado.
+  const vtextCv = document.createElement("canvas");
+  let vtextSig = "", vboxes = {}, vfontTick = 0;
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { vfontTick++; vdirty = true; });
+  const vIsDark = hex => { const n = parseInt(hex.slice(1), 16); return (0.2126 * (n >> 16 & 255) + 0.7152 * (n >> 8 & 255) + 0.0722 * (n & 255)) / 255 < 0.4; };
+  function vTextLayout(g, t, W, H) {
+    const px = Math.max(10, t.size * H), f = VFONT[t.font] || VFONT.display;
+    g.font = `${f.w} ${px}px ${f.fam}`;
+    const maxW = W * 0.92, lines = [];
+    String(t.text).split("\n").forEach(par => {
+      let line = "";
+      par.trim().split(/\s+/).forEach(w => { const tryL = line ? line + " " + w : w; if (line && g.measureText(tryL).width > maxW) { lines.push(line); line = w; } else line = tryL; });
+      lines.push(line);
+    });
+    const lh = px * 1.18, w = Math.max(px * 0.5, ...lines.map(l => g.measureText(l).width));
+    return { px, lines, lh, w, h: lh * lines.length, cx: t.x * W, cy: t.y * H };
   }
-  const vToggle = () => { if (vrun) return; if (vvideo.paused) vPlay(); else vvideo.pause(); };
-  $("vstage").addEventListener("click", vToggle);
+  function vRoundRect(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function vDrawTexts(T) {
+    const W = vcanvas.width, H = vcanvas.height;
+    const vis = vs.texts.filter(t => T >= t.t0 - 0.02 && T < t.t1 && String(t.text).trim());
+    const sig = vis.length ? W + "x" + H + "·" + vfontTick + JSON.stringify(vis) : "";
+    if (sig === vtextSig) return vis.length > 0;
+    vtextSig = sig; vboxes = {};
+    if (!vis.length) return false;
+    if (vtextCv.width !== W || vtextCv.height !== H) { vtextCv.width = W; vtextCv.height = H; }
+    const g = vtextCv.getContext("2d");
+    g.clearRect(0, 0, W, H); g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
+    vis.forEach(t => {
+      const L = vTextLayout(g, t, W, H), pad = L.px * 0.3, x0 = L.cx - L.w / 2, y0 = L.cy - L.h / 2, dark = vIsDark(t.color);
+      vboxes[t.id] = { x0: (x0 - pad) / W, y0: (y0 - pad * 0.6) / H, x1: (x0 + L.w + pad) / W, y1: (y0 + L.h + pad * 0.6) / H };
+      if (t.style === "box") { g.fillStyle = dark ? "rgba(255,255,255,.88)" : "rgba(0,0,0,.66)"; vRoundRect(g, x0 - pad, y0 - pad * 0.5, L.w + pad * 2, L.h + pad, L.px * 0.24); g.fill(); }
+      L.lines.forEach((ln, i) => {
+        const y = y0 + L.lh * (i + 0.5);
+        if (t.style === "outline") { g.strokeStyle = dark ? "#ffffff" : "#000000"; g.lineWidth = L.px * 0.17; g.strokeText(ln, L.cx, y); }
+        if (t.style === "plain") { g.shadowColor = dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.6)"; g.shadowBlur = L.px * 0.16; g.shadowOffsetY = L.px * 0.04; }
+        g.fillStyle = t.color; g.fillText(ln, L.cx, y);
+        g.shadowColor = "transparent"; g.shadowBlur = 0; g.shadowOffsetY = 0;
+      });
+    });
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, gltext);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vtextCv); } catch (e) {}
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.activeTexture(gl.TEXTURE0);
+    return true;
+  }
+  function vSyncBox() {       // marco del texto elegido (no sale en el video guardado)
+    const el = $("vtext-box"), b = vtab === "texto" && vtsel && !vrun && !vplaying ? vboxes[vtsel] : null;
+    if (!b) { el.hidden = true; return; }
+    const r = vcanvas.getBoundingClientRect(), s = vstage.getBoundingClientRect();
+    el.hidden = false;
+    el.style.left = r.left - s.left + b.x0 * r.width + "px"; el.style.top = r.top - s.top + b.y0 * r.height + "px";
+    el.style.width = (b.x1 - b.x0) * r.width + "px"; el.style.height = (b.y1 - b.y0) * r.height + "px";
+  }
+
+  /* ---- Sonido ---- */
+  // Con un solo video sin música suena el propio video. Con varios clips, música o volumen a medias, el sonido pasa
+  // por un mezclador (WebAudio), que es también lo que se graba al guardar.
+  const vmusic = new Audio(); vmusic.preload = "auto";
+  const VM = { el: vmusic, want: false, unl: false, ready: false, node: null };
+  let vaudio = null, vmusId = null, vmusUrl = null;
+  const vNeedGraph = () => !!vaudio || vsrc.size > 1 || !!vs.music || (vs.vol !== 0 && vs.vol !== 100);
+  function vWire(S) { if (!vaudio || S.node) return; try { S.node = vaudio.ctx.createMediaElementSource(S.el); S.node.connect(vaudio.vid); } catch (e) {} }
+  function ensureAudio() {
+    if (vaudio) return vaudio;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC();
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}   // que suene aunque el iPhone esté en silencio
+      const vid = ctx.createGain(), mus = ctx.createGain(), bus = ctx.createGain(), mon = ctx.createGain(), dest = ctx.createMediaStreamDestination();
+      vid.connect(bus); mus.connect(bus); bus.connect(mon); mon.connect(ctx.destination); bus.connect(dest);
+      vaudio = { ctx, vid, mus, mon, dest };
+      vsrc.forEach(vWire); vWire(VM);
+      if (VM.node) { try { VM.node.disconnect(); VM.node.connect(mus); } catch (e) {} }
+      vApplyVol();
+    } catch (e) { vaudio = null; }
+    return vaudio;
+  }
+  function vMusicFade(T) {
+    if (!vs.music || !vs.music.fade) return 1;
+    return clamp((vlay.total - T) / vs.speed / 1.5, 0, 1);
+  }
+  function vApplyVol() {
+    const v = vs.vol / 100, m = vs.music ? vs.music.vol / 100 : 0;
+    if (vaudio) {
+      vaudio.vid.gain.value = vquiet ? 0 : v;
+      vaudio.mus.gain.value = vquiet ? 0 : m * vMusicFade(vNow());
+    }
+    vsrc.forEach(S => {
+      const wired = !!(vaudio && S.node);
+      S.el.muted = S.forceMute || (!wired && (vsilent || v === 0));
+      try { S.el.volume = wired ? 1 : v; } catch (e) {}
+    });
+    const mw = !!(vaudio && VM.node);
+    vmusic.muted = !mw && vsilent;
+    try { vmusic.volume = mw ? 1 : m; } catch (e) {}
+  }
+  const vApplyRate = () => vsrc.forEach(S => { try { S.el.playbackRate = vs.speed; } catch (e) {} });
+  async function mPlay(M) { M.want = true; try { await M.el.play(); M.unl = true; return true; } catch (e) { return false; } }
+  function mPause(M) { M.want = false; try { M.el.pause(); } catch (e) {} }
+  // En el iPhone cada video o canción solo puede sonar si se puso en marcha con un toque. Al tocar reproducir o
+  // guardar se «despiertan» un instante (en silencio) todos los que aún no lo están.
+  function mUnlock(M) {
+    if (M.unl) return;
+    M.unl = true;
+    let p;
+    try { M.el.muted = false; p = M.el.play(); } catch (e) { M.unl = false; return; }
+    Promise.resolve(p).then(() => { if (!M.want) M.el.pause(); }).catch(() => { M.unl = false; });
+  }
+  function vUnlock() {
+    const cur = curClip() && srcOf(curClip()); let any = false;
+    vsrc.forEach(S => { S.forceMute = false; if (S !== cur && !S.unl) { mUnlock(S); any = true; } });
+    if (vs.music && VM.ready && !VM.unl) { mUnlock(VM); any = true; }
+    if (any) {
+      vquiet++;
+      if (vaudio) { vaudio.vid.gain.value = 0; vaudio.mus.gain.value = 0; }
+      setTimeout(() => { vquiet--; vApplyVol(); }, 400);
+    }
+  }
+  const vMusicPos = T => (vs.music ? vs.music.offset + T / vs.speed : 0);
+  function vMusicStart() {
+    if (!vs.music || !VM.ready) return;
+    const pos = vMusicPos(vNow());
+    if (pos >= vmusic.duration - 0.05) { mPause(VM); return; }
+    try { vmusic.currentTime = pos; } catch (e) {}
+    mPlay(VM);
+  }
+  async function vSyncMusicSrc() {       // pone en el reproductor la canción que diga el proyecto
+    const want = vs.music && vmus.has(vs.music.id) ? vs.music.id : null;
+    if (want === vmusId) return true;
+    mPause(VM); VM.ready = false; VM.unl = false; vmusId = null;
+    if (vmusUrl) { URL.revokeObjectURL(vmusUrl); vmusUrl = null; }
+    if (!want) { vmusic.removeAttribute("src"); try { vmusic.load(); } catch (e) {} return true; }
+    vmusUrl = URL.createObjectURL(vmus.get(want).blob); vmusic.src = vmusUrl; vmusic.load();
+    try { await once(vmusic, "loadedmetadata", 15000); } catch (e) { return false; }
+    if (!isFinite(vmusic.duration) || vmusic.duration <= 0) return false;
+    vmusId = want; VM.ready = true;
+    return true;
+  }
+
+  /* ---- Reproducción ---- */
+  const PLAY_IC = '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/>', PAUSE_IC = '<rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/>';
+  function syncPlayBtn() {
+    $("v-play").hidden = vplaying || !!vrun || vtab === "texto";
+    const b = $("v-pp"); b.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${vplaying ? PAUSE_IC : PLAY_IC}</svg>`;
+    b.setAttribute("aria-label", vplaying ? "Pausar" : "Reproducir");
+    vSyncBox();
+  }
+  function vPause() {
+    vjumpId++; vjump = false; vplaying = false;
+    vsrc.forEach(mPause); mPause(VM);
+    syncPlayBtn();
+  }
+  function vPlay(fromT) {
+    if (vrun || vstarting || vplaying || !vs.clips.length) return;
+    if (vNeedGraph()) { const a = ensureAudio(); if (a) { try { a.ctx.resume().catch(() => {}); } catch (e) {} } }
+    vUnlock();
+    vplaying = true; syncPlayBtn(); vStartLoop();
+    vStart(fromT);
+  }
+  async function vStart(fromT) {
+    const id = ++vjumpId; vjump = true;
+    if (fromT != null) await vSeekTo(fromT);
+    else if (vNow() >= vlay.total - 0.08) await vSeekTo(0);
+    if (id !== vjumpId) return;
+    vApplyVol(); vApplyRate();
+    const S = srcOf(curClip());
+    let ok = await mPlay(S);
+    if (id !== vjumpId) return;
+    if (!ok) { S.forceMute = true; S.el.muted = true; ok = await mPlay(S); if (id !== vjumpId) return; }
+    if (!ok) { vPause(); return; }
+    vMusicStart(); vjump = false;
+  }
+  const vToggle = () => { if (vrun || vstarting) return; if (vplaying) vPause(); else vPlay(); };
+  // Paso de un clip al siguiente. Si hay que saltar a otro punto u otro video, se espera a que esté listo
+  // (y al guardar, la grabación se detiene ese instante para que el corte quede limpio).
+  async function vAdvance(i) {
+    const run = vrun, from = curClip(), a = srcOf(from), to = vs.clips[i], b = srcOf(to), seq = i === vci + 1;
+    if (seq && VTMODE[to.tr]) vHoldPrev(to.id); else vprevFor = null;
+    if (seq && a === b && Math.abs(to.s - from.e) < 0.06 && !a.el.ended) { vci = i; vpre = false; return; }
+    const id = ++vjumpId; vjump = true;
+    if (run) { try { if (run.rec.state === "recording" && run.rec.pause) run.rec.pause(); } catch (e) {} }
+    mPause(VM); mPause(a);
+    vci = i; vpre = false;
+    if (b.el.seeking || Math.abs(b.el.currentTime - to.s) > 0.04) await elSeek(b.el, to.s);
+    if (id !== vjumpId) return;
+    try { b.el.playbackRate = vs.speed; } catch (e) {}
+    let ok = await mPlay(b);
+    if (id !== vjumpId) return;
+    if (!ok) { b.forceMute = true; b.el.muted = true; ok = await mPlay(b); if (id !== vjumpId) return; }
+    if (run) { try { if (run.rec.state === "paused") run.rec.resume(); } catch (e) {} }
+    vMusicStart(); vjump = false;
+  }
+  let vtickN = 0;
+  function vTick() {
+    const i = vci, c = vs.clips[i], S = srcOf(c), el = S.el, t = el.currentTime, nx = vs.clips[i + 1];
+    if (nx && !vpre && c.e - t < 1.2 * vs.speed) {       // deja preparado el clip siguiente si es de otro video
+      vpre = true;
+      const N = srcOf(nx);
+      if (N !== S && Math.abs(N.el.currentTime - nx.s) > 0.03) { try { N.el.currentTime = nx.s; } catch (e) {} }
+    }
+    if (el.ended || t >= c.e - 0.03) {
+      if (nx) vAdvance(i + 1);
+      else if (vrun) stopExport();
+      else vAdvance(0);
+      return;
+    }
+    if (vs.music && VM.ready) {
+      if (vaudio && !vquiet) vaudio.mus.gain.value = vs.music.vol / 100 * vMusicFade(vNow());
+      if (++vtickN % 45 === 0 && VM.want && !vmusic.paused) { const pos = vMusicPos(vNow()); if (Math.abs(vmusic.currentTime - pos) > 0.3 && pos < vmusic.duration - 0.2) { try { vmusic.currentTime = pos; } catch (e) {} } }
+    }
+  }
   function vLoop() {
     if (vapp.hidden && !vrun) { vraf = 0; return; }
     vraf = requestAnimationFrame(vLoop);
-    if (vrun) { vDraw(); vExportTick(); return; }
-    if (!vvideo.paused && !vvideo.seeking) {         // al llegar al final de un trozo salta al siguiente; tras el último, vuelve al primero
-      const t = vvideo.currentTime, i = vSegAt(t);
-      if (i < 0) vvideo.currentTime = vNextStart(t);
-      else if (t >= vs.segs[i].e - 0.03) { const nx = vs.segs[i + 1] || vs.segs[0]; if (Math.abs(nx.s - t) > 0.06) vvideo.currentTime = nx.s; }
-    }
-    if (!vvideo.paused || vdirty) { vDraw(); vdirty = false; vSyncTime(); }
+    if (!vs.clips.length) return;
+    if ((vplaying || vrun) && !vjump) vTick();
+    if (vplaying || vrun || vdirty) { vDraw(); vdirty = false; vSyncTime(); }
+    if (vrun) vExportTick();
   }
   const vStartLoop = () => { if (!vraf) vraf = requestAnimationFrame(vLoop); };
+  $("v-pp").addEventListener("click", vToggle);
 
-  // Tira: tocar un trozo lo elige; arrastrar sus extremos lo acorta o alarga; tocar o arrastrar mueve el punto de reproducción.
+  /* ---- Tira de clips ---- */
+  function vSyncTime() {
+    if (!vlay.total) return;
+    const T = vNow();
+    $("trim-head").style.left = clamp(T / vlay.total, 0, 1) * 100 + "%";
+    $("v-cur").textContent = fmtTime(T / vs.speed);
+    vSyncBox();
+  }
+  let vthumbSig = "";
+  function vDrawThumbs() {
+    const sig = vs.clips.map(c => c.src + ":" + c.s.toFixed(2) + ":" + c.e.toFixed(2)).join("|");
+    if (sig === vthumbSig) return;
+    vthumbSig = sig;
+    const cv = $("trim-thumbs"), g = cv.getContext("2d"), CW = cv.width, CH = cv.height;
+    g.fillStyle = "#0c0b0a"; g.fillRect(0, 0, CW, CH);
+    vs.clips.forEach((c, i) => {
+      const S = srcOf(c), x0 = vlay.starts[i] / vlay.total * CW, w = clipLen(c) / vlay.total * CW;
+      const n = Math.max(1, Math.round(w / 80)), dw = w / n, tw = S.thumbs.width / VTHUMBS, sw = Math.min(tw, dw * S.thumbs.height / CH);
+      for (let k = 0; k < n; k++) {
+        const tt = c.s + (k + 0.5) / n * clipLen(c), idx = clamp(Math.floor(tt / S.dur * VTHUMBS), 0, VTHUMBS - 1);
+        try { g.drawImage(S.thumbs, idx * tw + (tw - sw) / 2, 0, sw, S.thumbs.height, x0 + k * dw, 0, dw + 0.5, CH); } catch (e) {}
+      }
+    });
+  }
+  function vSyncTrim() {
+    const n = vs.clips.length; if (!n || !vlay.total) return;
+    vsel = clamp(vsel, 0, n - 1);
+    const tot = vlay.total, pct = t => (t / tot * 100).toFixed(3) + "%";
+    let html = "";
+    vs.clips.forEach((c, i) => {
+      html += `<div class="trim-seg${i === vsel ? " sel" : ""}" style="left:${pct(vlay.starts[i])};width:${pct(clipLen(c))}">${i === vsel ? '<span class="trim-h" data-h="s"></span><span class="trim-h" data-h="e"></span>' : ""}</div>`;
+      if (i > 0 && c.tr && c.tr !== "none") html += `<i class="trim-tr" style="left:${pct(vlay.starts[i])}"></i>`;
+    });
+    $("trim-segs").innerHTML = html;
+    let marks = "";
+    vs.texts.forEach(t => { if (t.t0 < tot) marks += `<i class="tm${t.id === vtsel ? " sel" : ""}" style="left:${pct(t.t0)};width:${pct(Math.min(tot, t.t1) - t.t0)}"></i>`; });
+    if (vs.music && VM.ready) marks += `<i class="tm mus" style="left:0;width:${pct(Math.min(tot, Math.max(0, vmusic.duration - vs.music.offset) * vs.speed))}"></i>`;
+    $("trim-marks").innerHTML = marks;
+    $("v-dur").textContent = fmtTime(tot / vs.speed);
+    vDrawThumbs();
+    const info = $("v-clip-info");
+    if (info) {
+      const c = vs.clips[vsel];
+      info.innerHTML = (n === 1 ? "<b>1 clip</b>" : `<b>${n} clips</b> unidos`) + ` · duración <b>${fmtTime(tot / vs.speed)}</b>` + (n > 1 ? ` · elegido: el ${vsel + 1}.º (${fmtTime(clipLen(c) / vs.speed)})` : "");
+      $("v-clip-del").disabled = n < 2; $("v-clip-l").disabled = vsel === 0; $("v-clip-r").disabled = vsel === n - 1;
+    }
+  }
+  // Tocar un clip lo elige; arrastrar sus extremos lo acorta o alarga; tocar o arrastrar la tira mueve la línea blanca.
   const trim = $("trim");
   let tdrag = null;
-  const trimTime = e => { const r = trim.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * vdur; };
+  const trimT = e => { const r = trim.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * vlay.total; };
   function trimMove(e) {
-    const t = trimTime(e), g = vs.segs[vsel];
-    if (tdrag === "s") { const lo = vsel > 0 ? vs.segs[vsel - 1].e : 0; g.s = clamp(t, lo, g.e - VMIN_LEN); vScrub(g.s); }
-    else if (tdrag === "e") { const hi = vsel < vs.segs.length - 1 ? vs.segs[vsel + 1].s : vdur; g.e = clamp(t, g.s + VMIN_LEN, hi); vScrub(g.e - 0.05); }
-    else vScrub(vNearestKept(t));
-    vSyncTrim(); vSyncTime();
+    if (!tdrag) return;
+    if (tdrag.kind === "seek") {
+      const T = trimT(e), i = vLocate(T).i;
+      if (i !== vsel) { vsel = i; vSyncTrim(); if (vtab === "trans") renderVPanel(); }
+      vScrubTo(T); vSyncTime(); return;
+    }
+    const c = vs.clips[vsel], S = srcOf(c), dt = (e.clientX - tdrag.x0) / tdrag.pps;
+    if (tdrag.kind === "s") { c.s = clamp(tdrag.s0 + dt, 0, c.e - VMIN_LEN); elScrub(S.el, c.s); }
+    else { c.e = clamp(tdrag.e0 + dt, c.s + VMIN_LEN, S.dur); elScrub(S.el, Math.max(c.s, c.e - 0.05)); }
+    tdrag.box.style.left = tdrag.left0 + (c.s - tdrag.s0) * tdrag.pps + "px";
+    tdrag.box.style.width = Math.max(10, clipLen(c) * tdrag.pps) + "px";
+    $("v-dur").textContent = fmtTime((vlay.total - (tdrag.e0 - tdrag.s0) + clipLen(c)) / vs.speed);
   }
   trim.addEventListener("pointerdown", e => {
-    if (vrun || !vdur) return;
-    e.preventDefault(); vvideo.pause();
-    tdrag = e.target.dataset.h || "seek";
-    if (tdrag === "seek") { const i = vSegAt(trimTime(e)); if (i >= 0) vsel = i; } else vPushHist();
-    trim.setPointerCapture(e.pointerId); trimMove(e);
+    if (vrun || vstarting || !vs.clips.length) return;
+    e.preventDefault(); vPause();
+    const h = e.target.dataset && e.target.dataset.h;
+    if (h) {
+      const c = vs.clips[vsel], box = e.target.parentElement, r = trim.getBoundingClientRect();
+      vSetClip(vsel); vprevFor = null;
+      tdrag = { kind: h, x0: e.clientX, pps: r.width / vlay.total, s0: c.s, e0: c.e, box, left0: box.offsetLeft, w0: box.offsetWidth };
+      trim.classList.add("dragging");
+    } else tdrag = { kind: "seek" };
+    try { trim.setPointerCapture(e.pointerId); } catch (e2) {}
+    trimMove(e);
   });
-  trim.addEventListener("pointermove", e => { if (tdrag) trimMove(e); });
+  trim.addEventListener("pointermove", trimMove);
   ["pointerup", "pointercancel"].forEach(ev => trim.addEventListener(ev, () => {
     if (!tdrag) return;
     const was = tdrag; tdrag = null;
-    if (was !== "seek") { vScrub(vs.segs[vsel].s); vSyncTrim(); vSaveSoon(); }
+    if (was.kind === "seek") return;
+    trim.classList.remove("dragging");
+    vRelayout(); vSyncTrim();
+    vScrubTo(was.kind === "s" ? vlay.starts[vsel] : vlay.starts[vsel] + clipLen(vs.clips[vsel]) - 0.05);
+    vSyncTime(); vCommit();
   }));
   function vSplit() {
-    const t = vvideo.currentTime, i = vSegAt(t);
-    if (i < 0) { toast("Mueve la línea blanca a un punto dentro del video para dividir ahí."); return; }
-    const g = vs.segs[i];
-    if (t - g.s < VMIN_LEN || g.e - t < VMIN_LEN) { toast("Ese punto está demasiado cerca del borde del trozo. Muévete un poco más adentro."); return; }
-    vPushHist();
-    vs.segs.splice(i, 1, { s: g.s, e: t }, { s: t, e: g.e });
-    vsel = i + 1;
-    vSyncTrim(); vSaveSoon();
-    toast("Dividido en dos trozos.");
+    const T = vNow(), p = vLocate(T), c = vs.clips[p.i];
+    if (p.t - c.s < VMIN_LEN || c.e - p.t < VMIN_LEN) { toast("Ese punto está demasiado cerca del borde del clip. Mueve la línea blanca un poco más adentro."); return; }
+    vPause();
+    vs.clips.splice(p.i, 1, { ...c, e: p.t }, { id: vuid(), src: c.src, s: p.t, e: c.e, tr: "none" });
+    vRelayout(); vci = p.i + 1; vsel = p.i + 1; vprevFor = null;
+    vSyncTrim(); vSyncTime(); vCommit();
+    toast("Dividido en dos clips.");
   }
-  function vDeleteSeg() {
-    if (vs.segs.length < 2) { toast("Tiene que quedar al menos un trozo. Divide primero el video."); return; }
-    vPushHist();
-    vs.segs.splice(vsel, 1);
-    vsel = clamp(vsel, 0, vs.segs.length - 1);
-    vvideo.pause(); vScrub(vs.segs[vsel].s);
-    vSyncTrim(); vSyncTime(); vSaveSoon();
+  function vAfterClips(T) {      // tras borrar o mover clips
+    vRelayout(); vsel = clamp(vsel, 0, vs.clips.length - 1); vci = Math.min(vci, vs.clips.length - 1);
+    vResize(); vScrubTo(T == null ? vlay.starts[vsel] : T); vSyncTrim(); vSyncTime();
   }
-  function vUndoCut() {
-    if (!vhist.length) return;
-    vs.segs = JSON.parse(vhist.pop());
-    vsel = clamp(vsel, 0, vs.segs.length - 1);
-    vvideo.pause(); vScrub(vNearestKept(vvideo.currentTime));
-    vSyncTrim(); vSyncTime(); vSaveSoon();
+  function vDeleteClip() {
+    if (vs.clips.length < 2) { toast("Tiene que quedar al menos un clip."); return; }
+    vPause(); vs.clips.splice(vsel, 1); vAfterClips(); vCommit();
+  }
+  function vMoveClip(d) {
+    const j = vsel + d; if (j < 0 || j >= vs.clips.length) return;
+    vPause(); const [c] = vs.clips.splice(vsel, 1); vs.clips.splice(j, 0, c); vsel = j; vAfterClips(); vCommit();
   }
 
-  async function buildTrimThumbs() {
-    const cv = $("trim-thumbs"), c = cv.getContext("2d"), N = 10, cw = cv.width / N, ch = cv.height;
-    c.fillStyle = "#0c0b0a"; c.fillRect(0, 0, cv.width, cv.height);
-    const vw = vvideo.videoWidth, vh = vvideo.videoHeight;
-    for (let i = 0; i < N; i++) {
-      await vSeek((i + 0.5) / N * vdur);
-      try {
-        const k = Math.max(cw / vw, ch / vh), sw = cw / k, sh = ch / k;
-        c.drawImage(vvideo, (vw - sw) / 2, (vh - sh) / 2, sw, sh, i * cw, 0, cw, ch);
-        if (i === 1) {      // un fotograma pequeño para las miniaturas de filtros y para el menú
-          const t = 132 / Math.min(vw, vh);
-          vThumbSrc.width = Math.max(1, Math.round(vw * t)); vThumbSrc.height = Math.max(1, Math.round(vh * t));
-          vThumbSrc.getContext("2d").drawImage(vvideo, 0, 0, vThumbSrc.width, vThumbSrc.height);
-          try { vposter = vThumbSrc.toDataURL("image/jpeg", 0.7); } catch (e) { vposter = ""; }
-        }
-      } catch (e) {}
-    }
+  /* ---- Deshacer y rehacer ---- */
+  function syncVUndo() { $("v-undo").disabled = !vundo.length; $("v-redo").disabled = !vredo.length; }
+  function vCommit() {       // se llama al terminar cada cambio
+    const j = JSON.stringify(vs);
+    if (j !== vsnap) { vundo.push(vsnap); if (vundo.length > 60) vundo.shift(); vredo = []; vsnap = j; syncVUndo(); }
+    vSaveSoon();
   }
+  function vRestore(j) {
+    vPause();
+    const T = vNow();
+    vs = JSON.parse(j); vsnap = j;
+    if (vtsel && !vs.texts.some(t => t.id === vtsel)) vtsel = null;
+    vthumbSig = ""; vci = 0;
+    vAfterClips(Math.min(T, Math.max(0, vs.clips.reduce((a, c) => a + clipLen(c), 0) - 0.05)));
+    vSyncMusicSrc().then(() => { vApplyVol(); vSyncTrim(); if (vtab === "sonido") renderVPanel(); });
+    vApplyVol(); vApplyRate(); renderVPanel(); syncVUndo(); vSaveSoon();
+  }
+  function vUndo() { if (!vundo.length || vrun) return; vredo.push(vsnap); vRestore(vundo.pop()); }
+  function vRedo() { if (!vredo.length || vrun) return; vundo.push(vsnap); vRestore(vredo.pop()); }
+  $("v-undo").addEventListener("click", vUndo); $("v-redo").addEventListener("click", vRedo);
+
+  /* ---- Textos: añadir, elegir y mover con el dedo ---- */
+  function vAddText() {
+    vPause();
+    let t0 = Math.floor(vNow() * 10) / 10;
+    if (vlay.total - t0 < 0.5) t0 = Math.max(0, vlay.total - 3);
+    const t = { id: vuid(), text: "Tu texto", x: 0.5, y: 0.5, size: 0.08, color: "#ffffff", style: "outline", font: "display", t0, t1: t0 + 3 >= vlay.total - 0.05 ? VALL : t0 + 3 };
+    vs.texts.push(t); vtsel = t.id;
+    if (vNow() < t0) vScrubTo(t0 + 0.02);
+    vdirty = true; renderVPanel(); vSyncTrim(); vCommit();
+    const inp = $("v-text-in"); if (inp) { try { inp.focus(); inp.select(); } catch (e) {} }
+  }
+  function vSelectText(id) {
+    const t = vs.texts.find(x => x.id === id); if (!t) return;
+    vPause(); vtsel = id;
+    const T = vNow(); if (T < t.t0 || T >= t.t1) vScrubTo(t.t0 + 0.02);
+    vdirty = true; renderVPanel(); vSyncTrim();
+  }
+  let sdrag = null, sSuppress = false;
+  const stagePt = e => { const r = vcanvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
+  function vHitText(p) { for (let i = vs.texts.length - 1; i >= 0; i--) { const b = vboxes[vs.texts[i].id]; if (b && p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1) return vs.texts[i]; } return null; }
+  vstage.addEventListener("pointerdown", e => {
+    sSuppress = false;
+    if (vrun || vstarting || vtab !== "texto") return;
+    const p = stagePt(e), t = vHitText(p); if (!t) return;
+    e.preventDefault(); sSuppress = true; vPause();
+    if (vtsel !== t.id) { vtsel = t.id; renderVPanel(); vSyncTrim(); }
+    sdrag = { t, dx: t.x - p.x, dy: t.y - p.y, moved: false };
+    try { vstage.setPointerCapture(e.pointerId); } catch (e2) {}
+    vdirty = true;
+  });
+  vstage.addEventListener("pointermove", e => {
+    if (!sdrag) return;
+    const p = stagePt(e), nx = clamp(p.x + sdrag.dx, 0.03, 0.97), ny = clamp(p.y + sdrag.dy, 0.03, 0.97);
+    if (Math.abs(nx - sdrag.t.x) + Math.abs(ny - sdrag.t.y) > 0.001) sdrag.moved = true;
+    sdrag.t.x = nx; sdrag.t.y = ny; vdirty = true;
+  });
+  ["pointerup", "pointercancel"].forEach(ev => vstage.addEventListener(ev, () => { if (!sdrag) return; if (sdrag.moved) vCommit(); sdrag = null; }));
+  vstage.addEventListener("click", () => { if (sSuppress) { sSuppress = false; return; } vToggle(); });
 
   /* ---- Panel de herramientas ---- */
   const VI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const IC_CUT = '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', IC_PLUS = '<path d="M12 5v14M5 12h14"/>';
+  const IC_NOTE = '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>';
   const VTABS = [
-    ["recorte", "Recortar", '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>'],
+    ["clips", "Clips", IC_CUT],
+    ["texto", "Texto", '<path d="M5 7V5h14v2"/><path d="M12 5v14"/><path d="M9 19h6"/>'],
+    ["sonido", "Música", IC_NOTE],
+    ["trans", "Transición", '<rect x="3" y="5" width="8" height="14" rx="2"/><path d="M14 5h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><path d="M14 9v6"/>'],
     ["filtros", "Filtros", '<circle cx="9" cy="9" r="5.5"/><circle cx="15" cy="9" r="5.5"/><circle cx="12" cy="15" r="5.5"/>'],
     ["ajustes", "Ajustes", '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'],
     ["velocidad", "Velocidad", '<path d="M5 18a8 8 0 1 1 14 0"/><path d="m12 13 4-5"/>'],
-    ["sonido", "Sonido", '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/>'],
     ["formato", "Formato", '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>'],
   ];
   $("vtabs").innerHTML = VTABS.map(([id, name, ic]) => `<button class="tab" role="tab" data-vt="${id}" aria-selected="false">${VI(ic)}${name}</button>`).join("");
-  $("vtabs").querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { vtab = b.dataset.vt; renderVPanel(); }));
+  $("vtabs").querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { vtab = b.dataset.vt; renderVPanel(); vdirty = true; syncPlayBtn(); }));
 
   function renderVPanel() {
     $("vtabs").querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.vt === vtab)));
     const body = $("vbody");
-    if (vtab === "recorte") {
-      body.innerHTML = `<div class="vinfo" id="v-trim-info"></div>
+    if (vtab === "clips") {
+      body.innerHTML = `<div class="vinfo" id="v-clip-info"></div>
         <div class="vrow">
-          <button class="btn primary" id="v-split">${VI('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>')}Dividir aquí</button>
-          <button class="btn" id="v-seg-del">Borrar trozo</button>
-          <button class="btn" id="v-seg-undo">Deshacer</button>
-          <button class="btn" id="v-trim-reset">Video entero</button>
+          <button class="btn primary" id="v-split">${VI(IC_CUT)}Dividir aquí</button>
+          <label class="btn" for="video-add">${VI(IC_PLUS)}Añadir video</label>
+          <button class="btn" id="v-clip-del">Borrar clip</button>
+          <button class="btn" id="v-clip-l">${VI('<path d="m14 6-6 6 6 6"/>')}Mover</button>
+          <button class="btn" id="v-clip-r">Mover${VI('<path d="m10 6 6 6-6 6"/>')}</button>
         </div>
-        <div class="vinfo">Lleva la línea blanca al punto de corte y pulsa «Dividir aquí». Toca un trozo para elegirlo: puedes borrarlo o arrastrar sus extremos. Los trozos que queden se unen.</div>`;
+        <div class="vinfo">Toca un clip para elegirlo y arrastra sus extremos para acortarlo. «Dividir aquí» corta donde está la línea blanca.</div>`;
       $("v-split").onclick = vSplit;
-      $("v-seg-del").onclick = vDeleteSeg;
-      $("v-seg-undo").onclick = vUndoCut;
-      $("v-trim-reset").onclick = () => { vPushHist(); vs.segs = [{ s: 0, e: vdur }]; vsel = 0; vSyncTrim(); vSaveSoon(); };
+      $("v-clip-del").onclick = vDeleteClip;
+      $("v-clip-l").onclick = () => vMoveClip(-1);
+      $("v-clip-r").onclick = () => vMoveClip(1);
       vSyncTrim();
+    } else if (vtab === "texto") {
+      const t = vs.texts.find(x => x.id === vtsel);
+      const list = vs.texts.length > (t ? 1 : 0) ? `<div class="vrow" id="v-text-list"></div>` : "";
+      if (!t) {
+        body.innerHTML = `<div class="vrow"><button class="btn primary" id="v-text-add">${VI(IC_PLUS)}Añadir texto</button></div>${list}
+          <div class="vinfo">Pon un título o una frase encima del video. Aparece donde está la línea blanca; después puedes moverlo con el dedo.</div>`;
+      } else {
+        body.innerHTML = `<div class="vrow"><input class="vinput" id="v-text-in" type="text" maxlength="140" placeholder="Escribe aquí" autocomplete="off" enterkeyhint="done">
+            <button class="btn icon" id="v-text-add" aria-label="Añadir otro texto" title="Añadir otro texto">${VI(IC_PLUS)}</button>
+            <button class="btn" id="v-text-del">Borrar</button></div>${list}
+          <div class="vrow" id="v-text-look">
+            ${VCOLORS.map(c => `<button class="vsw" data-c="${c}" style="background:${c}" aria-label="Color"></button>`).join("")}
+          </div>
+          <div class="vrow">
+            ${VSTYLES.map(([id, l]) => `<button class="chip text" data-st="${id}">${l}</button>`).join("")}
+            <span class="vsep"></span>
+            ${Object.entries(VFONT).map(([id, f]) => `<button class="chip text" data-fo="${id}">${f.l}</button>`).join("")}
+          </div>
+          <div class="ctl"><label for="v-text-size">Tamaño</label><output id="v-text-size-out"></output>
+            <input type="range" id="v-text-size" min="3" max="22" step="0.5"></div>
+          <div class="vrow"><button class="chip text" id="v-text-from">Empieza aquí</button><button class="chip text" id="v-text-to">Termina aquí</button><button class="chip text" id="v-text-all">Todo el video</button><span class="vinfo" id="v-text-info"></span></div>`;
+        const inp = $("v-text-in"); inp.value = t.text;
+        inp.addEventListener("input", () => { t.text = inp.value; vdirty = true; });
+        inp.addEventListener("change", () => { vCommit(); syncVText(); });
+        inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
+        $("v-text-del").onclick = () => { vs.texts = vs.texts.filter(x => x.id !== t.id); vtsel = null; vdirty = true; renderVPanel(); vSyncTrim(); vCommit(); };
+        body.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => { t.color = b.dataset.c; vdirty = true; syncVText(); vCommit(); }));
+        body.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { t.style = b.dataset.st; vdirty = true; syncVText(); vCommit(); }));
+        body.querySelectorAll("[data-fo]").forEach(b => b.addEventListener("click", () => { t.font = b.dataset.fo; vdirty = true; syncVText(); vCommit(); }));
+        const sz = $("v-text-size");
+        sz.addEventListener("input", () => { t.size = +sz.value / 100; vdirty = true; syncVText(true); });
+        sz.addEventListener("change", vCommit);
+        $("v-text-from").onclick = () => { const T = vNow(); t.t0 = Math.max(0, Math.min(T, Math.min(t.t1, vlay.total) - 0.3)); vdirty = true; syncVText(); vSyncTrim(); vCommit(); };
+        $("v-text-to").onclick = () => { const T = vNow(); t.t1 = Math.max(T, t.t0 + 0.3); vdirty = true; syncVText(); vSyncTrim(); vCommit(); };
+        $("v-text-all").onclick = () => { t.t0 = 0; t.t1 = VALL; vdirty = true; syncVText(); vSyncTrim(); vCommit(); };
+      }
+      $("v-text-add").onclick = vAddText;
+      const lb = $("v-text-list");
+      if (lb) vs.texts.forEach(x => {
+        const b = document.createElement("button");
+        b.className = "chip text"; b.setAttribute("aria-pressed", String(x.id === vtsel));
+        b.textContent = (String(x.text).trim() || "(vacío)").slice(0, 14);
+        b.addEventListener("click", () => vSelectText(x.id));
+        lb.appendChild(b);
+      });
+      syncVText();
+    } else if (vtab === "sonido") {
+      const m = vs.music && VM.ready ? vs.music : null;
+      body.innerHTML = `<div class="ctl"><label for="v-vol">Sonido del video</label><output id="v-vol-out"></output>
+          <input type="range" id="v-vol" min="0" max="100" step="1"></div>` + (m
+        ? `<div class="ctl"><label for="v-mvol" id="v-mus-name"></label><output id="v-mvol-out"></output>
+            <input type="range" id="v-mvol" min="0" max="100" step="1"></div>
+          <div class="ctl"><label for="v-moff">La canción empieza en</label><output id="v-moff-out"></output>
+            <input type="range" id="v-moff" min="0" max="${Math.max(1, Math.floor(vmusic.duration - 1))}" step="0.5"></div>
+          <div class="vrow"><button class="chip text" id="v-mfade">Bajar la música al final</button><label class="btn" for="music-input">Cambiar canción</label><button class="btn" id="v-mdel">Quitar música</button></div>`
+        : `<div class="vrow"><label class="btn primary" for="music-input">${VI(IC_NOTE)}Añadir música</label></div>
+          <div class="vinfo">Elige una canción guardada en tu teléfono (en el iPhone, desde la app Archivos), en MP3 o M4A. Suena junto con el video.</div>`);
+      const vol = $("v-vol");
+      vol.addEventListener("input", () => { vs.vol = +vol.value; vApplyVol(); syncVSound(true); });
+      vol.addEventListener("change", vCommit);
+      if (m) {
+        const mv = $("v-mvol"), mo = $("v-moff");
+        mv.addEventListener("input", () => { m.vol = +mv.value; vApplyVol(); syncVSound(true); });
+        mv.addEventListener("change", vCommit);
+        mo.addEventListener("input", () => { m.offset = +mo.value; syncVSound(true); });
+        mo.addEventListener("change", () => { vPause(); vSyncTrim(); vCommit(); });
+        $("v-mfade").onclick = () => { m.fade = !m.fade; vApplyVol(); syncVSound(); vCommit(); };
+        $("v-mdel").onclick = () => { vPause(); vs.music = null; vSyncMusicSrc().then(() => { renderVPanel(); vSyncTrim(); }); vCommit(); };
+      }
+      syncVSound();
+    } else if (vtab === "trans") {
+      if (vs.clips.length < 2) body.innerHTML = `<div class="vinfo">Las transiciones van entre dos clips. Añade otro video o divide este en la pestaña <b>Clips</b>.</div>`;
+      else {
+        const j = Math.max(1, Math.min(vsel, vs.clips.length - 1)), c = vs.clips[j];
+        body.innerHTML = `<div class="vinfo">Paso del clip <b>${j}</b> al <b>${j + 1}</b>. Toca otro clip en la tira para cambiar de unión.</div>
+          <div class="vrow">${VTRANS.map(([id, l]) => `<button class="chip text" data-tr="${id}" aria-pressed="${(c.tr || "none") === id}">${l}</button>`).join("")}</div>
+          <div class="vrow"><span class="vinfo">Duración</span>${[0.3, 0.5, 1].map(d => `<button class="chip" data-td="${d}" aria-pressed="${vs.trDur === d}">${d} s</button>`).join("")}<button class="btn" id="v-tr-all">Poner en todas</button></div>`;
+        const preview = () => { vPause(); vPlay(Math.max(0, vlay.starts[j] - 1 * vs.speed)); };
+        body.querySelectorAll("[data-tr]").forEach(b => b.addEventListener("click", () => { c.tr = b.dataset.tr; vSyncTrim(); vCommit(); renderVPanel(); if (c.tr !== "none") preview(); else { vPause(); vdirty = true; } }));
+        body.querySelectorAll("[data-td]").forEach(b => b.addEventListener("click", () => { vs.trDur = +b.dataset.td; vCommit(); renderVPanel(); if ((c.tr || "none") !== "none") preview(); }));
+        $("v-tr-all").onclick = () => { vs.clips.forEach((x, i) => { if (i > 0) x.tr = c.tr || "none"; }); vSyncTrim(); vCommit(); toast((c.tr || "none") === "none" ? "Transiciones quitadas de todas las uniones." : "Transición puesta en todas las uniones."); };
+      }
     } else if (vtab === "filtros") {
       body.innerHTML = `<div class="ctl"><label for="v-amount">Intensidad <span id="v-amount-name" style="color:var(--accent);font-weight:600"></span></label><output id="v-amount-out"></output>
           <input type="range" id="v-amount" min="0" max="150" step="1"></div>
         <div class="vrow"><div class="presets-v" id="v-presets"></div></div>`;
-      const box = $("v-presets");
+      const box = $("v-presets"), small = vs.clips[0] ? srcOf(vs.clips[0]).small : null;
       ALL_PRESETS.slice().sort((a, b) => (a.id === "original" ? -1 : b.id === "original" ? 1 : 0)).forEach(pr => {
         const b = document.createElement("button");
         b.className = "preset"; b.dataset.id = pr.id; b.setAttribute("aria-pressed", String(pr.id === vs.preset));
         b.innerHTML = `<span class="thumb"><canvas width="1" height="1" aria-hidden="true"></canvas></span><span>${pr.name}</span>`;
-        b.addEventListener("click", () => { vs.preset = pr.id; if (pr.id !== "original" && !vs.presetAmount) vs.presetAmount = 100; vdirty = true; syncVFilters(); vSaveSoon(); });
+        b.addEventListener("click", () => { vs.preset = pr.id; if (pr.id !== "original" && !vs.presetAmount) vs.presetAmount = 100; vdirty = true; syncVFilters(); vCommit(); });
         box.appendChild(b);
-        if (vThumbSrc.width > 1) {
+        if (small && small.width > 1) {
           const pp = presetOnlyParams(pr.id); ["clarity", "sharpen", "smooth", "depth", "focusArea"].forEach(k => { pp[k] = 0; });
-          try { renderImage(vThumbSrc, pp, b.querySelector("canvas"), defaults(), false); } catch (e) {}
+          try { renderImage(small, pp, b.querySelector("canvas"), defaults(), false); } catch (e) {}
         }
       });
       const am = $("v-amount");
       am.addEventListener("input", () => { vs.presetAmount = +am.value; vdirty = true; syncVFilters(); });
-      am.addEventListener("change", vSaveSoon);
+      am.addEventListener("change", vCommit);
       syncVFilters();
     } else if (vtab === "ajustes") {
       body.innerHTML = `<div id="v-adj-slider"><div class="m-adj-head"><span id="v-adj-name"></span><span><output id="v-adj-out"></output> <button class="chip text" id="v-adj-zero" hidden>A cero</button></span></div>
@@ -4785,30 +5252,48 @@ void main(){
       });
       const r = $("v-adj-range");
       r.addEventListener("input", () => { vs.adj[vkey] = +r.value; vdirty = true; syncVAdjust(true); });
-      r.addEventListener("change", vSaveSoon);
-      $("v-adj-zero").onclick = () => { vs.adj[vkey] = 0; vdirty = true; syncVAdjust(); vSaveSoon(); };
+      r.addEventListener("change", vCommit);
+      $("v-adj-zero").onclick = () => { vs.adj[vkey] = 0; vdirty = true; syncVAdjust(); vCommit(); };
       syncVAdjust();
     } else if (vtab === "velocidad") {
       body.innerHTML = `<div class="vrow">${[0.5, 0.75, 1, 1.5, 2].map(v => `<button class="chip" data-sp="${v}" aria-pressed="${vs.speed === v}">×${v}</button>`).join("")}</div>
         <div class="vinfo" id="v-speed-info"></div>`;
       body.querySelectorAll("[data-sp]").forEach(b => b.addEventListener("click", () => {
-        vs.speed = +b.dataset.sp; vvideo.playbackRate = vs.speed;
+        vPause(); vs.speed = +b.dataset.sp; vApplyRate();
         body.querySelectorAll("[data-sp]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-        syncVSpeed(); vSyncTrim(); vSaveSoon();
+        syncVSpeed(); vSyncTrim(); vSyncTime(); vCommit();
       }));
       syncVSpeed();
-    } else if (vtab === "sonido") {
-      body.innerHTML = `<div class="seg text" id="v-sound"><button data-m="0" aria-pressed="${!vs.muted}">Con sonido</button><button data-m="1" aria-pressed="${vs.muted}">Sin sonido</button></div>
-        <div class="vinfo">${vs.muted ? "El video se guardará sin sonido." : "El video se guarda con su sonido original."}</div>`;
-      body.querySelectorAll("#v-sound button").forEach(b => b.addEventListener("click", () => { vs.muted = b.dataset.m === "1"; vvideo.muted = vs.muted; vSaveSoon(); renderVPanel(); }));
     } else if (vtab === "formato") {
+      const fit = vs.format !== "original" || vMixed();
       body.innerHTML = `<div class="vrow">${VFORMATS.map(f => `<button class="chip text" data-f="${f.id}" aria-pressed="${vs.format === f.id}">${f.label}</button>`).join("")}</div>
-        <div class="seg text" id="v-fit" ${vs.format === "original" ? "hidden" : ""}><button data-fit="cover" aria-pressed="${vs.fit === "cover"}">Recortar para llenar</button><button data-fit="contain" aria-pressed="${vs.fit === "contain"}">Entero con fondo negro</button></div>
+        <div class="seg text" id="v-fit" ${fit ? "" : "hidden"}><button data-fit="cover" aria-pressed="${vs.fit === "cover"}">Recortar para llenar</button><button data-fit="contain" aria-pressed="${vs.fit === "contain"}">Entero con fondo negro</button></div>
         <div class="vinfo" id="v-format-info"></div>`;
-      body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vSaveSoon(); renderVPanel(); }));
-      body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vSaveSoon(); renderVPanel(); }));
+      body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vCommit(); renderVPanel(); }));
+      body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vCommit(); renderVPanel(); }));
       const o = vOutDims(); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
     }
+  }
+  function syncVText(fromSlider = false) {
+    const t = vs.texts.find(x => x.id === vtsel), sz = $("v-text-size"); if (!t || !sz) return;
+    if (!fromSlider) sz.value = Math.round(t.size * 200) / 2; setFill(sz);
+    $("v-text-size-out").textContent = Math.round(t.size * 100) + "%";
+    $("vbody").querySelectorAll("[data-c]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.c === t.color)));
+    $("vbody").querySelectorAll("[data-st]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.st === t.style)));
+    $("vbody").querySelectorAll("[data-fo]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.fo === t.font)));
+    $("v-text-info").textContent = t.t0 <= 0.01 && t.t1 >= vlay.total - 0.01 ? "Se ve todo el video." : `Se ve de ${fmtTime(t.t0 / vs.speed)} a ${t.t1 >= vlay.total ? "el final" : fmtTime(t.t1 / vs.speed)}.`;
+  }
+  function syncVSound(fromSlider = false) {
+    const vol = $("v-vol"); if (!vol) return;
+    if (!fromSlider) vol.value = vs.vol; setFill(vol);
+    $("v-vol-out").textContent = vs.vol === 0 ? "Sin sonido" : vs.vol + "%";
+    const m = vs.music, mv = $("v-mvol"); if (!m || !mv) return;
+    if (!fromSlider) { mv.value = m.vol; $("v-moff").value = m.offset; }
+    setFill(mv); setFill($("v-moff"));
+    $("v-mus-name").textContent = "♪ " + m.name;
+    $("v-mvol-out").textContent = m.vol + "%";
+    $("v-moff-out").textContent = fmtTime(m.offset);
+    $("v-mfade").setAttribute("aria-pressed", String(!!m.fade));
   }
   function syncVFilters() {
     const am = $("v-amount"); if (!am) return;
@@ -4829,10 +5314,12 @@ void main(){
   }
   function syncVSpeed() {
     const el = $("v-speed-info"); if (!el) return;
-    el.innerHTML = vs.speed === 1 ? "Velocidad normal." : `${vs.speed < 1 ? "Cámara lenta" : "Cámara rápida"}: el video de ${fmtTime(vTotal())} durará <b>${fmtTime(vTotal() / vs.speed)}</b>.`;
+    el.innerHTML = vs.speed === 1 ? "Velocidad normal." : `${vs.speed < 1 ? "Cámara lenta" : "Cámara rápida"}: el video de ${fmtTime(vlay.total)} durará <b>${fmtTime(vlay.total / vs.speed)}</b>.${vs.music ? " La música no cambia de velocidad." : ""}`;
   }
 
-  /* ---- Abrir, guardar el proyecto y volver a él ---- */
+  /* ---- Proyectos: crear, abrir, guardar y borrar ---- */
+  // Cada proyecto guarda en el dispositivo sus videos, su música y todo lo que se le ha hecho.
+  const VK = { index: "video-index", proj: id => "vp:" + id, file: (id, sid) => "vf:" + id + ":" + sid };
   function vBusy(text, note = "", opts = {}) {
     $("vbusy-text").textContent = text; $("vbusy-note").textContent = note;
     $("vbusy-bar").hidden = !opts.bar; $("vbusy-cancel").hidden = !opts.cancel; $("vbusy-fill").style.width = "0%";
@@ -4840,66 +5327,250 @@ void main(){
   }
   const vBusyOff = () => { $("vbusy").hidden = true; };
   let vSaveTimer = 0;
-  function vSaveSoon() { clearTimeout(vSaveTimer); vSaveTimer = setTimeout(() => { if (vfile) store.kvPut("video-state", vs).catch(() => {}); }, 600); }
-
-  async function loadVideo(file, saved) {
-    if (!file) return;
-    const name = file.name || (saved && saved.name) || "video";
-    if (!(file.type || "").startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(name)) { toast(`«${name}» no es un video. Prueba con MP4 o MOV.`, true); return; }
+  function vSaveSoon() { clearTimeout(vSaveTimer); vSaveTimer = setTimeout(vSaveNow, 600); }
+  function vSaveNow() {
+    clearTimeout(vSaveTimer);
+    if (!vproj || !vs.clips.length) return;
+    const first = srcOf(vs.clips[0]);
+    const rec = { id: vproj.id, name: vproj.name, created: vproj.created, state: vs,
+      srcs: [...vsrc.values()].filter(S => S.stored).map(S => ({ id: S.id, name: S.name })),
+      mus: [...vmus].filter(([, m]) => m.stored).map(([id, m]) => ({ id, name: m.name })) };
+    store.kvPut(VK.proj(vproj.id), rec).catch(() => {});
+    const entry = { id: vproj.id, name: vproj.name, updated: Date.now(), poster: first ? first.poster : "", dur: vlay.total / vs.speed, clips: vs.clips.length };
+    vindex = vindex.filter(p => p.id !== entry.id); vindex.push(entry);
+    store.kvPut(VK.index, vindex).catch(() => {});
+  }
+  function vNormalize(st) {
+    const d = vDefaults(); st = st || {};
+    const out = { ...d, ...st, adj: { ...d.adj, ...(st.adj || {}) } };
+    if (!Array.isArray(st.clips)) {       // proyectos de la primera versión: un solo video, con trozos
+      let segs = Array.isArray(st.segs) ? st.segs : [];
+      if (!segs.length && st.end > 0) segs = [{ s: st.start || 0, e: st.end }];
+      out.clips = segs.length ? segs.map(g => ({ id: vuid(), src: "a", s: g.s, e: g.e, tr: "none" })) : [{ id: vuid(), src: "a", s: 0, e: 1e9, tr: "none" }];
+      out.vol = st.muted ? 0 : 100;
+    }
+    ["segs", "start", "end", "muted"].forEach(k => { delete out[k]; });
+    out.ver = 2; out.texts = Array.isArray(out.texts) ? out.texts : [];
+    return out;
+  }
+  async function vBuildThumbs(S) {
+    const N = VTHUMBS, tw = 80, th = 70, cv = S.thumbs, el = S.el;
+    cv.width = tw * N; cv.height = th;
+    const c = cv.getContext("2d"); c.fillStyle = "#0c0b0a"; c.fillRect(0, 0, cv.width, th);
+    for (let i = 0; i < N; i++) {
+      await elSeek(el, (i + 0.5) / N * S.dur);
+      try {
+        const k = Math.max(tw / S.w, th / S.h), sw = tw / k, sh = th / k;
+        c.drawImage(el, (S.w - sw) / 2, (S.h - sh) / 2, sw, sh, i * tw, 0, tw, th);
+        if (i === 1) {      // un fotograma pequeño para las miniaturas de filtros y para el menú
+          const t = 132 / Math.min(S.w, S.h);
+          S.small.width = Math.max(1, Math.round(S.w * t)); S.small.height = Math.max(1, Math.round(S.h * t));
+          S.small.getContext("2d").drawImage(el, 0, 0, S.small.width, S.small.height);
+          try { S.poster = S.small.toDataURL("image/jpeg", 0.7); } catch (e) { S.poster = ""; }
+        }
+      } catch (e) {}
+    }
+    await elSeek(el, 0);
+  }
+  async function vAddSource(blob, name, id) {
+    const el = document.createElement("video");
+    el.playsInline = true; el.setAttribute("playsinline", ""); el.setAttribute("webkit-playsinline", ""); el.preload = "auto"; el.muted = true;
+    vpool.appendChild(el);
+    const url = URL.createObjectURL(blob);
+    const S = { id: id || vuid(), name, blob, el, url, dur: 0, w: 0, h: 0, thumbs: document.createElement("canvas"), small: document.createElement("canvas"), poster: "", node: null, unl: false, want: false, stored: false, forceMute: false };
+    try {
+      el.src = url; el.load();
+      await once(el, "loadedmetadata", 20000);
+      try { await el.play(); el.pause(); } catch (e) {}      // en el iPhone hace falta para que cargue el primer fotograma
+      if (el.readyState < 2) { try { await once(el, "loadeddata", 8000); } catch (e) {} }
+      if (!isFinite(el.duration) || el.duration <= 0 || !el.videoWidth) throw new Error("sin datos");
+      S.dur = el.duration; S.w = el.videoWidth; S.h = el.videoHeight;
+      await vBuildThumbs(S);
+    } catch (e) { el.removeAttribute("src"); try { el.load(); } catch (e2) {} el.remove(); URL.revokeObjectURL(url); return null; }
+    el.addEventListener("seeked", () => { vdirty = true; if (el._pend != null) { const t = el._pend; el._pend = null; try { el.currentTime = t; } catch (e) {} } });
+    el.addEventListener("loadeddata", () => { vdirty = true; });
+    el.addEventListener("pause", () => { if (S.want && vplaying && !vjump && !vrun && !el.ended) vPause(); });
+    vsrc.set(S.id, S); vWire(S);
+    return S;
+  }
+  function vStoreSource(S) {
+    if (S.blob.size > VBIG) { toast("Ese video es muy grande: se puede editar, pero no quedará guardado en el proyecto."); return; }
+    S.stored = true;
+    store.kvPut(VK.file(vproj.id, S.id), { blob: S.blob, name: S.name }).catch(() => { S.stored = false; toast("No queda espacio en el dispositivo para guardar este video en el proyecto. Puedes editarlo ahora, pero no retomarlo después.", true); });
+  }
+  async function vAddFiles(files) {       // prepara cada video y lo añade como clip al final
+    let n = 0, i = 0;
+    for (const f of files) {
+      i++;
+      const name = f.name || "video";
+      if (!(f.type || "").startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(name)) { toast(`«${name}» no es un video. Prueba con MP4 o MOV.`, true); continue; }
+      if (files.length > 1) $("vbusy-text").textContent = `Preparando el video ${i} de ${files.length}…`;
+      const S = await vAddSource(f, name);
+      if (!S) { toast(`No se pudo abrir «${name}». Puede que este navegador no lea ese formato de video.`, true); continue; }
+      vStoreSource(S);
+      vs.clips.push({ id: vuid(), src: S.id, s: 0, e: S.dur, tr: "none" }); n++;
+    }
+    return n;
+  }
+  function vDispose(save = true) {
+    if (save && vproj) vSaveNow();
+    vPause(); clearTimeout(vSaveTimer);
+    vsrc.forEach(S => { try { if (S.node) S.node.disconnect(); } catch (e) {} S.el.removeAttribute("src"); try { S.el.load(); } catch (e) {} S.el.remove(); URL.revokeObjectURL(S.url); });
+    vsrc.clear(); vmus.clear();
+    vs = vDefaults(); vproj = null; vlay = { starts: [], total: 0 };
+    vundo = []; vredo = []; vsnap = ""; vci = 0; vsel = 0; vtsel = null; vthumbSig = ""; vprevFor = null;
+    vSyncMusicSrc();
+  }
+  async function vReady() {       // con los videos ya cargados: lo deja todo listo y abre el editor
+    vRelayout(); vci = 0; vsel = 0; vtsel = null; vundo = []; vredo = []; vthumbSig = ""; vtab = "clips";
+    vResize();
+    if (!(await vSyncMusicSrc())) vs.music = null;
+    vsnap = JSON.stringify(vs);
+    vApplyVol(); vApplyRate();
+    await vSeekTo(0);
+    $("v-name").value = vproj.name;
+    vSaveNow(); openVideoEditor();
+  }
+  async function vNewProject(files) {
+    files = [...(files || [])].filter(Boolean); if (!files.length) return;
     vBusy("Preparando el video…");
     try {
-      vvideo.pause();
-      if (vurl) URL.revokeObjectURL(vurl);
-      vurl = URL.createObjectURL(file);
-      vvideo.muted = true; vvideo.src = vurl; vvideo.load();
-      await once(vvideo, "loadedmetadata", 20000);
-      try { await vvideo.play(); vvideo.pause(); } catch (e) {}      // en el iPhone hace falta para que cargue el primer fotograma
-      if (vvideo.readyState < 2) { try { await once(vvideo, "loadeddata", 8000); } catch (e) {} }
-      const dur = vvideo.duration;
-      if (!isFinite(dur) || dur <= 0 || !vvideo.videoWidth) throw new Error("sin datos");
-      if (!initGL()) { vBusyOff(); toast("Este dispositivo no permite el editor de video.", true); return; }
-      vfile = file; vname = name.replace(/\.[^.]+$/, "") || "video"; vdur = dur;
-      const st = saved && saved.state ? saved.state : null;
-      vs = st ? { ...vDefaults(), ...st, adj: { ...vDefaults().adj, ...(st.adj || {}) } } : vDefaults();
-      let segs = Array.isArray(vs.segs) ? vs.segs : [];
-      if (!segs.length && st && st.end > 0) segs = [{ s: st.start || 0, e: st.end }];      // proyectos de la versión anterior
-      segs = segs.map(g => ({ s: clamp(+g.s || 0, 0, vdur), e: clamp(+g.e || 0, 0, vdur) })).filter(g => g.e - g.s >= VMIN_LEN * 0.9).sort((x, y) => x.s - y.s);
-      vs.segs = segs.length ? segs : [{ s: 0, e: vdur }];
-      delete vs["start"]; delete vs["end"];
-      vsel = 0; vhist = [];
-      vResize();
-      await buildTrimThumbs();
-      await vSeek(vFirst());
-      $("v-name").textContent = name;
-      if (!saved) {
-        store.kvPut("video-state", vs).catch(() => {});
-        if (file.size <= 600 * 1048576) store.kvPut("video-file", { blob: file, name, poster: vposter }).then(() => { savedVideo = { blob: file, name, poster: vposter }; }).catch(() => {});
-        else { store.kvDel("video-file").catch(() => {}); toast("El video es muy grande: se puede editar, pero no quedará guardado para retomarlo.", false); }
-        savedVideo = { blob: file, name, poster: vposter };
+      vDispose();
+      if (!initGL()) { toast("Este dispositivo no permite el editor de video.", true); return; }
+      vproj = { id: vuid(), name: (files[0].name || "Video").replace(/\.[^.]+$/, "") || "Video", created: Date.now() };
+      vs = vDefaults();
+      if (!(await vAddFiles(files))) { vproj = null; vDispose(false); return; }
+      await vReady();
+    } catch (e) { vproj = null; vDispose(false); toast("No se pudo abrir el video.", true); }
+    finally { vBusyOff(); }
+  }
+  async function vOpenProject(id) {
+    if (vproj && vproj.id === id && vs.clips.length) { openVideoEditor(); return; }
+    vBusy("Abriendo el proyecto…");
+    try {
+      vDispose();
+      const rec = await store.kvGet(VK.proj(id));
+      if (!rec) throw new Error("no está");
+      if (!initGL()) { toast("Este dispositivo no permite el editor de video.", true); return; }
+      const st = vNormalize(rec.state), used = new Set(st.clips.map(c => c.src));
+      let n = 0;
+      for (const m of rec.srcs || []) {
+        if (!used.has(m.id)) { store.kvDel(VK.file(id, m.id)).catch(() => {}); continue; }
+        const f = await store.kvGet(VK.file(id, m.id)); if (!f || !f.blob) continue;
+        if (used.size > 1) $("vbusy-text").textContent = `Abriendo el proyecto… video ${++n} de ${used.size}`;
+        const S = await vAddSource(f.blob, f.name || m.name, m.id); if (S) S.stored = true;
       }
-      openVideoEditor();
-    } catch (e) {
-      toast(`No se pudo abrir «${name}». Puede que este navegador no lea ese formato de video.`, true);
+      for (const m of rec.mus || []) {
+        if (!st.music || st.music.id !== m.id) { store.kvDel(VK.file(id, "m:" + m.id)).catch(() => {}); continue; }
+        const f = await store.kvGet(VK.file(id, "m:" + m.id)); if (f && f.blob) vmus.set(m.id, { blob: f.blob, name: f.name || m.name, stored: true });
+      }
+      st.clips = st.clips.filter(c => vsrc.has(c.src)).map(c => { const S = vsrc.get(c.src); return { ...c, s: clamp(+c.s || 0, 0, S.dur), e: clamp(+c.e || 0, 0, S.dur) }; }).filter(c => c.e - c.s >= VMIN_LEN * 0.9);
+      if (!st.clips.length) throw new Error("sin videos");
+      if (st.music && !vmus.has(st.music.id)) st.music = null;
+      vproj = { id, name: rec.name || "Video", created: rec.created || Date.now() };
+      vs = st;
+      await vReady();
+    } catch (e) { vproj = null; vDispose(false); toast("No se pudo abrir ese proyecto. Puede que sus videos ya no estén guardados en este dispositivo.", true); }
+    finally { vBusyOff(); }
+  }
+  async function vAddClips(files) {
+    files = [...(files || [])].filter(Boolean); if (!vproj || !files.length) return;
+    vPause(); vBusy("Añadiendo el video…");
+    try {
+      const n0 = vs.clips.length;
+      if (await vAddFiles(files)) {
+        vRelayout(); vsel = n0; vApplyVol(); vApplyRate(); vResize();
+        await vSeekTo(vlay.starts[n0]);
+        renderVPanel(); vSyncTrim(); vSyncTime(); vCommit();
+      }
     } finally { vBusyOff(); }
   }
+  async function vSetMusic(file) {
+    if (!file || !vproj) return;
+    const name = file.name || "música";
+    if (!(file.type || "").startsWith("audio/") && !/\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(name)) { toast(`«${name}» no es un archivo de música. Prueba con MP3 o M4A.`, true); return; }
+    vPause();
+    const id = vuid(), prev = vs.music;
+    vmus.set(id, { blob: file, name, stored: false });
+    vs.music = { id, name: name.replace(/\.[^.]+$/, ""), vol: 80, offset: 0, fade: true };
+    if (!(await vSyncMusicSrc())) {
+      vmus.delete(id); vs.music = prev; await vSyncMusicSrc();
+      toast(`No se pudo leer «${name}». Prueba con otra canción en MP3 o M4A.`, true); return;
+    }
+    if (file.size <= VBIG) { const m = vmus.get(id); m.stored = true; store.kvPut(VK.file(vproj.id, "m:" + id), { blob: file, name }).catch(() => { m.stored = false; }); }
+    vApplyVol(); renderVPanel(); vSyncTrim(); vCommit();
+    toast("Música añadida. Toca reproducir para oírla con el video.");
+  }
+  async function vDeleteProject(id) {
+    if (vproj && vproj.id === id) { vproj = null; vDispose(false); vapp.hidden = true; }
+    vindex = vindex.filter(p => p.id !== id);
+    renderVideoHome();
+    try {
+      const rec = await store.kvGet(VK.proj(id));
+      if (rec) { for (const m of rec.srcs || []) await store.kvDel(VK.file(id, m.id)); for (const m of rec.mus || []) await store.kvDel(VK.file(id, "m:" + m.id)); }
+      await store.kvDel(VK.proj(id)); await store.kvPut(VK.index, vindex);
+    } catch (e) {}
+  }
   function openVideoEditor() {
-    vapp.hidden = false; vtab = vtab || "recorte";
-    renderVPanel(); vSyncTrim(); vSyncTime(); syncPlayBtn();
+    vapp.hidden = false;
+    renderVPanel(); vSyncTrim(); vSyncTime(); syncPlayBtn(); syncVUndo();
     vdirty = true; vStartLoop();
     hideHome();
   }
-  function closeVideoEditor() { if (!vapp.hidden) { vvideo.pause(); vapp.hidden = true; } }
-  $("v-back").addEventListener("click", () => { vvideo.pause(); showHome("main"); });
-  $("video-input").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; loadVideo(f, null); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && !vrun) vvideo.pause(); });
+  function closeVideoEditor() { if (!vapp.hidden) { vPause(); vapp.hidden = true; } }
+  $("v-back").addEventListener("click", () => { vPause(); vSaveNow(); showHome("video"); });
+  $("v-name").addEventListener("change", () => { if (!vproj) return; const v = $("v-name").value.trim(); if (v) { vproj.name = v.slice(0, 60); vSaveNow(); } $("v-name").value = vproj.name; });
+  $("v-name").addEventListener("keydown", e => { if (e.key === "Enter") $("v-name").blur(); });
+  $("video-input").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; vNewProject(f); });
+  $("video-add").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; vAddClips(f); });
+  $("music-input").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; vSetMusic(f); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && !vrun) { vPause(); if (vproj) vSaveNow(); } });
+  // Lista de proyectos en el menú
+  function vWhen(ts) {
+    const d = new Date(ts), now = new Date(), day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(), diff = Math.round((day(now) - day(d)) / 864e5);
+    return diff <= 0 ? "hoy" : diff === 1 ? "ayer" : d.toLocaleDateString("es", { day: "numeric", month: "short" });
+  }
+  function renderVideoHome() {
+    const box = $("home-vlist"); box.textContent = "";
+    const list = vindex.slice().sort((a, b) => b.updated - a.updated);
+    $("home-vlist-title").hidden = !list.length;
+    $("home-vnew-info").textContent = list.length ? "Empieza otro video. Tus proyectos se conservan." : "Elige uno o varios videos de tu galería";
+    list.forEach(p => {
+      const row = document.createElement("div"); row.className = "home-row vproj";
+      row.innerHTML = `<button class="vproj-open"><span class="home-thumbs"></span><span><b></b><small></small></span></button>
+        <button class="vproj-del" aria-label="Borrar proyecto" title="Borrar proyecto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>¿Borrar?</span></button>`;
+      row.querySelector("b").textContent = p.name || "Video";
+      row.querySelector("small").textContent = [p.clips > 1 ? p.clips + " clips" : "", p.dur ? fmtTime(p.dur) : "", "editado " + vWhen(p.updated)].filter(Boolean).join(" · ");
+      if (p.poster) { const im = new Image(); im.src = p.poster; im.alt = ""; im.className = "home-poster"; row.querySelector(".home-thumbs").appendChild(im); }
+      row.querySelector(".vproj-open").addEventListener("click", () => vOpenProject(p.id));
+      const del = row.querySelector(".vproj-del"); let armed = 0;
+      del.addEventListener("click", () => {       // dos toques para borrar
+        if (del.classList.contains("armed")) { clearTimeout(armed); vDeleteProject(p.id); return; }
+        del.classList.add("armed"); armed = setTimeout(() => del.classList.remove("armed"), 3000);
+      });
+      box.appendChild(row);
+    });
+  }
   const videoReady = (async () => {
-    try { const r = await store.kvGet("video-file"); if (r && r.blob) savedVideo = { ...r, state: await store.kvGet("video-state") }; } catch (e) {}
+    try {
+      const ix = await store.kvGet(VK.index);
+      vindex = Array.isArray(ix) ? ix : [];
+      const old = await store.kvGet("video-file");       // proyecto único de la primera versión
+      if (old && old.blob) {
+        const id = vuid(), fname = old.name || "video", name = fname.replace(/\.[^.]+$/, "") || "Video";
+        await store.kvPut(VK.file(id, "a"), { blob: old.blob, name: fname });
+        await store.kvPut(VK.proj(id), { id, name, created: Date.now(), state: await store.kvGet("video-state"), srcs: [{ id: "a", name: fname }], mus: [] });
+        vindex.push({ id, name, updated: Date.now(), poster: old.poster || "", dur: 0, clips: 1 });
+        await store.kvPut(VK.index, vindex);
+        await store.kvDel("video-file"); await store.kvDel("video-state");
+      }
+    } catch (e) {}
   })();
 
   /* ---- Guardar el video ---- */
-  // Se reproduce el trozo elegido con todo aplicado y se graba lo que sale por pantalla (y el sonido).
-  // Tarda lo mismo que dura el video y hay que dejar la app abierta mientras tanto.
-  let vaudio = null, vresultUrl = null, vresult = null;
+  // Se reproduce el proyecto entero con todo aplicado y se graba lo que sale por pantalla, con el sonido del
+  // mezclador. Tarda lo mismo que dura el video y hay que dejar la app abierta mientras tanto.
+  let vresultUrl = null, vresult = null;
   function pickMime() {
     if (!window.MediaRecorder) return null;
     // MP4 (H.264) siempre que se pueda: es lo que acepta Fotos en el iPhone. Fuera de Apple, si no hay H.264, WebM.
@@ -4911,89 +5582,71 @@ void main(){
     for (const t of c) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (e) {} }
     return "";
   }
-  function ensureAudio() {
-    if (vaudio) return vaudio;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC(), src = ctx.createMediaElementSource(vvideo), mon = ctx.createGain(), dest = ctx.createMediaStreamDestination();
-    src.connect(mon); mon.connect(ctx.destination); src.connect(dest);
-    return (vaudio = { ctx, mon, dest });
-  }
   async function exportVideo() {
-    if (vrun || !vdur) return;
+    if (vrun || vstarting || !vs.clips.length) return;
     const mime = pickMime();
     if (mime === null || !vcanvas.captureStream) { toast("Este navegador todavía no permite guardar video desde la app.", true); return; }
-    vvideo.pause();
+    vPause(); vstarting = true;
+    const wantAudio = vs.vol > 0 || !!(vs.music && VM.ready && vs.music.vol > 0);
     let stream, rec, withAudio = false;
     try {
+      if (wantAudio) { const a = ensureAudio(); if (a) { try { a.ctx.resume().catch(() => {}); } catch (e) {} } }
+      vUnlock();
       stream = vcanvas.captureStream(30);
-      if (!vs.muted) {
-        try { const a = ensureAudio(); await a.ctx.resume(); const tr = a.dest.stream.getAudioTracks()[0]; if (tr) { stream.addTrack(tr); a.mon.gain.value = 0; withAudio = true; } } catch (e) { withAudio = false; }
+      if (wantAudio && vaudio) {
+        try { await vaudio.ctx.resume(); const tr = vaudio.dest.stream.getAudioTracks()[0]; if (tr) { stream.addTrack(tr); vaudio.mon.gain.value = 0; withAudio = true; } } catch (e) { withAudio = false; }
       }
       rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 });
-    } catch (e) { toast("No se pudo empezar a guardar el video en este navegador.", true); if (vaudio) vaudio.mon.gain.value = 1; return; }
-    const run = { rec, chunks: [], mime: rec.mimeType || mime || "video/mp4", withAudio, cancelled: false, done: false, t0: 0, deadline: 0, seg: 0, jumping: false };
+    } catch (e) { vstarting = false; if (vaudio) vaudio.mon.gain.value = 1; toast("No se pudo empezar a guardar el video en este navegador.", true); return; }
+    const run = { rec, chunks: [], mime: rec.mimeType || mime || "video/mp4", withAudio, cancelled: false, done: false, t0: 0, deadline: 0 };
     rec.ondataavailable = e => { if (e.data && e.data.size) run.chunks.push(e.data); };
     rec.onstop = () => finishExport(run);
     rec.onerror = () => { run.cancelled = true; };
     vBusy("Guardando el video…", "No cierres la app ni cambies a otra hasta que termine. Tarda lo que dura el video.", { bar: true, cancel: true });
-    await vSeek(vFirst());
-    vvideo.muted = withAudio ? false : true;
-    vvideo.playbackRate = vs.speed;
-    vrun = run; syncPlayBtn(); vStartLoop();
-    try { rec.start(500); await vvideo.play(); }
-    catch (e) { run.cancelled = true; stopExport(); toast("No se pudo reproducir el video para guardarlo.", true); return; }
+    vsilent = !withAudio;
+    await vSeekTo(0);
+    vApplyVol(); vApplyRate();
+    vrun = run; vstarting = false; syncPlayBtn(); vStartLoop();
+    const id = ++vjumpId; vjump = true;
+    let ok = false;
+    try { rec.start(500); ok = await mPlay(srcOf(vs.clips[0])); } catch (e) { ok = false; }
+    if (vrun !== run || run.done || id !== vjumpId) return;
+    if (!ok) { run.cancelled = true; run.quiet = true; stopExport(); toast("No se pudo reproducir el video para guardarlo.", true); return; }
+    vMusicStart(); vjump = false;
     run.t0 = performance.now();
-    run.deadline = run.t0 + vTotal() / vs.speed * 1000 * 1.5 + 6000 + 3000 * vs.segs.length;
+    run.deadline = run.t0 + vlay.total / vs.speed * 1000 * 1.5 + 6000 + 3000 * vs.clips.length;
   }
   function vExportTick() {
-    const run = vrun; if (!run || run.done || !run.t0 || run.jumping) return;
-    const prog = clamp(vOutTime(vvideo.currentTime) / Math.max(0.05, vTotal()), 0, 1);
+    const run = vrun; if (!run || run.done || !run.t0) return;
+    const prog = clamp(vNow() / Math.max(0.05, vlay.total), 0, 1);
     $("vbusy-fill").style.width = Math.round(prog * 100) + "%";
     $("vbusy-text").textContent = `Guardando el video… ${Math.round(prog * 100)}%`;
-    if (performance.now() > run.deadline) { stopExport(); return; }
-    const g = vs.segs[run.seg];
-    if (vvideo.ended || vvideo.currentTime >= g.e - 0.02) {
-      const nx = vs.segs[run.seg + 1];
-      if (!nx) stopExport();
-      else if (nx.s - g.e < 0.06 && !vvideo.ended) run.seg++;       // trozos pegados: sigue sin parar
-      else exportJump(run, run.seg + 1);
-    }
-  }
-  // Salto al siguiente trozo: la grabación se detiene un instante para que el corte quede limpio.
-  async function exportJump(run, i) {
-    run.jumping = true;
-    try { if (run.rec.state === "recording" && run.rec.pause) run.rec.pause(); } catch (e) {}
-    vvideo.pause();
-    await vSeek(vs.segs[i].s);
-    if (vrun !== run || run.done) return;
-    run.seg = i;
-    try { await vvideo.play(); } catch (e) {}
-    try { if (run.rec.state === "paused") run.rec.resume(); } catch (e) {}
-    run.jumping = false;
+    if (performance.now() > run.deadline) stopExport();
   }
   function stopExport() {
     const run = vrun; if (!run || run.done) return;
-    run.done = true;
-    vvideo.pause();
+    run.done = true; vjumpId++; vjump = false;
+    vsrc.forEach(mPause); mPause(VM);
     try { if (run.rec.state !== "inactive") run.rec.stop(); else finishExport(run); } catch (e) { finishExport(run); }
   }
   function finishExport(run) {
     if (vrun !== run) return;
-    vrun = null;
+    vrun = null; vsilent = false; vjump = false;
     if (vaudio) vaudio.mon.gain.value = 1;
-    vvideo.muted = vs.muted; vvideo.playbackRate = vs.speed;
-    vBusyOff(); syncPlayBtn(); vSeek(vFirst());
-    if (run.cancelled) { toast("Guardado cancelado."); return; }
+    vApplyVol(); vApplyRate();
+    vBusyOff(); syncPlayBtn(); vSeekTo(0);
+    if (run.cancelled) { if (!run.quiet) toast("Guardado cancelado."); return; }
     const type = (run.mime || "video/mp4").split(";")[0];
     const blob = new Blob(run.chunks, { type });
-    if (!blob.size) { toast("No se pudo grabar el video. Prueba otra vez o con un trozo más corto.", true); return; }
+    if (!blob.size) { toast("No se pudo grabar el video. Prueba otra vez o con un video más corto.", true); return; }
     const ext = type.includes("webm") ? "webm" : "mp4";
     if (vresultUrl) URL.revokeObjectURL(vresultUrl);
     vresultUrl = URL.createObjectURL(blob);
-    vresult = { blob, name: `${vname}-moon.${ext}`, type };
+    const base = (vproj ? vproj.name : "video").replace(/[\\/:*?"<>|]+/g, " ").trim() || "video";
+    vresult = { blob, name: `${base}-moon.${ext}`, type };
     const rv = $("v-result-video"); rv.src = vresultUrl;
     $("v-res-size").textContent = `${vcanvas.width} × ${vcanvas.height} px`;
-    $("v-res-dur").textContent = fmtTime(vTotal() / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido") + (vs.segs.length > 1 ? ` · ${vs.segs.length} trozos` : "");
+    $("v-res-dur").textContent = fmtTime(vlay.total / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido") + (vs.clips.length > 1 ? ` · ${vs.clips.length} clips` : "");
     $("v-res-weight").textContent = humanBytes(blob.size);
     $("v-res-name").textContent = vresult.name;
     $("v-res-note").textContent = ext === "webm" ? "Este navegador guarda el video en formato WebM. En el iPhone se guarda en MP4." : "En el iPhone se abre el menú de compartir: elige «Guardar video» y va a Fotos.";
@@ -5033,14 +5686,7 @@ void main(){
     $("home-sample").hidden = !!real.length;
     $("home-resume-info").textContent = real.length === 1 ? real[0].name : `${real.length} fotos, tal como las dejaste`;
     $("home-new-info").textContent = real.length ? "Elige fotos nuevas. Sustituyen al proyecto guardado." : "Elige una o varias fotos de tu galería";
-    // Video
-    const hasVideo = !!vfile || !!(savedVideo && savedVideo.blob);
-    $("home-vresume").hidden = !hasVideo;
-    $("home-vresume-info").textContent = hasVideo ? (vfile ? (vfile.name || vname) : savedVideo.name) || "Tu video, tal como lo dejaste" : "";
-    $("home-vnew-info").textContent = hasVideo ? "Elige otro video. Sustituye al proyecto guardado." : "Elige un video de tu galería";
-    const vbox = $("home-vthumb"); vbox.textContent = "";
-    const poster = vposter || (savedVideo && savedVideo.poster);
-    if (hasVideo && poster) { const im = new Image(); im.src = poster; im.alt = ""; im.className = "home-poster"; vbox.appendChild(im); }
+    renderVideoHome();
     const box = $("home-thumbs"); box.textContent = "";
     real.slice(0, 3).forEach(d => {
       if (!d.thumb.width || !d.thumb.height) return;
@@ -5072,10 +5718,6 @@ void main(){
   $("home-foto").addEventListener("click", () => showHome("foto"));
   $("home-video").addEventListener("click", () => showHome("video"));
   $("home-back-v").addEventListener("click", () => showHome("main"));
-  $("home-vresume").addEventListener("click", () => {
-    if (vfile) openVideoEditor();
-    else if (savedVideo && savedVideo.blob) loadVideo(savedVideo.blob, savedVideo);
-  });
   $("home-back").addEventListener("click", () => showHome("main"));
   $("home-resume").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
   $("home-sample").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
