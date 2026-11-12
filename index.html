@@ -1377,8 +1377,16 @@ body::before {
   probeTop.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
   probeFull.style.cssText = "position:fixed;top:0;bottom:0;left:0;width:1px;visibility:hidden;pointer-events:none";
   document.body.append(probeTop, probeFull);
+  // En el iPhone, una app de la pantalla de inicio se dibuja siempre también detrás del reloj. A veces el iPhone
+  // tarda en informar de cuánto mide esa zona (o no lo informa): entonces se usa un valor típico según el modelo.
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const fit = () => {
-    const top = Math.round(probeTop.getBoundingClientRect().height);
+    const portrait0 = innerHeight >= innerWidth, longSide = Math.max(screen.width, screen.height);
+    let top = Math.round(probeTop.getBoundingClientRect().height), supuesto = false;
+    if (top < 10 && isIOS && portrait0 && navigator.standalone === true) {
+      top = longSide < 812 ? 20 : (longSide >= 852 && longSide !== 896 && longSide !== 926) ? 59 : 47;
+      supuesto = true;
+    }
     root.style.setProperty("--safe-top", top + "px");
     root.classList.toggle("under-bar", top >= 10);   // la app se dibuja detrás del reloj
     // Si la app se dibuja detrás del reloj, el iPhone suele informar de un alto menor que el visible
@@ -1388,10 +1396,14 @@ body::before {
     const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
     const h = top >= 10 ? Math.max(vh, Math.min(screenH, vh + top)) : vh;
     root.style.setProperty("--app-h", Math.round(h) + "px");
-    window.__fitInfo = { innerHeight, fijo: Math.round(probeFull.getBoundingClientRect().height), pantalla: screenH, reloj: top, usado: Math.round(h) };
+    window.__fitInfo = { innerHeight, fijo: Math.round(probeFull.getBoundingClientRect().height), pantalla: screenH, reloj: top + (supuesto ? " (supuesto)" : ""), usado: Math.round(h) };
   };
   fit();
-  addEventListener("resize", fit);
+  // Se vuelve a medir varias veces: el iPhone puede informar de la zona del reloj un poco después de abrir la app.
+  [0, 60, 200, 500, 1000, 2000, 4000].forEach(ms => setTimeout(fit, ms));
+  requestAnimationFrame(() => requestAnimationFrame(fit));
+  ["resize", "load", "pageshow"].forEach(ev => addEventListener(ev, fit));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { fit(); setTimeout(fit, 300); } });
   addEventListener("orientationchange", () => setTimeout(fit, 300));
 })();
 (() => {
