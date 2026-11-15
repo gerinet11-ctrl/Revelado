@@ -139,7 +139,7 @@ platform :ios do
     if grupo
       UI.message("El grupo «#{nombre}» ya existe")
     else
-      grupo = app.create_beta_group(group_name: nombre, public_link_enabled: true, public_link_limit_enabled: false, feedback_enabled: true)
+      grupo = app.create_beta_group(group_name: nombre, public_link_enabled: true, public_link_limit_enabled: false)
       UI.success("Grupo «#{nombre}» creado")
     end
     grupo.add_builds(build_ids: [build.id])
