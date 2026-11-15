@@ -118,4 +118,42 @@ platform :ios do
     )
     upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
   end
+  desc "Crea el grupo externo de TestFlight con enlace público, añade la última compilación y la envía a revisión"
+  lane :invitar do
+    nombre = ENV["GRUPO"] || "Testers Moon"
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], filepath: ENV["ASC_KEY_PATH"]
+    )
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    UI.user_error!("No se encontró la app #{APP_ID} en App Store Connect") unless app
+
+    # Última compilación ya procesada por Apple
+    builds = Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 15)
+    builds.each { |b| UI.message("Compilación #{b.version} · estado #{b.processing_state} · #{b.uploaded_date}") }
+    build = builds.find { |b| b.processing_state == "VALID" }
+    UI.user_error!("Todavía no hay una compilación procesada por Apple. Espera unos minutos y vuelve a lanzar.") unless build
+    UI.success("Se usa la compilación #{build.version}")
+
+    # Grupo externo con enlace público
+    grupo = app.get_beta_groups.find { |g| g.name == nombre }
+    if grupo
+      UI.message("El grupo «#{nombre}» ya existe")
+    else
+      grupo = app.create_beta_group(group_name: nombre, public_link_enabled: true, public_link_limit_enabled: false, feedback_enabled: true)
+      UI.success("Grupo «#{nombre}» creado")
+    end
+    grupo.add_builds(build_ids: [build.id])
+    UI.success("Compilación #{build.version} añadida al grupo")
+
+    # Revisión de Apple para pruebas externas
+    begin
+      build.post_beta_app_review_submission
+      UI.success("Enviada a revisión de Apple")
+    rescue StandardError => ex
+      UI.important("No se pudo enviar a revisión: #{ex.message.to_s[0, 700]}")
+    end
+
+    grupo = app.get_beta_groups.find { |g| g.id == grupo.id } || grupo
+    UI.success("ENLACE PÚBLICO: #{grupo.public_link.inspect} · activo: #{grupo.public_link_enabled.inspect}")
+  end
 end
