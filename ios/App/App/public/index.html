@@ -5925,12 +5925,50 @@ void main(){
   const nat = (m, o) => window.Capacitor.nativePromise("MoonExport", m, o || {});
   const blobB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(b); });
   const natErr = (code, msg) => Object.assign(new Error(msg || code), { code });
-  async function natUpload(blob, name, onBytes) {
-    const { id } = await nat("beginFile", { name });
-    const CH = 4 * 1024 * 1024;
+  let vnatInfo;            // undefined: aún no se sabe · null: no hay canal rápido · {port, token}
+  let vnatOff = false;     // si el guardado rápido falló una vez, no se vuelve a intentar en esta sesión
+  let vnatNote = "";
+  const withTimeout = (pr, ms, what) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(natErr("failed", what + " tardó demasiado")), ms))]);
+  const natName = (name, type) => {       // el sistema de video de Apple necesita la extensión para reconocer el archivo
+    if (/\.[A-Za-z0-9]{2,5}$/.test(name || "")) return name;
+    const t = (type || "").toLowerCase();
+    const ext = t.includes("quicktime") ? "mov" : t.includes("webm") ? "webm" : t.includes("mpeg") && t.startsWith("audio") ? "mp3" : t.includes("wav") ? "wav" : t.startsWith("video") ? "mp4" : t.startsWith("audio") ? "m4a" : t.includes("png") ? "png" : "bin";
+    return (name || "archivo") + "." + ext;
+  };
+  function natHttpPut(id, blob, onBytes, run) {       // un solo envío, sin convertir nada en texto
+    return new Promise((res, rej) => {
+      const x = new XMLHttpRequest(); run.xhr = x;
+      let last = 0, lastT = Date.now(), done = false;
+      const fin = err => { if (done) return; done = true; clearInterval(dog); run.xhr = null; err ? rej(err) : res(); };
+      const dog = setInterval(() => { if (Date.now() - lastT > 20000) { fin(new Error("sin avance en 20 s")); try { x.abort(); } catch (e) {} } }, 2000);
+      x.open("POST", `http://127.0.0.1:${vnatInfo.port}/put/${vnatInfo.token}/${id}`);
+      x.upload.onprogress = e => { onBytes(e.loaded - last); last = e.loaded; lastT = Date.now(); };
+      x.onload = () => (x.status >= 200 && x.status < 300 ? fin() : fin(new Error("respuesta " + x.status)));
+      x.onerror = () => fin(new Error("no se pudo conectar"));
+      x.onabort = () => fin(run.cancelled ? natErr("cancelled") : new Error("interrumpido"));
+      x.send(new Blob([blob], { type: "text/plain" }));
+    });
+  }
+  async function natUpload(blob, name, onBytes, run) {
+    if (vnatInfo === undefined) { try { vnatInfo = await withTimeout(nat("uploadInfo"), 8000, "abrir el canal"); } catch (e) { vnatInfo = null; run.note = "sin canal rápido (" + (e.message || e) + ")"; } }
+    if (vnatInfo) {
+      const { id } = await nat("beginFile", { name });
+      try {
+        await natHttpPut(id, blob, onBytes, run);
+        const r = await nat("endFile", { id });
+        if (r.size === blob.size) return r.path;
+        throw new Error("llegó incompleto");
+      } catch (e) {
+        if (e && e.code === "cancelled") throw e;
+        run.note = "canal rápido falló (" + (e.message || e) + ")"; vnatInfo = null;
+        if (run.cancelled) throw natErr("cancelled");
+      }
+    }
+    const { id } = await nat("beginFile", { name });         // plan B: por trozos
+    const CH = 3 * 1024 * 1024;
     for (let off = 0; off < blob.size; off += CH) {
-      if (vnat && vnat.cancelled) throw natErr("cancelled");
-      await nat("appendFile", { id, data: await blobB64(blob.slice(off, off + CH)) });
+      if (run.cancelled) throw natErr("cancelled");
+      await withTimeout(nat("appendFile", { id, data: await blobB64(blob.slice(off, off + CH)) }), 40000, "pasar el archivo");
       onBytes(Math.min(CH, blob.size - off));
     }
     return (await nat("endFile", { id })).path;
@@ -5950,9 +5988,10 @@ void main(){
     return new Promise(r => cv.toBlob(r, "image/png"));
   }
   async function exportNative() {
-    if (!isNative || !window.Capacitor.nativePromise || vnat) return "fallback";
+    if (!isNative || !window.Capacitor.nativePromise || vnat || vnatOff) return "fallback";
     vPause();
-    const run = vnat = { cancelled: false };
+    const run = vnat = { cancelled: false, stalled: false, xhr: null, note: "" };
+    const t0 = performance.now();
     const setBar = f => { $("vbusy-fill").style.width = Math.round(clamp(f, 0, 1) * 100) + "%"; };
     vBusy("Preparando el guardado…", "No cierres la app hasta que termine.", { bar: true, cancel: true });
     let poll = 0, result = "fallback";
@@ -5970,8 +6009,8 @@ void main(){
         }
         const W = vcanvas.width, H = vcanvas.height;
         const jobs = [];       // { blob, name, done(path) }
-        used.forEach(S => { if (!S.natPath) jobs.push({ get: async () => S.still ? await new Promise(r => S.el.img.toBlob(r, "image/png")) : S.blob, name: S.still ? S.id + ".png" : S.name || S.id, done: p => { S.natPath = p; } }); });
-        const addAudio = ref => { const m = ref && vmus.get(ref.id); if (m && !m.natPath) jobs.push({ get: async () => m.blob, name: "audio-" + ref.id, done: p => { m.natPath = p; } }); };
+        used.forEach(S => { if (!S.natPath) jobs.push({ get: async () => S.still ? await new Promise(r => S.el.img.toBlob(r, "image/png")) : S.blob, name: S.still ? S.id + ".png" : natName(S.name || S.id, S.blob && S.blob.type), done: p => { S.natPath = p; } }); });
+        const addAudio = ref => { const m = ref && vmus.get(ref.id); if (m && !m.natPath) jobs.push({ get: async () => m.blob, name: natName("audio-" + ref.id, m.blob.type), done: p => { m.natPath = p; } }); };
         if (vs.music) addAudio(vs.music);
         if (vs.voice) addAudio(vs.voice);
         const texts = vs.texts.filter(t => String(t.text).trim());
@@ -5981,12 +6020,15 @@ void main(){
         for (const j of jobs) blobs.push(await j.get());
         const total = blobs.reduce((a, b) => a + (b ? b.size : 0), 0) || 1;
         let sent = 0;
+        const tUp = performance.now();
+        const showUp = () => { const mb = sent / 1048576, sec = Math.max(0.5, (performance.now() - tUp) / 1000); $("vbusy-text").textContent = "Preparando los archivos… " + Math.round(sent / total * 100) + "%"; $("vbusy-note").textContent = `${mb.toFixed(0)} de ${(total / 1048576).toFixed(0)} MB · ${(mb / sec).toFixed(1)} MB/s`; };
         for (let k = 0; k < jobs.length; k++) {
           if (run.cancelled) throw natErr("cancelled");
           if (!blobs[k]) throw natErr("failed", "No se pudo preparar " + jobs[k].name);
-          $("vbusy-text").textContent = "Preparando los archivos… " + Math.round(sent / total * 100) + "%";
-          jobs[k].done(await natUpload(blobs[k], jobs[k].name, n => { sent += n; setBar(sent / total * 0.3); $("vbusy-text").textContent = "Preparando los archivos… " + Math.round(sent / total * 100) + "%"; }));
+          showUp();
+          jobs[k].done(await natUpload(blobs[k], jobs[k].name, n => { sent += n; setBar(sent / total * 0.3); showUp(); }, run));
         }
+        $("vbusy-note").textContent = "No cierres la app hasta que termine.";
         // Proyecto
         const p = vParams(), M = colorMatrix(p);
         const proj = {
@@ -6001,10 +6043,19 @@ void main(){
         };
         if (proj.clips.some(c => !c.file)) throw natErr("failed", "Falta un archivo");
         $("vbusy-text").textContent = "Guardando el video… 0%";
-        poll = setInterval(async () => { try { const r = await nat("progress"); setBar(0.3 + r.fraction * 0.7); $("vbusy-text").textContent = "Guardando el video… " + Math.round(r.fraction * 100) + "%"; } catch (e) {} }, 400);
+        let lastFrac = -1, lastMove = performance.now();
+        poll = setInterval(async () => {
+          try {
+            const r = await nat("progress");
+            if (r.fraction !== lastFrac) { lastFrac = r.fraction; lastMove = performance.now(); }
+            setBar(0.3 + r.fraction * 0.7); $("vbusy-text").textContent = "Guardando el video… " + Math.round(r.fraction * 100) + "%";
+            if (performance.now() - lastMove > 60000 && !run.cancelled) { run.stalled = true; nat("cancel").catch(() => {}); }
+          } catch (e) {}
+        }, 400);
         try {
-          await nat("export", { project: JSON.stringify(proj), save: true });
+          const done = await nat("export", { project: JSON.stringify(proj), save: true });
           result = "ok";
+          run.secs = done && done.seconds;
           break;
         } catch (e) {
           clearInterval(poll); poll = 0;
@@ -6012,15 +6063,21 @@ void main(){
           throw e;
         }
       }
-      if (result === "ok") toast("Video guardado en Fotos");
+      if (result === "ok") toast(`Video guardado en Fotos (${Math.round((performance.now() - t0) / 1000)} s${run.secs ? ", montaje " + Math.round(run.secs) + " s" : ""})`);
     } catch (e) {
       const code = e && e.code;
-      if (code === "cancelled") { toast("Guardado cancelado."); result = "cancel"; }
+      if (run.cancelled) { result = "cancel"; }
       else if (code === "denied") { toast("Moon no tiene permiso para guardar en Fotos. Actívalo en Ajustes → Moon → Fotos y vuelve a intentarlo.", true); result = "cancel"; }
-      else { result = "fallback"; }
+      else {
+        result = "fallback";
+        const why = run.stalled ? "se detuvo sin avanzar" : String((e && e.message) || e || "error desconocido").slice(0, 160);
+        vnatNote = "El guardado rápido no funcionó (" + why + (run.note ? " · " + run.note : "") + "). Se usa el método normal: tarda lo que dura el video.";
+        vnatOff = true;
+        toast(vnatNote, true);
+      }
     } finally {
       if (poll) clearInterval(poll);
-      vnat = null;
+      if (vnat === run) vnat = null;
       if (result !== "fallback") vBusyOff();
     }
     return result;
@@ -6046,7 +6103,7 @@ void main(){
     rec.ondataavailable = e => { if (e.data && e.data.size) run.chunks.push(e.data); };
     rec.onstop = () => finishExport(run);
     rec.onerror = () => { run.cancelled = true; };
-    vBusy("Guardando el video…", "No cierres la app ni cambies a otra hasta que termine. Tarda lo que dura el video.", { bar: true, cancel: true });
+    vBusy("Guardando el video…", vnatNote || "No cierres la app ni cambies a otra hasta que termine. Tarda lo que dura el video.", { bar: true, cancel: true });
     vsilent = !withAudio;
     await vSeekTo(0);
     vApplyVol(); vApplyRate();
@@ -6097,9 +6154,24 @@ void main(){
     $("v-result").hidden = false;
   }
   $("v-save").addEventListener("click", exportVideo);
+  function vForceEnd(r) {       // por si el grabador no responde: se limpia todo a mano
+    if (vrun !== r) return;
+    r.done = true; vrun = null; vsilent = false; vjump = false; vjumpId++;
+    try { if (r.rec.state !== "inactive") r.rec.stop(); } catch (e) {}
+    vsrc.forEach(mPause); mPause(VM); mPause(VV);
+    if (vaudio) vaudio.mon.gain.value = 1;
+    vApplyVol(); vApplyRate(); vBusyOff(); syncPlayBtn(); vSeekTo(0);
+    toast("Guardado cancelado.");
+  }
   $("vbusy-cancel").addEventListener("click", () => {
-    if (vnat) { vnat.cancelled = true; try { nat("cancel").catch(() => {}); } catch (e) {} return; }
-    if (vrun) { vrun.cancelled = true; stopExport(); }
+    if (vnat) {
+      const r = vnat; r.cancelled = true;
+      try { if (r.xhr) r.xhr.abort(); } catch (e) {}
+      try { nat("cancel").catch(() => {}); } catch (e) {}
+      vBusyOff(); vnat = null; toast("Guardado cancelado.");
+      return;
+    }
+    if (vrun) { const r = vrun; r.cancelled = true; stopExport(); setTimeout(() => vForceEnd(r), 1500); }
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && vrun && !vrun.done) { vrun.cancelled = true; stopExport(); setTimeout(() => toast("El guardado se canceló porque saliste de la app. Vuelve a pulsar Guardar y déjala abierta.", true), 400); }
