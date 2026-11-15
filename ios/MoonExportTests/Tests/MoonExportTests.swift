@@ -224,13 +224,13 @@ final class MoonExportTests: XCTestCase {
     }
 
     func testOverlayAppearsOnlyInItsTime() async throws {
-        let v = try makeVideo("a.mp4", w: 200, h: 120, seconds: 2, draw: solid(20, 120, 20))
+        let v = try makeVideo("a.mp4", w: 200, h: 120, seconds: 2, draw: solid(120, 120, 120))
         let text = try writePNG("texto.png", w: 200, h: 120) { ctx in
             ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)); ctx.fill(CGRect(x: 80, y: 45, width: 40, height: 30))
         }
         let ov = MoonProject.Overlay(file: text.path, t0: 1.0, t1: 2.0, x: 0.5, y: 0.5, anim: "none")
         let out = try await run(project(w: 200, h: 120, clips: [clip(v, e: 2)], overlays: [ov]))
-        near(pixel(try frame(out, at: 0.4), 0.5, 0.5), (20, 120, 20))
+        near(pixel(try frame(out, at: 0.4), 0.5, 0.5), (120, 120, 120))
         near(pixel(try frame(out, at: 1.5), 0.5, 0.5), (255, 255, 255), 24)
     }
 

@@ -5917,8 +5917,117 @@ void main(){
     for (const t of c) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (e) {} }
     return "";
   }
+  /* ---- Guardado rápido (app de iPhone) ----
+     En la app instalada, el video se genera con la gráfica del iPhone, sin reproducirlo: se mandan al código nativo el
+     proyecto y los archivos (una sola vez cada uno) y él lo monta y lo guarda directo en Fotos. Si algo falla, se usa
+     el guardado de siempre (reproducir y grabar). */
+  let vnat = null;
+  const nat = (m, o) => window.Capacitor.nativePromise("MoonExport", m, o || {});
+  const blobB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(b); });
+  const natErr = (code, msg) => Object.assign(new Error(msg || code), { code });
+  async function natUpload(blob, name, onBytes) {
+    const { id } = await nat("beginFile", { name });
+    const CH = 4 * 1024 * 1024;
+    for (let off = 0; off < blob.size; off += CH) {
+      if (vnat && vnat.cancelled) throw natErr("cancelled");
+      await nat("appendFile", { id, data: await blobB64(blob.slice(off, off + CH)) });
+      onBytes(Math.min(CH, blob.size - off));
+    }
+    return (await nat("endFile", { id })).path;
+  }
+  async function vTextPng(t, W, H) {       // el texto, con su aspecto, en una imagen transparente del tamaño del video
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d"); g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
+    const L = vTextLayout(g, t, W, H), pad = L.px * 0.3, x0 = L.cx - L.w / 2, y0 = L.cy - L.h / 2, dark = vIsDark(t.color);
+    if (t.style === "box") { g.fillStyle = dark ? "rgba(255,255,255,.88)" : "rgba(0,0,0,.66)"; vRoundRect(g, x0 - pad, y0 - pad * 0.5, L.w + pad * 2, L.h + pad, L.px * 0.24); g.fill(); }
+    L.lines.forEach((ln, i) => {
+      const y = y0 + L.lh * (i + 0.5);
+      if (t.style === "outline") { g.strokeStyle = dark ? "#ffffff" : "#000000"; g.lineWidth = L.px * 0.17; g.strokeText(ln, L.cx, y); }
+      if (t.style === "plain") { g.shadowColor = dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.6)"; g.shadowBlur = L.px * 0.16; g.shadowOffsetY = L.px * 0.04; }
+      g.fillStyle = t.color; g.fillText(ln, L.cx, y);
+      g.shadowColor = "transparent"; g.shadowBlur = 0; g.shadowOffsetY = 0;
+    });
+    return new Promise(r => cv.toBlob(r, "image/png"));
+  }
+  async function exportNative() {
+    if (!isNative || !window.Capacitor.nativePromise || vnat) return "fallback";
+    vPause();
+    const run = vnat = { cancelled: false };
+    const setBar = f => { $("vbusy-fill").style.width = Math.round(clamp(f, 0, 1) * 100) + "%"; };
+    vBusy("Preparando el guardado…", "No cierres la app hasta que termine.", { bar: true, cancel: true });
+    let poll = 0, result = "fallback";
+    try {
+      await nat("ping");
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // Archivos que el código nativo todavía no tiene
+        const used = [...new Set(vs.clips.map(c => srcOf(c)))];
+        const known = [...used.map(S => S.natPath), vs.music && vmus.get(vs.music.id) && vmus.get(vs.music.id).natPath, vs.voice && vmus.get(vs.voice.id) && vmus.get(vs.voice.id).natPath].filter(Boolean);
+        if (known.length) {
+          const { missing } = await nat("has", { paths: known });
+          const gone = new Set(missing);
+          used.forEach(S => { if (gone.has(S.natPath)) S.natPath = null; });
+          vmus.forEach(m => { if (gone.has(m.natPath)) m.natPath = null; });
+        }
+        const W = vcanvas.width, H = vcanvas.height;
+        const jobs = [];       // { blob, name, done(path) }
+        used.forEach(S => { if (!S.natPath) jobs.push({ get: async () => S.still ? await new Promise(r => S.el.img.toBlob(r, "image/png")) : S.blob, name: S.still ? S.id + ".png" : S.name || S.id, done: p => { S.natPath = p; } }); });
+        const addAudio = ref => { const m = ref && vmus.get(ref.id); if (m && !m.natPath) jobs.push({ get: async () => m.blob, name: "audio-" + ref.id, done: p => { m.natPath = p; } }); };
+        if (vs.music) addAudio(vs.music);
+        if (vs.voice) addAudio(vs.voice);
+        const texts = vs.texts.filter(t => String(t.text).trim());
+        const textPaths = {};
+        texts.forEach(t => jobs.push({ get: () => vTextPng(t, W, H), name: "texto-" + t.id + ".png", small: true, done: p => { textPaths[t.id] = p; } }));
+        const blobs = [];
+        for (const j of jobs) blobs.push(await j.get());
+        const total = blobs.reduce((a, b) => a + (b ? b.size : 0), 0) || 1;
+        let sent = 0;
+        for (let k = 0; k < jobs.length; k++) {
+          if (run.cancelled) throw natErr("cancelled");
+          if (!blobs[k]) throw natErr("failed", "No se pudo preparar " + jobs[k].name);
+          $("vbusy-text").textContent = "Preparando los archivos… " + Math.round(sent / total * 100) + "%";
+          jobs[k].done(await natUpload(blobs[k], jobs[k].name, n => { sent += n; setBar(sent / total * 0.3); $("vbusy-text").textContent = "Preparando los archivos… " + Math.round(sent / total * 100) + "%"; }));
+        }
+        // Proyecto
+        const p = vParams(), M = colorMatrix(p);
+        const proj = {
+          width: W, height: H, fps: 30, speed: vs.speed, vol: vs.vol, trDur: vs.trDur,
+          look: { m: [M[0], M[1], M[2], M[3] / 255, M[4], M[5], M[6], M[7] / 255, M[8], M[9], M[10], M[11] / 255],
+            shadows: (p.shadows || 0) / 100 * 70 / 255, highlights: (p.highlights || 0) / 100 * 70 / 255, split: (p.split || 0) / 100,
+            vignette: (p.vignette || 0) / 100 * 0.85, grain: (p.grain || 0) * 0.55 / 255, flash: Math.min(1, (p.flash || 0) / 100) },
+          clips: vs.clips.map(c => { const S = srcOf(c), sc = vScaleFor(S, c); return { kind: S.still ? "still" : "video", file: S.natPath, s: c.s, e: c.e, tr: c.tr || "none", vol: clipVol(c), scale: [sc[0], sc[1]], off: [sc[2], sc[3]] }; }),
+          overlays: texts.map(t => ({ file: textPaths[t.id], t0: t.t0, t1: t.t1, x: t.x, y: t.y, anim: t.anim || "none" })),
+          music: vs.music && vmus.get(vs.music.id) && vs.music.vol > 0 ? { file: vmus.get(vs.music.id).natPath, vol: vs.music.vol, offset: vs.music.offset, fade: !!vs.music.fade } : null,
+          voice: vs.voice && vmus.get(vs.voice.id) && vs.voice.vol > 0 ? { file: vmus.get(vs.voice.id).natPath, at: vs.voice.at, dur: vs.voice.dur, vol: vs.voice.vol } : null,
+        };
+        if (proj.clips.some(c => !c.file)) throw natErr("failed", "Falta un archivo");
+        $("vbusy-text").textContent = "Guardando el video… 0%";
+        poll = setInterval(async () => { try { const r = await nat("progress"); setBar(0.3 + r.fraction * 0.7); $("vbusy-text").textContent = "Guardando el video… " + Math.round(r.fraction * 100) + "%"; } catch (e) {} }, 400);
+        try {
+          await nat("export", { project: JSON.stringify(proj), save: true });
+          result = "ok";
+          break;
+        } catch (e) {
+          clearInterval(poll); poll = 0;
+          if (e && e.code === "missing" && attempt === 0) { used.forEach(S => { S.natPath = null; }); vmus.forEach(m => { m.natPath = null; }); continue; }
+          throw e;
+        }
+      }
+      if (result === "ok") toast("Video guardado en Fotos");
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "cancelled") { toast("Guardado cancelado."); result = "cancel"; }
+      else if (code === "denied") { toast("Moon no tiene permiso para guardar en Fotos. Actívalo en Ajustes → Moon → Fotos y vuelve a intentarlo.", true); result = "cancel"; }
+      else { result = "fallback"; }
+    } finally {
+      if (poll) clearInterval(poll);
+      vnat = null;
+      if (result !== "fallback") vBusyOff();
+    }
+    return result;
+  }
   async function exportVideo() {
-    if (vrun || vstarting || !vs.clips.length) return;
+    if (vrun || vstarting || vnat || !vs.clips.length) return;
+    if (isNative) { const r = await exportNative(); if (r !== "fallback") return; }
     const mime = pickMime();
     if (mime === null || !vcanvas.captureStream) { toast("Este navegador todavía no permite guardar video desde la app.", true); return; }
     vPause(); vstarting = true;
@@ -5988,7 +6097,10 @@ void main(){
     $("v-result").hidden = false;
   }
   $("v-save").addEventListener("click", exportVideo);
-  $("vbusy-cancel").addEventListener("click", () => { if (vrun) { vrun.cancelled = true; stopExport(); } });
+  $("vbusy-cancel").addEventListener("click", () => {
+    if (vnat) { vnat.cancelled = true; try { nat("cancel").catch(() => {}); } catch (e) {} return; }
+    if (vrun) { vrun.cancelled = true; stopExport(); }
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && vrun && !vrun.done) { vrun.cancelled = true; stopExport(); setTimeout(() => toast("El guardado se canceló porque saliste de la app. Vuelve a pulsar Guardar y déjala abierta.", true), 400); }
   });
