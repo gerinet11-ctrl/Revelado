@@ -1,10 +1,47 @@
 # Firma Moon con un certificado de distribución y la sube a TestFlight desde un Mac de GitHub.
 # Usa la clave de App Store Connect guardada en los secretos del repositorio. Se lanza desde
 # .github/workflows/ios.yml; no hace falta ejecutarlo a mano.
+require "openssl"
+require "base64"
+
 default_platform(:ios)
 
 APP_ID = "com.gerinet11.moon"
 PROJECT = "ios/App/App.xcodeproj"
+
+# Clave privada del certificado de distribución. Se calcula siempre igual a partir de la clave de App Store
+# Connect (que está en los secretos), así todas las compilaciones usan el mismo certificado en vez de crear
+# uno nuevo cada vez. No se guarda en ningún sitio.
+def moon_signing_key(secret)
+  ctr = 0
+  stream = lambda do |bytes|
+    out = "".b
+    while out.bytesize < bytes
+      out << OpenSSL::HMAC.digest("SHA256", secret, "moon-dist-cert-v1:#{ctr}")
+      ctr += 1
+    end
+    out[0, bytes]
+  end
+  e = OpenSSL::BN.new(65537)
+  prime = lambda do
+    loop do
+      raw = stream.call(128).bytes
+      raw[0] |= 0xC0
+      raw[-1] |= 1
+      c = OpenSSL::BN.new(raw.pack("C*"), 2)
+      next unless c.prime?
+      next if ((c - 1) % e).zero?
+      return c
+    end
+  end
+  p = prime.call
+  q = prime.call
+  p, q = q, p if p < q
+  n = p * q
+  d = e.mod_inverse((p - 1) * (q - 1))
+  parts = [OpenSSL::BN.new(0), n, e, d, p, q, d % (p - 1), d % (q - 1), q.mod_inverse(p)]
+  OpenSSL::PKey::RSA.new(OpenSSL::ASN1::Sequence(parts.map { |v| OpenSSL::ASN1::Integer(v) }).to_der)
+end
 
 platform :ios do
   desc "Firma Moon y la sube a TestFlight"
@@ -15,11 +52,57 @@ platform :ios do
     setup_ci
     keychain = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
 
-    # Cada compilación crea su propio certificado de distribución (el Mac de GitHub es nuevo cada vez).
-    # No se borra ni se retira nada de la cuenta. Apple permite pocos certificados a la vez: si se llega
-    # al límite, este paso falla con un aviso y hay que decidir a mano cuál retirar.
-    cert(api_key: api_key, keychain_path: keychain, keychain_password: "")
-    sigh(api_key: api_key, app_identifier: APP_ID, force: true, cert_id: lane_context[SharedValues::CERT_CERTIFICATE_ID])
+    # Certificado de distribución: se busca el de Moon en la cuenta y, si no está, se crea una sola vez.
+    # No se borra ni se retira nada.
+    key = moon_signing_key(File.read(ENV["ASC_KEY_PATH"]).gsub(/-----[^-]+-----|\s/, ""))
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], filepath: ENV["ASC_KEY_PATH"]
+    )
+    certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: "DISTRIBUTION" })
+    UI.message("Certificados de distribución en la cuenta: #{certs.length}")
+    mine = certs.find do |c|
+      begin
+        OpenSSL::X509::Certificate.new(Base64.decode64(c.certificate_content)).public_key.n == key.n
+      rescue StandardError
+        false
+      end
+    end
+    if mine
+      UI.success("Se reutiliza el certificado de distribución de Moon (#{mine.id})")
+    else
+      UI.message("Creando el certificado de distribución de Moon…")
+      csr = OpenSSL::X509::Request.new
+      csr.version = 0
+      csr.subject = OpenSSL::X509::Name.new([["CN", "Moon Distribution", OpenSSL::ASN1::UTF8STRING]])
+      csr.public_key = key
+      csr.sign(key, OpenSSL::Digest.new("SHA256"))
+      begin
+        mine = Spaceship::ConnectAPI::Certificate.create(certificate_type: "DISTRIBUTION", csr_content: csr.to_pem)
+      rescue StandardError => ex
+        UI.user_error!("Apple no dejó crear el certificado (#{ex.message.to_s[0, 300]}). Si es por el límite de certificados, hay que retirar uno antiguo en developer.apple.com → Certificates.")
+      end
+      UI.success("Certificado de distribución de Moon creado (#{mine.id})")
+    end
+    tmp = ENV["RUNNER_TEMP"] || Dir.tmpdir
+    key_path = File.join(tmp, "moon_dist.key")
+    cer_path = File.join(tmp, "moon_dist.cer")
+    File.write(key_path, key.to_pem)
+    File.binwrite(cer_path, Base64.decode64(mine.certificate_content))
+    begin
+      sh("security", "import", key_path, "-k", keychain, "-T", "/usr/bin/codesign", "-T", "/usr/bin/security", log: false)
+      sh("security", "import", cer_path, "-k", keychain, "-T", "/usr/bin/codesign", "-T", "/usr/bin/security", log: false)
+      sh("security", "set-key-partition-list", "-S", "apple-tool:,apple:,codesign:", "-s", "-k", "", keychain, log: false)
+    ensure
+      File.delete(key_path) if File.exist?(key_path)
+    end
+    begin
+      FastlaneCore::CertChecker.install_missing_wwdr_certificates(keychain)
+    rescue StandardError => ex
+      UI.important("No se pudieron instalar los certificados intermedios de Apple: #{ex.message}")
+    end
+    sh("security find-identity -v -p codesigning #{keychain.shellescape} | tail -3")
+
+    sigh(api_key: api_key, app_identifier: APP_ID, cert_id: mine.id)
     perfil = lane_context[SharedValues::SIGH_NAME]
 
     update_code_signing_settings(

@@ -741,11 +741,11 @@ kbd {
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
   font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.vtime-row { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 8px; }
+.vtime-row { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 4px; font-size: 13px; }
 .vtime-row span { min-width: 64px; }
 .vtime-row span:last-child { text-align: right; }
-.vpp { width: 52px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg); cursor: pointer; }
-.vpp svg { width: 15px; height: 15px; }
+.vpp { width: 58px; height: 34px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg); cursor: pointer; }
+.vpp svg { width: 17px; height: 17px; }
 .trim.dragging .trim-head { display: none; }
 .trim-tr { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; transform: rotate(45deg); z-index: 2; pointer-events: none; }
 .trim-marks { position: relative; height: 11px; margin-top: 7px; }
@@ -754,7 +754,10 @@ kbd {
 .tm.sel { background: var(--accent); opacity: 1; }
 .tm.mus { top: 7px; background: #4da3ff; opacity: .85; }
 .vtime-row span:first-child { color: var(--fg); }
-.trim { position: relative; height: 58px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
+.trim { position: relative; height: 62px; margin-top: 24px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
+/* Franja encima de la tira: tocarla o arrastrarla mueve siempre la línea blanca (nunca recorta un clip). */
+.trim-ruler { position: absolute; left: -10px; right: -10px; top: -30px; height: 30px; z-index: 3; }
+.trim-ruler::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 9px; height: 2px; border-radius: 1px; background: var(--line); }
 .trim canvas { display: block; width: 100%; height: 100%; border-radius: 8px; }
 .trim-gap { position: absolute; top: 0; bottom: 0; background: rgba(8,7,6,.78); pointer-events: none; }
 .trim-seg { position: absolute; top: -2px; bottom: -2px; border: 2px solid rgba(231,162,64,.6); border-radius: 8px; pointer-events: none; }
@@ -764,8 +767,9 @@ kbd {
 .trim-h[data-h="e"] { right: -3px; border-radius: 0 7px 7px 0; }
 .trim-h::before { content: ""; position: absolute; inset: -10px -14px; }
 .trim-h::after { content: ""; position: absolute; left: 7px; top: 32%; bottom: 32%; width: 2px; border-radius: 1px; background: var(--accent-ink); }
-.trim-head { position: absolute; top: -7px; bottom: -7px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; z-index: 2; }
-.vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; }
+.trim-head { position: absolute; top: -20px; bottom: -7px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; z-index: 4; }
+.trim-head::before { content: ""; position: absolute; left: 50%; top: -10px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.45); }
+.vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; zoom: 1.08; }
 .vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
 .vrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .vrow::-webkit-scrollbar { display: none; }
@@ -791,8 +795,8 @@ kbd {
 .vproj-del.armed { border-color: #e2574c; color: #ff8a80; }
 .vproj-del.armed span { display: inline; }
 .vtabs { border-bottom: 0; border-top: 1px solid var(--line); }
-.vtabs .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 5px 6px; font-size: 11px; border-bottom: 0; border-top: 2px solid transparent; }
-.vtabs .tab svg { width: 20px; height: 20px; margin: 0; }
+.vtabs .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 9px 7px; font-size: 12px; border-bottom: 0; border-top: 2px solid transparent; }
+.vtabs .tab svg { width: 22px; height: 22px; margin: 0; }
 .vtabs .tab[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
 .vbusy { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 24px; background: rgba(5,5,4,.78); }
 .vbusy-card { width: min(340px, 100%); display: flex; flex-direction: column; gap: 12px; align-items: stretch; text-align: center; padding: 22px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
@@ -1002,7 +1006,7 @@ body::before {
   .strip { padding: 6px 0 2px; }
   .film, .film-add { height: 54px; }
   .film { width: 54px; }
-  .panel { grid-row: 3; grid-column: 1; border: 0; border-top: 1px solid var(--line); border-radius: 0; overflow: hidden; }
+  .panel { grid-row: 3; grid-column: 1; border: 0; border-top: 1px solid var(--line); border-radius: 0; overflow: hidden; zoom: 1.08; }
   .tab-body {
     order: 1; flex: none; max-height: 34vh;
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
@@ -1011,10 +1015,10 @@ body::before {
   .tabs { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
   .tab {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    padding: 8px 10px 6px; font-size: 11px;
+    padding: 9px 10px 7px; font-size: 12px;
     border-bottom: 0; border-top: 2px solid transparent;
   }
-  .tab svg { width: 20px; height: 20px; margin: 0; }
+  .tab svg { width: 22px; height: 22px; margin: 0; }
   .tab[aria-selected="true"] { color: var(--accent); border-top-color: var(--accent); }
   #tab-fotos { display: flex; }
   .panel-foot { display: none; }
@@ -1219,6 +1223,7 @@ body::before {
     <div class="trim" id="trim">
       <canvas id="trim-thumbs" width="800" height="70" aria-hidden="true"></canvas>
       <div id="trim-segs"></div>
+      <div class="trim-ruler" id="trim-ruler"></div>
       <div class="trim-head" id="trim-head"></div>
     </div>
     <div class="trim-marks" id="trim-marks"></div>
@@ -4540,27 +4545,27 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 v_uv;
-uniform sampler2D u_tex; uniform sampler2D u_prev; uniform vec2 u_scale; uniform vec2 u_pscale; uniform vec2 u_res;
+uniform sampler2D u_tex; uniform sampler2D u_prev; uniform vec2 u_scale; uniform vec2 u_pscale; uniform vec2 u_off; uniform vec2 u_poff; uniform vec2 u_res;
 uniform float u_mode; uniform float u_k; uniform vec4 u_dip;
 uniform mat3 u_m; uniform vec3 u_o;
 uniform float u_sh; uniform float u_hi; uniform float u_split; uniform float u_vig; uniform float u_grain; uniform float u_flash; uniform float u_seed;
 float luma(vec3 c){ return dot(c, vec3(.2126, .7152, .0722)); }
 float shoulder(float v){ float k = 205. / 255.; float w = 50. / 255.; return v <= k ? v : k + w * (1. - exp(-(v - k) / w)); }
-vec4 pick(sampler2D t, vec2 p, vec2 sc){
-  vec2 q = (p - .5) * sc + .5;
+vec4 pick(sampler2D t, vec2 p, vec2 sc, vec2 off){
+  vec2 q = (p - .5) * sc + .5 + off;
   if (q.x < 0. || q.x > 1. || q.y < 0. || q.y > 1.) return vec4(0.);
   return vec4(texture2D(t, q).rgb, 1.);
 }
 void main(){
   vec4 s;
-  if (u_mode < .5) s = pick(u_tex, v_uv, u_scale);
-  else if (u_mode < 1.5) s = mix(pick(u_prev, v_uv, u_pscale), pick(u_tex, v_uv, u_scale), u_k);
+  if (u_mode < .5) s = pick(u_tex, v_uv, u_scale, u_off);
+  else if (u_mode < 1.5) s = mix(pick(u_prev, v_uv, u_pscale, u_poff), pick(u_tex, v_uv, u_scale, u_off), u_k);
   else if (u_mode < 2.5) {
     float e = 1. - u_k;
-    if (v_uv.x < e) s = pick(u_prev, vec2(v_uv.x + u_k, v_uv.y), u_pscale);
-    else s = pick(u_tex, vec2(v_uv.x - e, v_uv.y), u_scale);
+    if (v_uv.x < e) s = pick(u_prev, vec2(v_uv.x + u_k, v_uv.y), u_pscale, u_poff);
+    else s = pick(u_tex, vec2(v_uv.x - e, v_uv.y), u_scale, u_off);
   } else {
-    s = mix(pick(u_prev, (v_uv - .5) / (1. + .6 * u_k) + .5, u_pscale), pick(u_tex, (v_uv - .5) * (.72 + .28 * u_k) + .5, u_scale), smoothstep(.1, .9, u_k));
+    s = mix(pick(u_prev, (v_uv - .5) / (1. + .6 * u_k) + .5, u_pscale, u_poff), pick(u_tex, (v_uv - .5) * (.72 + .28 * u_k) + .5, u_scale, u_off), smoothstep(.1, .9, u_k));
   }
   vec3 c = s.rgb;
   if (s.a > 0.) {
@@ -4590,7 +4595,7 @@ void main(){
   gl_FragColor = vec4(c, 1.);
 }`;
   const T_FS = "precision mediump float; varying vec2 v_uv; uniform sampler2D u_t; void main(){ gl_FragColor = texture2D(u_t, v_uv); }";
-  let gl = null, glu = null, glp = null, glt = null, gltex = null, gltext = null, glcur = 0, glscale = [[1, 1], [1, 1]];
+  let gl = null, glu = null, glp = null, glt = null, gltex = null, gltext = null, glcur = 0, glscale = [[1, 1, 0, 0], [1, 1, 0, 0]];
   let vprevFor = null;      // id del clip cuya entrada puede usar el último fotograma del clip anterior (para las transiciones)
   function initGL() {
     if (gl) return true;
@@ -4619,7 +4624,7 @@ void main(){
       g.useProgram(progT); g.uniform1i(g.getUniformLocation(progT, "u_t"), 2);
       g.useProgram(prog);
       glu = {};
-      ["u_tex", "u_prev", "u_scale", "u_pscale", "u_res", "u_mode", "u_k", "u_dip", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
+      ["u_tex", "u_prev", "u_scale", "u_pscale", "u_off", "u_poff", "u_res", "u_mode", "u_k", "u_dip", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
       g.uniform1i(glu.u_tex, 0); g.uniform1i(glu.u_prev, 1);
       glp = prog; glt = progT; gl = g; glcur = 0; vtextSig = "?"; vprevFor = null;
       return true;
@@ -4652,12 +4657,15 @@ void main(){
     vdirty = true;
   }
   const vMixed = () => { const r = vs.clips.map(c => { const S = srcOf(c); return S.w / S.h; }); return r.some(x => Math.abs(x - r[0]) > 0.01); };
-  function vScaleFor(S) {
+  // Devuelve cuánto del video se ve (sx, sy) y hacia dónde está desplazado (ox, oy). Al recortar para llenar sobra
+  // video por un lado: el clip guarda en px/py (de −1 a 1) qué parte de ese sobrante se enseña.
+  function vScaleFor(S, c) {
     const av = S.w / S.h, ao = vcanvas.width / vcanvas.height;
     let sx = 1, sy = 1;
     if (vs.fit === "contain") { if (av > ao) sy = av / ao; else sx = ao / av; }
     else { if (av > ao) sx = ao / av; else sy = av / ao; }
-    return [sx, sy];
+    const ox = sx < 0.999 ? clamp(+c.px || 0, -1, 1) * (1 - sx) / 2 : 0, oy = sy < 0.999 ? clamp(+c.py || 0, -1, 1) * (1 - sy) / 2 : 0;
+    return [sx, sy, ox, oy];
   }
   // Transición en el instante T: mezcla con el último fotograma del clip anterior, o paso por negro/blanco.
   function vTrans(T) {
@@ -4683,11 +4691,13 @@ void main(){
     const p = vParams(), M = colorMatrix(p);
     gl.viewport(0, 0, W, H);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur]);
-    if (el.readyState >= 2 && el.videoWidth) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); glscale[glcur] = vScaleFor(S); } catch (e) {} }
+    if (el.readyState >= 2 && el.videoWidth) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); glscale[glcur] = vScaleFor(S, c); } catch (e) {} }
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur ^ 1]);
     const tr = vTrans(T);
     gl.uniform2f(glu.u_scale, glscale[glcur][0], glscale[glcur][1]);
     gl.uniform2f(glu.u_pscale, glscale[glcur ^ 1][0], glscale[glcur ^ 1][1]);
+    gl.uniform2f(glu.u_off, glscale[glcur][2], glscale[glcur][3]);
+    gl.uniform2f(glu.u_poff, glscale[glcur ^ 1][2], glscale[glcur ^ 1][3]);
     gl.uniform1f(glu.u_mode, tr.mode); gl.uniform1f(glu.u_k, tr.k); gl.uniform4f(glu.u_dip, tr.dip[0], tr.dip[1], tr.dip[2], tr.dip[3]);
     gl.uniform2f(glu.u_res, W, H);
     gl.uniformMatrix3fv(glu.u_m, false, [M[0], M[4], M[8], M[1], M[5], M[9], M[2], M[6], M[10]]);
@@ -5085,9 +5095,20 @@ void main(){
   let sdrag = null, sSuppress = false;
   const stagePt = e => { const r = vcanvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
   function vHitText(p) { for (let i = vs.texts.length - 1; i >= 0; i--) { const b = vboxes[vs.texts[i].id]; if (b && p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1) return vs.texts[i]; } return null; }
+  let pdrag = null;
   vstage.addEventListener("pointerdown", e => {
     sSuppress = false;
-    if (vrun || vstarting || vtab !== "texto") return;
+    if (vrun || vstarting) return;
+    if (vtab === "formato" && curClip()) {       // mover el video dentro del recorte
+      const c = curClip(), sc = vScaleFor(srcOf(c), c);
+      if (sc[0] < 0.999 || sc[1] < 0.999) {
+        const r = vcanvas.getBoundingClientRect();
+        pdrag = { c, sc, x0: e.clientX, y0: e.clientY, w: r.width, h: r.height, px0: +c.px || 0, py0: +c.py || 0, moved: false };
+        try { vstage.setPointerCapture(e.pointerId); } catch (e2) {}
+      }
+      return;
+    }
+    if (vtab !== "texto") return;
     const p = stagePt(e), t = vHitText(p); if (!t) return;
     e.preventDefault(); sSuppress = true; vPause();
     if (vtsel !== t.id) { vtsel = t.id; renderVPanel(); vSyncTrim(); }
@@ -5096,12 +5117,23 @@ void main(){
     vdirty = true;
   });
   vstage.addEventListener("pointermove", e => {
+    if (pdrag) {
+      const d = pdrag, dx = (e.clientX - d.x0) / d.w, dy = (e.clientY - d.y0) / d.h;
+      if (!d.moved && Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 6) return;
+      if (!d.moved) { d.moved = true; vPause(); }
+      if (d.sc[0] < 0.999) d.c.px = clamp(d.px0 - dx * d.sc[0] / ((1 - d.sc[0]) / 2), -1, 1);
+      if (d.sc[1] < 0.999) d.c.py = clamp(d.py0 - dy * d.sc[1] / ((1 - d.sc[1]) / 2), -1, 1);
+      vdirty = true; return;
+    }
     if (!sdrag) return;
     const p = stagePt(e), nx = clamp(p.x + sdrag.dx, 0.03, 0.97), ny = clamp(p.y + sdrag.dy, 0.03, 0.97);
     if (Math.abs(nx - sdrag.t.x) + Math.abs(ny - sdrag.t.y) > 0.001) sdrag.moved = true;
     sdrag.t.x = nx; sdrag.t.y = ny; vdirty = true;
   });
-  ["pointerup", "pointercancel"].forEach(ev => vstage.addEventListener(ev, () => { if (!sdrag) return; if (sdrag.moved) vCommit(); sdrag = null; }));
+  ["pointerup", "pointercancel"].forEach(ev => vstage.addEventListener(ev, () => {
+    if (pdrag) { const m = pdrag.moved; pdrag = null; if (m) { sSuppress = true; vCommit(); if (vtab === "formato") renderVPanel(); } return; }
+    if (!sdrag) return; if (sdrag.moved) vCommit(); sdrag = null;
+  }));
   vstage.addEventListener("click", () => { if (sSuppress) { sSuppress = false; return; } vToggle(); });
 
   /* ---- Panel de herramientas ---- */
@@ -5133,7 +5165,7 @@ void main(){
           <button class="btn" id="v-clip-l">${VI('<path d="m14 6-6 6 6 6"/>')}Mover</button>
           <button class="btn" id="v-clip-r">Mover${VI('<path d="m10 6 6 6-6 6"/>')}</button>
         </div>
-        <div class="vinfo">Toca un clip para elegirlo y arrastra sus extremos para acortarlo. «Dividir aquí» corta donde está la línea blanca.</div>`;
+        <div class="vinfo">Arrastra el punto blanco para mover la línea. Toca un clip para elegirlo y arrastra sus extremos para acortarlo.</div>`;
       $("v-split").onclick = vSplit;
       $("v-clip-del").onclick = vDeleteClip;
       $("v-clip-l").onclick = () => vMoveClip(-1);
@@ -5271,7 +5303,14 @@ void main(){
       const fit = vs.format !== "original" || vMixed();
       body.innerHTML = `<div class="vrow">${VFORMATS.map(f => `<button class="chip text" data-f="${f.id}" aria-pressed="${vs.format === f.id}">${f.label}</button>`).join("")}</div>
         <div class="seg text" id="v-fit" ${fit ? "" : "hidden"}><button data-fit="cover" aria-pressed="${vs.fit === "cover"}">Recortar para llenar</button><button data-fit="contain" aria-pressed="${vs.fit === "contain"}">Entero con fondo negro</button></div>
+        <div class="vrow" id="v-pan-row" hidden><span class="vinfo" style="flex:1 1 0;min-width:0">Arrastra el video con el dedo para elegir qué parte se ve.</span><button class="chip text" id="v-pan-zero" hidden>Centrar</button></div>
         <div class="vinfo" id="v-format-info"></div>`;
+      const pc = curClip(), psc = pc ? vScaleFor(srcOf(pc), pc) : [1, 1];
+      if (pc && (psc[0] < 0.999 || psc[1] < 0.999)) {
+        $("v-pan-row").hidden = false;
+        $("v-pan-zero").hidden = !(pc.px || pc.py);
+        $("v-pan-zero").onclick = () => { pc.px = 0; pc.py = 0; vdirty = true; vCommit(); renderVPanel(); };
+      }
       body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vCommit(); renderVPanel(); }));
       body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vCommit(); renderVPanel(); }));
       const o = vOutDims(); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
