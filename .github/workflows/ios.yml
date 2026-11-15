@@ -67,7 +67,10 @@ jobs:
           ASC_KEY_ID=$(printf '%s' "$ASC_KEY_ID" | tr -d '[:space:]'); ASC_ISSUER_ID=$(printf '%s' "$ASC_ISSUER_ID" | tr -d '[:space:]'); APPLE_TEAM_ID=$(printf '%s' "$APPLE_TEAM_ID" | tr -d '[:space:]')
           echo "Los cuatro secretos tienen la forma correcta."
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
-          printf '%s\n' "$ASC_KEY_P8" > "$KEY"
+          # Recompone la clave: al copiarla (sobre todo desde Windows) cambian los saltos de línea y Apple la rechaza.
+          CUERPO=$(printf '%s' "$ASC_KEY_P8" | tr -d '\r' | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d '[:space:]')
+          { echo "-----BEGIN PRIVATE KEY-----"; printf '%s\n' "$CUERPO" | fold -w 64; echo "-----END PRIVATE KEY-----"; } > "$KEY"
+          if ! openssl pkey -in "$KEY" -noout 2>/dev/null; then echo "::error::ASC_KEY_P8 no es una clave válida: vuelve a copiar el archivo .p8 completo, sin cambiar nada"; exit 1; fi
           sed "s/__TEAM_ID__/$APPLE_TEAM_ID/" ios/ci/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/Moon.xcarchive" \
