@@ -189,4 +189,50 @@ platform :ios do
       UI.message("GRUPO «#{g.name}»: interno=#{g.is_internal_group.inspect} · enlace público=#{g.public_link_enabled.inspect} · testers=#{n} · compilaciones=[#{bs}]")
     end
   end
+  desc "Retira la compilación en revisión y envía otra (OLD y NEW son los números de compilación)"
+  lane :reemplazar do
+    viejo = ENV["OLD"].to_s
+    nuevo = ENV["NEW"].to_s
+    UI.user_error!("Faltan OLD y NEW") if viejo.empty? || nuevo.empty?
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], filepath: ENV["ASC_KEY_PATH"]
+    )
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    UI.user_error!("No se encontró la app") unless app
+    builds = Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 30)
+    b_old = builds.find { |b| b.version.to_s == viejo }
+    b_new = builds.find { |b| b.version.to_s == nuevo }
+    UI.user_error!("No se encontró la compilación #{nuevo}") unless b_new
+    UI.user_error!("La compilación #{nuevo} aún no está procesada (#{b_new.processing_state})") unless b_new.processing_state == "VALID"
+
+    if b_old
+      begin
+        Spaceship::ConnectAPI.patch_builds(build_id: b_old.id, attributes: { expired: true })
+        UI.success("Compilación #{viejo} retirada (caducada): ya no está en revisión")
+      rescue StandardError => ex
+        UI.important("No se pudo retirar la #{viejo}: #{ex.message.to_s[0, 400]}")
+      end
+      sleep 8
+    end
+
+    app.get_beta_groups.select { |g| ["Testers Moon", "Pruebas"].include?(g.name) }.each do |g|
+      begin
+        b_new.add_beta_groups(beta_groups: [g])
+        UI.success("Compilación #{nuevo} añadida a «#{g.name}»")
+      rescue StandardError => ex
+        UI.important("Al añadir a «#{g.name}»: #{ex.message.to_s[0, 300]}")
+      end
+    end
+
+    3.times do |n|
+      begin
+        b_new.post_beta_app_review_submission
+        UI.success("Compilación #{nuevo} enviada a revisión de Apple")
+        break
+      rescue StandardError => ex
+        UI.important("Envío a revisión (intento #{n + 1}): #{ex.message.to_s[0, 400]}")
+        sleep 10
+      end
+    end
+  end
 end

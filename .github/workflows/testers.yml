@@ -30,5 +30,9 @@ jobs:
           export ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH="$KEY" GRUPO="Testers Moon"
           export FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_HIDE_CHANGELOG=1 FASTLANE_OPT_OUT_USAGE=1 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
           command -v fastlane >/dev/null || brew install fastlane
-          if [ "${{ github.event.inputs.accion }}" = "estado" ]; then fastlane ios estado; else fastlane ios invitar; fi
+          case "${{ github.event.inputs.accion }}" in
+            estado) fastlane ios estado ;;
+            reemplazar) OLD=10 NEW=20 fastlane ios reemplazar && fastlane ios estado ;;
+            *) fastlane ios invitar ;;
+          esac
           rm -f "$KEY"
