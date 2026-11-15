@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="oro" cx="0.15" cy="1.08" r="1.35">
+      <stop offset="0" stop-color="#FFF6CF"/>
+      <stop offset="0.16" stop-color="#FFE07A"/>
+      <stop offset="0.42" stop-color="#F6BC3A"/>
+      <stop offset="0.72" stop-color="#DC9421"/>
+      <stop offset="1" stop-color="#A9620F"/>
+    </radialGradient>
+    <clipPath id="forma"><rect width="1024" height="1024" rx="230"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#oro)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" transform="translate(12 12)">
+    <circle cx="440" cy="440" r="262" stroke-width="58"/>
+    <path d="M636 636 L800 800" stroke-width="100"/>
+    <g transform="translate(440 440) rotate(45) translate(0 -14)" stroke-width="25">
+      <path d="M0 -176 C60 -138 66 -64 62 34 L62 96 L-62 96 L-62 34 C-66 -64 -60 -138 0 -176 Z"/>
+      <path d="M-42 -112 Q0 -130 42 -112"/>
+      <circle cx="0" cy="-32" r="31"/>
+      <path d="M-62 30 L-106 74 L-106 118 L-62 94"/>
+      <path d="M62 30 L106 74 L106 118 L62 94"/>
+      <path d="M-34 96 L-28 128 L28 128 L34 96"/>
+      <path d="M-26 170 L-26 186 M0 170 L0 204 M26 170 L26 186"/>
+    </g>
+  </g>
+</svg>

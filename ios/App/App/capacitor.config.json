@@ -1,0 +1,11 @@
+{
+	"appId": "com.gerinet11.moon",
+	"appName": "Moon",
+	"webDir": "www",
+	"backgroundColor": "#131211",
+	"ios": {
+		"contentInset": "never",
+		"backgroundColor": "#131211"
+	},
+	"packageClassList": []
+}

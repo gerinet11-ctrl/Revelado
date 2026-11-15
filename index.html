@@ -1536,7 +1536,9 @@ body::before {
 <script>
 // Respaldo para el iPhone en modo app: si no informa del alto de la zona del reloj, se reserva igualmente.
 (() => {
-  const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  // Vale para la app de la pantalla de inicio y para la app de la App Store (que ocupa toda la pantalla igual).
+  const nativa = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const standalone = navigator.standalone === true || nativa || matchMedia("(display-mode: standalone)").matches;
   if (!standalone) return;
   document.documentElement.classList.add("standalone");
   // Se mide el espacio real que da el iPhone (no se supone nada): el alto de la zona del reloj, si la app
@@ -1552,7 +1554,7 @@ body::before {
   const fit = () => {
     const portrait0 = innerHeight >= innerWidth, longSide = Math.max(screen.width, screen.height);
     let top = Math.round(probeTop.getBoundingClientRect().height), supuesto = false;
-    if (top < 10 && isIOS && portrait0 && navigator.standalone === true) {
+    if (top < 10 && isIOS && portrait0 && (navigator.standalone === true || nativa)) {
       top = longSide < 812 ? 20 : (longSide >= 852 && longSide !== 896 && longSide !== 926) ? 59 : 47;
       supuesto = true;
     }

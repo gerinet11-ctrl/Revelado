@@ -2,7 +2,7 @@
 
 *Volemos hacia la perfección*
 
-Editor de fotos que funciona en el navegador y se instala en el iPhone como una app.
+Editor de fotos y video que funciona en el navegador y se instala en el iPhone como una app.
 
 **Abrir la app:** https://gerinet11-ctrl.github.io/Revelado/
 
@@ -29,3 +29,4 @@ Todo se procesa en el propio dispositivo: las fotos no se suben a ningún servid
 - `index.html`: la app completa
 - `manifest.webmanifest`: nombre, colores e iconos para instalarla
 - `logo/`: el icono en todos los tamaños (`icono-appstore-1024.png` es el que pide el App Store)
+- `ios/`: el proyecto de Xcode para publicarla en la App Store. Los pasos están en [IOS.md](IOS.md)
