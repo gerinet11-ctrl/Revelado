@@ -781,6 +781,9 @@ kbd {
 .vrow > .vinput { flex: 1 1 140px; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--well); color: var(--fg); font: inherit; font-size: 16px; }
 .vrow > .vinput:focus { outline: none; border-color: var(--accent); }
 #v-text-look { padding: 3px; }
+.vpanel input[type="range"], .vtime input[type="range"] { height: 26px; }
+.vpanel input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; }
+.vpanel input[type="range"]::-webkit-slider-thumb { width: 19px; height: 19px; margin-top: -6.5px; }
 .vsw { width: 28px; height: 28px; padding: 0; border: 2px solid var(--line); border-radius: 50%; cursor: pointer; }
 .vsw[aria-pressed="true"] { border-color: var(--panel); box-shadow: 0 0 0 2px var(--accent); }
 .vsep { width: 1px; height: 22px; background: var(--line); }
@@ -1015,6 +1018,9 @@ body::before {
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     padding: 2px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px));
   }
+  input[type="range"] { height: 26px; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; }
+  input[type="range"]::-webkit-slider-thumb { width: 19px; height: 19px; margin-top: -6.5px; }
   .tabs { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
   .tab {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -1176,11 +1182,11 @@ body::before {
       <div class="home-list">
         <label class="home-row primary" id="home-vnew" for="video-input">
           <span class="home-ico small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
-          <span><b>Nuevo proyecto</b><small id="home-vnew-info">Elige uno o varios videos de tu galería</small></span>
+          <span><b>Nuevo proyecto</b><small id="home-vnew-info">Elige videos o fotos de tu galería</small></span>
         </label>
         <h2 class="home-sub" id="home-vlist-title" hidden>Tus proyectos</h2>
         <div class="home-list tight" id="home-vlist"></div>
-        <p class="note">Une varios videos, divídelos y ponles texto, música, transiciones y filtros. Los proyectos se guardan en este dispositivo.</p>
+        <p class="note">Une videos y fotos, divídelos y ponles texto, música, transiciones y filtros. Los proyectos se guardan en este dispositivo.</p>
       </div>
     </div>
 
@@ -1278,8 +1284,8 @@ body::before {
       <span class="lbl">Abrir fotos</span>
     </label>
     <input type="file" id="file-input" accept="image/*" multiple hidden>
-    <input type="file" id="video-input" accept="video/*" multiple hidden>
-    <input type="file" id="video-add" accept="video/*" multiple hidden>
+    <input type="file" id="video-input" accept="video/*,image/*" multiple hidden>
+    <input type="file" id="video-add" accept="video/*,image/*" multiple hidden>
     <input type="file" id="music-input" accept="audio/*,.mp3,.m4a,.aac,.wav" hidden>
 
     <div class="group">
@@ -4063,6 +4069,25 @@ body::before {
     try { downloadsApi = window.claude && window.claude.use ? await window.claude.use("downloads") : null; }
     catch (e) { downloadsApi = null; }
   })();
+  // En la app instalada desde la App Store o TestFlight se guarda directo en Fotos: el archivo se pasa por trozos
+  // a la parte nativa. Si algo falla, se usa el menú de compartir de siempre.
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.nativePromise);
+  async function saveToPhotos(blob, name, kind) {
+    const call = (m, o) => window.Capacitor.nativePromise("MoonSave", m, o);
+    const { id } = await call("begin", { name });
+    try {
+      const CH = 3 * 1024 * 1024;
+      for (let off = 0; off < blob.size; off += CH) {
+        const buf = new Uint8Array(await blob.slice(off, off + CH).arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+        await call("append", { id, data: btoa(bin) });
+      }
+      await call("finish", { id, kind });
+    } catch (e) { try { call("cancel", { id }).catch(() => {}); } catch (e2) {} throw e; }
+  }
+  const NO_PHOTOS_PERMISSION = "Moon no tiene permiso para guardar en Fotos. Actívalo en Ajustes → Moon → Fotos y vuelve a intentarlo.";
+  const photosDenied = e => !!e && (e.code === "denied" || /permiso/i.test(e.message || ""));
   function plainDownload() {
     // En el iPhone (también como app de la pantalla de inicio) se abre el menú de compartir: «Guardar imagen» la lleva a Fotos.
     const file = new File([exp.blob], exportName(), { type: exp.blob.type });
@@ -4136,6 +4161,12 @@ body::before {
   }
   async function deliverAll() {
     const list = allReady, files = list.map(x => x.file);
+    if (isNative) {
+      try {
+        for (const x of list) await saveToPhotos(x.blob, x.name, "image");
+        $("save-all-note").textContent = `Las ${list.length} fotos ya están en Fotos.`; toast(`${list.length} fotos guardadas en Fotos`); return;
+      } catch (e) { if (photosDenied(e)) { $("save-all-note").textContent = NO_PHOTOS_PERMISSION; return; } }
+    }
     const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (isTouch && navigator.canShare && navigator.canShare({ files })) {
       try { await navigator.share({ files, title: "Moon" }); $("save-all-note").textContent = "En el menú, elige «Guardar imágenes» para llevarlas a Fotos."; return; }
@@ -4160,6 +4191,10 @@ body::before {
     const btn = $("download");
     btn.disabled = true;
     try {
+      if (isNative) {
+        try { await saveToPhotos(exp.blob, exportName(), "image"); toast("Foto guardada en Fotos"); return; }
+        catch (e) { if (photosDenied(e)) { toast(NO_PHOTOS_PERMISSION, true); return; } }
+      }
       if (downloadsApi === undefined) await Promise.race([downloadsReady, new Promise(r => setTimeout(r, 1500))]);
       if (!downloadsApi) { plainDownload(); toast(`Guardando ${exportName()}`); return; }
       await downloadsApi.save({ filename: exportName(), data: exp.blob });
@@ -4520,6 +4555,24 @@ body::before {
     el.addEventListener(ev, ok); el.addEventListener("error", bad);
   });
 
+  // Una foto dentro del video: se comporta como un video mudo que dura lo que haga falta.
+  class VStill {
+    constructor(img) {
+      this.img = img; this.duration = 60; this.t = 0; this.t0 = 0; this.paused = true; this.ended = false; this.seeking = false;
+      this.readyState = 4; this.videoWidth = img.width; this.videoHeight = img.height; this.muted = true; this.volume = 1; this.playbackRate = 1; this.ls = {};
+    }
+    get currentTime() { return this.paused ? this.t : Math.min(this.duration, this.t + (performance.now() - this.t0) / 1000 * this.playbackRate); }
+    set currentTime(v) { this.t = clamp(+v || 0, 0, this.duration); this.t0 = performance.now(); Promise.resolve().then(() => this.emit("seeked")); }
+    play() { if (this.paused) { this.t0 = performance.now(); this.paused = false; } return Promise.resolve(); }
+    pause() { if (!this.paused) { this.t = this.currentTime; this.paused = true; this.emit("pause"); } }
+    addEventListener(ev, fn) { (this.ls[ev] = this.ls[ev] || []).push(fn); }
+    removeEventListener(ev, fn) { this.ls[ev] = (this.ls[ev] || []).filter(f => f !== fn); }
+    emit(ev) { (this.ls[ev] || []).slice().forEach(f => f()); }
+    removeAttribute() {} load() {} remove() {}
+  }
+  const VSTILL_LEN = 3;
+  const isImageFile = (type, name) => (type || "").startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(name || "");
+
   /* ---- Clips y tiempo ---- */
   // El tiempo del proyecto (T) son los segundos desde el principio, con los clips puestos uno tras otro.
   const clipLen = c => c.e - c.s;
@@ -4547,7 +4600,7 @@ body::before {
     vdirty = true;
   }
   function vSetClip(i) { const old = vel(); vci = clamp(i, 0, vs.clips.length - 1); const S = srcOf(vs.clips[vci]); if (old && old !== S.el) { vsrc.forEach(X => { if (X.el === old) mPause(X); }); } vpre = false; }
-  function vScrubTo(T) { if (!vs.clips.length) return; const p = vLocate(T); vSetClip(p.i); vprevFor = null; elScrub(vel(), p.t); }
+  function vScrubTo(T) { if (!vs.clips.length) return; const p = vLocate(T), ch = p.i !== vci; vSetClip(p.i); vprevFor = null; elScrub(vel(), p.t); if (ch) vApplyVol(); }
   async function vSeekTo(T) { if (!vs.clips.length) return; const p = vLocate(T); vSetClip(p.i); vprevFor = null; await elSeek(vel(), p.t); }
 
   /* ---- Gráfica ---- */
@@ -4609,7 +4662,7 @@ void main(){
   gl_FragColor = vec4(c, 1.);
 }`;
   const T_FS = "precision mediump float; varying vec2 v_uv; uniform sampler2D u_t; void main(){ gl_FragColor = texture2D(u_t, v_uv); }";
-  let gl = null, glu = null, glp = null, glt = null, gltex = null, gltext = null, glcur = 0, glscale = [[1, 1, 0, 0], [1, 1, 0, 0]];
+  let gl = null, glu = null, glp = null, glt = null, gltex = null, gltext = null, glcur = 0, glscale = [[1, 1, 0, 0], [1, 1, 0, 0]], glstill = [null, null];
   let vprevFor = null;      // id del clip cuya entrada puede usar el último fotograma del clip anterior (para las transiciones)
   function initGL() {
     if (gl) return true;
@@ -4640,7 +4693,7 @@ void main(){
       glu = {};
       ["u_tex", "u_prev", "u_scale", "u_pscale", "u_off", "u_poff", "u_res", "u_mode", "u_k", "u_dip", "u_m", "u_o", "u_sh", "u_hi", "u_split", "u_vig", "u_grain", "u_flash", "u_seed"].forEach(n => { glu[n] = g.getUniformLocation(prog, n); });
       g.uniform1i(glu.u_tex, 0); g.uniform1i(glu.u_prev, 1);
-      glp = prog; glt = progT; gl = g; glcur = 0; vtextSig = "?"; vprevFor = null;
+      glp = prog; glt = progT; gl = g; glcur = 0; vtextSig = "?"; vprevFor = null; glstill = [null, null];
       return true;
     } catch (e) { gl = null; return false; }
   }
@@ -4678,6 +4731,7 @@ void main(){
     let sx = 1, sy = 1;
     if (vs.fit === "contain") { if (av > ao) sy = av / ao; else sx = ao / av; }
     else { if (av > ao) sx = ao / av; else sy = av / ao; }
+    const z = clamp(+c.pz || 1, 1, 3); sx /= z; sy /= z;
     const ox = sx < 0.999 ? clamp(+c.px || 0, -1, 1) * (1 - sx) / 2 : 0, oy = sy < 0.999 ? clamp(+c.py || 0, -1, 1) * (1 - sy) / 2 : 0;
     return [sx, sy, ox, oy];
   }
@@ -4705,7 +4759,12 @@ void main(){
     const p = vParams(), M = colorMatrix(p);
     gl.viewport(0, 0, W, H);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur]);
-    if (el.readyState >= 2 && el.videoWidth) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); glscale[glcur] = vScaleFor(S, c); } catch (e) {} }
+    if (S.still) {       // la foto solo se sube a la gráfica una vez
+      if (glstill[glcur] !== S.id) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el.img); glstill[glcur] = S.id; } catch (e) {} }
+      glscale[glcur] = vScaleFor(S, c);
+    } else if (el.readyState >= 2 && el.videoWidth) {
+      try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, el); glscale[glcur] = vScaleFor(S, c); glstill[glcur] = null; } catch (e) {}
+    }
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, gltex[glcur ^ 1]);
     const tr = vTrans(T);
     gl.uniform2f(glu.u_scale, glscale[glcur][0], glscale[glcur][1]);
@@ -4796,8 +4855,9 @@ void main(){
   const vmusic = new Audio(); vmusic.preload = "auto";
   const VM = { el: vmusic, want: false, unl: false, ready: false, node: null };
   let vaudio = null, vmusId = null, vmusUrl = null;
-  const vNeedGraph = () => !!vaudio || vsrc.size > 1 || !!vs.music || (vs.vol !== 0 && vs.vol !== 100);
-  function vWire(S) { if (!vaudio || S.node) return; try { S.node = vaudio.ctx.createMediaElementSource(S.el); S.node.connect(vaudio.vid); } catch (e) {} }
+  const clipVol = c => (c && c.vol != null ? c.vol : 100);
+  const vNeedGraph = () => !!vaudio || vsrc.size > 1 || !!vs.music || (vs.vol !== 0 && vs.vol !== 100) || vs.clips.some(c => clipVol(c) !== 0 && clipVol(c) !== 100);
+  function vWire(S) { if (!vaudio || S.node || S.still) return; try { S.node = vaudio.ctx.createMediaElementSource(S.el); S.node.connect(vaudio.vid); } catch (e) {} }
   function ensureAudio() {
     if (vaudio) return vaudio;
     try {
@@ -4818,7 +4878,7 @@ void main(){
     return clamp((vlay.total - T) / vs.speed / 1.5, 0, 1);
   }
   function vApplyVol() {
-    const v = vs.vol / 100, m = vs.music ? vs.music.vol / 100 : 0;
+    const v = vs.vol / 100 * clipVol(curClip()) / 100, m = vs.music ? vs.music.vol / 100 : 0;
     if (vaudio) {
       vaudio.vid.gain.value = vquiet ? 0 : v;
       vaudio.mus.gain.value = vquiet ? 0 : m * vMusicFade(vNow());
@@ -4914,11 +4974,11 @@ void main(){
   async function vAdvance(i) {
     const run = vrun, from = curClip(), a = srcOf(from), to = vs.clips[i], b = srcOf(to), seq = i === vci + 1;
     if (seq && VTMODE[to.tr]) vHoldPrev(to.id); else vprevFor = null;
-    if (seq && a === b && Math.abs(to.s - from.e) < 0.06 && !a.el.ended) { vci = i; vpre = false; return; }
+    if (seq && a === b && Math.abs(to.s - from.e) < 0.06 && !a.el.ended) { vci = i; vpre = false; vApplyVol(); return; }
     const id = ++vjumpId; vjump = true;
     if (run) { try { if (run.rec.state === "recording" && run.rec.pause) run.rec.pause(); } catch (e) {} }
     mPause(VM); mPause(a);
-    vci = i; vpre = false;
+    vci = i; vpre = false; vApplyVol();
     if (b.el.seeking || Math.abs(b.el.currentTime - to.s) > 0.04) await elSeek(b.el, to.s);
     if (id !== vjumpId) return;
     try { b.el.playbackRate = vs.speed; } catch (e) {}
@@ -5003,6 +5063,11 @@ void main(){
       const c = vs.clips[vsel];
       info.innerHTML = (n === 1 ? "<b>1 clip</b>" : `<b>${n} clips</b> unidos`) + ` · duración <b>${fmtTime(tot / vs.speed)}</b>` + (n > 1 ? ` · elegido: el ${vsel + 1}.º (${fmtTime(clipLen(c) / vs.speed)})` : "");
       $("v-clip-del").disabled = n < 2; $("v-clip-l").disabled = vsel === 0; $("v-clip-r").disabled = vsel === n - 1;
+      const still = !!srcOf(c).still, cvol = $("v-cvol");
+      $("v-cvol-box").hidden = still;
+      if (document.activeElement !== cvol) cvol.value = clipVol(c);
+      setFill(cvol); $("v-cvol-out").textContent = clipVol(c) === 0 ? "Sin sonido" : clipVol(c) + "%";
+      $("v-clip-hint").textContent = still ? "Es una foto: arrastra su extremo derecho para que dure más o menos." : "Arrastra el punto blanco para mover la línea. Toca un clip para elegirlo y arrastra sus extremos para acortarlo.";
     }
   }
   // Tocar un clip lo elige; arrastrar sus extremos lo acorta o alarga; tocar o arrastrar la tira mueve la línea blanca.
@@ -5109,16 +5174,21 @@ void main(){
   let sdrag = null, sSuppress = false;
   const stagePt = e => { const r = vcanvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
   function vHitText(p) { for (let i = vs.texts.length - 1; i >= 0; i--) { const b = vboxes[vs.texts[i].id]; if (b && p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1) return vs.texts[i]; } return null; }
-  let pdrag = null;
+  let pdrag = null, vpinch = null;
+  const vppts = new Map();
   vstage.addEventListener("pointerdown", e => {
     sSuppress = false;
     if (vrun || vstarting) return;
-    if (vtab === "formato" && curClip()) {       // mover el video dentro del recorte
-      const c = curClip(), sc = vScaleFor(srcOf(c), c);
-      if (sc[0] < 0.999 || sc[1] < 0.999) {
-        const r = vcanvas.getBoundingClientRect();
+    if (vtab === "formato" && curClip()) {       // mover el video dentro del recorte, o acercarlo con dos dedos
+      const c = curClip(), sc = vScaleFor(srcOf(c), c), r = vcanvas.getBoundingClientRect();
+      vppts.set(e.pointerId, [e.clientX, e.clientY]);
+      try { vstage.setPointerCapture(e.pointerId); } catch (e2) {}
+      if (vppts.size === 2) {
+        const [a, b] = [...vppts.values()];
+        pdrag = null; vpinch = { c, d0: Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])), z0: clamp(+c.pz || 1, 1, 3) };
+        vPause();
+      } else if (vppts.size === 1 && (sc[0] < 0.999 || sc[1] < 0.999)) {
         pdrag = { c, sc, x0: e.clientX, y0: e.clientY, w: r.width, h: r.height, px0: +c.px || 0, py0: +c.py || 0, moved: false };
-        try { vstage.setPointerCapture(e.pointerId); } catch (e2) {}
       }
       return;
     }
@@ -5131,6 +5201,15 @@ void main(){
     vdirty = true;
   });
   vstage.addEventListener("pointermove", e => {
+    if (vppts.has(e.pointerId)) vppts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (vpinch) {
+      if (vppts.size >= 2) {
+        const [a, b] = [...vppts.values()];
+        vpinch.c.pz = clamp(vpinch.z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / vpinch.d0, 1, 3);
+        vdirty = true;
+      }
+      return;
+    }
     if (pdrag) {
       const d = pdrag, dx = (e.clientX - d.x0) / d.w, dy = (e.clientY - d.y0) / d.h;
       if (!d.moved && Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 6) return;
@@ -5144,7 +5223,9 @@ void main(){
     if (Math.abs(nx - sdrag.t.x) + Math.abs(ny - sdrag.t.y) > 0.001) sdrag.moved = true;
     sdrag.t.x = nx; sdrag.t.y = ny; vdirty = true;
   });
-  ["pointerup", "pointercancel"].forEach(ev => vstage.addEventListener(ev, () => {
+  ["pointerup", "pointercancel"].forEach(ev => vstage.addEventListener(ev, e => {
+    vppts.delete(e.pointerId);
+    if (vpinch) { if (vppts.size < 2) { vpinch = null; sSuppress = true; vCommit(); if (vtab === "formato") renderVPanel(); } return; }
     if (pdrag) { const m = pdrag.moved; pdrag = null; if (m) { sSuppress = true; vCommit(); if (vtab === "formato") renderVPanel(); } return; }
     if (!sdrag) return; if (sdrag.moved) vCommit(); sdrag = null;
   }));
@@ -5174,12 +5255,17 @@ void main(){
       body.innerHTML = `<div class="vinfo" id="v-clip-info"></div>
         <div class="vrow">
           <button class="btn primary" id="v-split">${VI(IC_CUT)}Dividir aquí</button>
-          <label class="btn" for="video-add">${VI(IC_PLUS)}Añadir video</label>
+          <label class="btn" for="video-add">${VI(IC_PLUS)}Añadir video o foto</label>
           <button class="btn" id="v-clip-del">Borrar clip</button>
           <button class="btn" id="v-clip-l">${VI('<path d="m14 6-6 6 6 6"/>')}Mover</button>
           <button class="btn" id="v-clip-r">Mover${VI('<path d="m10 6 6 6-6 6"/>')}</button>
         </div>
-        <div class="vinfo">Arrastra el punto blanco para mover la línea. Toca un clip para elegirlo y arrastra sus extremos para acortarlo.</div>`;
+        <div class="ctl" id="v-cvol-box"><label for="v-cvol">Sonido de este clip</label><output id="v-cvol-out"></output>
+          <input type="range" id="v-cvol" min="0" max="100" step="1"></div>
+        <div class="vinfo" id="v-clip-hint"></div>`;
+      const cv = $("v-cvol");
+      cv.addEventListener("input", () => { vs.clips[vsel].vol = +cv.value; vApplyVol(); vSyncTrim(); });
+      cv.addEventListener("change", vCommit);
       $("v-split").onclick = vSplit;
       $("v-clip-del").onclick = vDeleteClip;
       $("v-clip-l").onclick = () => vMoveClip(-1);
@@ -5317,14 +5403,21 @@ void main(){
       const fit = vs.format !== "original" || vMixed();
       body.innerHTML = `<div class="vrow">${VFORMATS.map(f => `<button class="chip text" data-f="${f.id}" aria-pressed="${vs.format === f.id}">${f.label}</button>`).join("")}</div>
         <div class="seg text" id="v-fit" ${fit ? "" : "hidden"}><button data-fit="cover" aria-pressed="${vs.fit === "cover"}">Recortar para llenar</button><button data-fit="contain" aria-pressed="${vs.fit === "contain"}">Entero con fondo negro</button></div>
-        <div class="vrow" id="v-pan-row" hidden><span class="vinfo" style="flex:1 1 0;min-width:0">Arrastra el video con el dedo para elegir qué parte se ve.</span><button class="chip text" id="v-pan-zero" hidden>Centrar</button></div>
+        <div class="ctl"><label for="v-zoom">Acercar</label><output id="v-zoom-out"></output>
+          <input type="range" id="v-zoom" min="100" max="300" step="5"></div>
+        <div class="vrow" id="v-pan-row" hidden><span class="vinfo" style="flex:1 1 0;min-width:0">Arrastra el video con el dedo para elegir qué parte se ve, o pellizca para acercar.</span><button class="chip text" id="v-pan-zero" hidden>Centrar</button></div>
         <div class="vinfo" id="v-format-info"></div>`;
       const pc = curClip(), psc = pc ? vScaleFor(srcOf(pc), pc) : [1, 1];
       if (pc && (psc[0] < 0.999 || psc[1] < 0.999)) {
         $("v-pan-row").hidden = false;
-        $("v-pan-zero").hidden = !(pc.px || pc.py);
-        $("v-pan-zero").onclick = () => { pc.px = 0; pc.py = 0; vdirty = true; vCommit(); renderVPanel(); };
+        $("v-pan-zero").hidden = !(pc.px || pc.py || (pc.pz || 1) > 1);
+        $("v-pan-zero").onclick = () => { pc.px = 0; pc.py = 0; pc.pz = 1; vdirty = true; vCommit(); renderVPanel(); };
       }
+      const zr = $("v-zoom"), zshow = () => { const z = Math.round(((pc && pc.pz) || 1) * 100); if (document.activeElement !== zr) zr.value = z; setFill(zr); $("v-zoom-out").textContent = z + "%"; };
+      zr.disabled = !pc;
+      zr.addEventListener("input", () => { if (!pc) return; pc.pz = +zr.value / 100; vdirty = true; zshow(); });
+      zr.addEventListener("change", () => { vCommit(); renderVPanel(); });
+      zshow();
       body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vCommit(); renderVPanel(); }));
       body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vCommit(); renderVPanel(); }));
       const o = vOutDims(); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
@@ -5410,11 +5503,11 @@ void main(){
     return out;
   }
   async function vBuildThumbs(S) {
-    const N = VTHUMBS, tw = 80, th = 70, cv = S.thumbs, el = S.el;
+    const N = VTHUMBS, tw = 80, th = 70, cv = S.thumbs, el = S.still ? S.el.img : S.el;
     cv.width = tw * N; cv.height = th;
     const c = cv.getContext("2d"); c.fillStyle = "#0c0b0a"; c.fillRect(0, 0, cv.width, th);
     for (let i = 0; i < N; i++) {
-      await elSeek(el, (i + 0.5) / N * S.dur);
+      if (!S.still) await elSeek(el, (i + 0.5) / N * S.dur);
       try {
         const k = Math.max(tw / S.w, th / S.h), sw = tw / k, sh = th / k;
         c.drawImage(el, (S.w - sw) / 2, (S.h - sh) / 2, sw, sh, i * tw, 0, tw, th);
@@ -5426,9 +5519,26 @@ void main(){
         }
       } catch (e) {}
     }
-    await elSeek(el, 0);
+    if (!S.still) await elSeek(el, 0);
+  }
+  async function vAddStill(blob, name, id) {       // una foto como clip
+    const url = URL.createObjectURL(blob);
+    try {
+      const im = new Image(); im.src = url; await im.decode();
+      const k = Math.min(1, VMAX / Math.max(im.naturalWidth, im.naturalHeight));
+      const cv = document.createElement("canvas"); cv.width = even(im.naturalWidth * k); cv.height = even(im.naturalHeight * k);
+      cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+      const el = new VStill(cv);
+      const S = { id: id || vuid(), name, blob, el, url, still: true, dur: el.duration, w: cv.width, h: cv.height, thumbs: document.createElement("canvas"), small: document.createElement("canvas"), poster: "", node: null, unl: true, want: false, stored: false, forceMute: false };
+      await vBuildThumbs(S);
+      el.addEventListener("seeked", () => { vdirty = true; });
+      vsrc.set(S.id, S);
+      return S;
+    } catch (e) { return null; }
+    finally { URL.revokeObjectURL(url); }
   }
   async function vAddSource(blob, name, id) {
+    if (isImageFile(blob.type, name)) return vAddStill(blob, name, id);
     const el = document.createElement("video");
     el.playsInline = true; el.setAttribute("playsinline", ""); el.setAttribute("webkit-playsinline", ""); el.preload = "auto"; el.muted = true;
     vpool.appendChild(el);
@@ -5459,12 +5569,13 @@ void main(){
     for (const f of files) {
       i++;
       const name = f.name || "video";
-      if (!(f.type || "").startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(name)) { toast(`«${name}» no es un video. Prueba con MP4 o MOV.`, true); continue; }
-      if (files.length > 1) $("vbusy-text").textContent = `Preparando el video ${i} de ${files.length}…`;
+      const img = isImageFile(f.type, name);
+      if (!img && !(f.type || "").startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(name)) { toast(`«${name}» no es un video ni una foto.`, true); continue; }
+      if (files.length > 1) $("vbusy-text").textContent = `Preparando ${i} de ${files.length}…`;
       const S = await vAddSource(f, name);
-      if (!S) { toast(`No se pudo abrir «${name}». Puede que este navegador no lea ese formato de video.`, true); continue; }
+      if (!S) { toast(`No se pudo abrir «${name}». Puede que este navegador no lea ese formato.`, true); continue; }
       vStoreSource(S);
-      vs.clips.push({ id: vuid(), src: S.id, s: 0, e: S.dur, tr: "none" }); n++;
+      vs.clips.push({ id: vuid(), src: S.id, s: 0, e: S.still ? VSTILL_LEN : S.dur, tr: "none" }); n++;
     }
     return n;
   }
@@ -5590,7 +5701,7 @@ void main(){
     const box = $("home-vlist"); box.textContent = "";
     const list = vindex.slice().sort((a, b) => b.updated - a.updated);
     $("home-vlist-title").hidden = !list.length;
-    $("home-vnew-info").textContent = list.length ? "Empieza otro video. Tus proyectos se conservan." : "Elige uno o varios videos de tu galería";
+    $("home-vnew-info").textContent = list.length ? "Empieza otro video. Tus proyectos se conservan." : "Elige videos o fotos de tu galería";
     list.forEach(p => {
       const row = document.createElement("div"); row.className = "home-row vproj";
       row.innerHTML = `<button class="vproj-open"><span class="home-thumbs"></span><span><b></b><small></small></span></button>
@@ -5720,6 +5831,10 @@ void main(){
     if (!vresult) return;
     const btn = $("v-download"); btn.disabled = true;
     try {
+      if (isNative) {
+        try { await saveToPhotos(vresult.blob, vresult.name, "video"); toast("Video guardado en Fotos"); closeVResult(); return; }
+        catch (e) { if (photosDenied(e)) { toast(NO_PHOTOS_PERMISSION, true); return; } }
+      }
       const file = new File([vresult.blob], vresult.name, { type: vresult.type });
       const isTouch = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       if (isTouch && navigator.canShare && navigator.canShare({ files: [file] })) {
