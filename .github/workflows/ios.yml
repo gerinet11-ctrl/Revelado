@@ -70,6 +70,8 @@ jobs:
           # Recompone la clave: al copiarla (sobre todo desde Windows) cambian los saltos de línea y Apple la rechaza.
           CUERPO=$(printf '%s' "$ASC_KEY_P8" | tr -d '\r' | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d '[:space:]')
           { echo "-----BEGIN PRIVATE KEY-----"; printf '%s\n' "$CUERPO" | fold -w 64; echo "-----END PRIVATE KEY-----"; } > "$KEY"
+          RAROS=$(printf '%s' "$CUERPO" | tr -d 'A-Za-z0-9+/=' | wc -c | tr -d ' ')
+          echo "Clave: ${#CUERPO} caracteres en el cuerpo (lo normal son unos 200), $RAROS que no pertenecen a una clave."
           if ! openssl pkey -in "$KEY" -noout 2>/dev/null; then echo "::error::ASC_KEY_P8 no es una clave válida: vuelve a copiar el archivo .p8 completo, sin cambiar nada"; exit 1; fi
           sed "s/__TEAM_ID__/$APPLE_TEAM_ID/" ios/ci/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
           xcodebuild -exportArchive \
