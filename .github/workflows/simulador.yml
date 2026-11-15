@@ -28,11 +28,11 @@ jobs:
           APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name App.app -maxdepth 3 | head -1)
           xcrun simctl install "$UDID" "$APP"
           (xcrun simctl launch --console-pty "$UDID" com.gerinet11.moon -moonSelfTest > "$RUNNER_TEMP/app.log" 2>&1 &)
-          for i in $(seq 1 60); do
+          for i in $(seq 1 40); do
             if grep -q "MOONTEST FIN" "$RUNNER_TEMP/app.log" 2>/dev/null; then break; fi
             sleep 3
           done
           echo "===== REGISTRO DE LA APP ====="
-          grep -E "MOONTEST|⚡️|rror|plugin" "$RUNNER_TEMP/app.log" | head -80
+          head -120 "$RUNNER_TEMP/app.log"
           echo "===== (fin) ====="
           grep -q "MOONTEST FIN" "$RUNNER_TEMP/app.log"
