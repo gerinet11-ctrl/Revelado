@@ -5,5 +5,6 @@ import Capacitor
 class MoonViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(MoonSavePlugin())
+        bridge?.registerPluginInstance(MoonExportPlugin())
     }
 }
