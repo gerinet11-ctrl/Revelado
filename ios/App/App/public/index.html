@@ -749,13 +749,19 @@ kbd {
 .vtime-row span:last-child { text-align: right; }
 .vpp { width: 58px; height: 34px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg); cursor: pointer; }
 .vpp svg { width: 17px; height: 17px; }
+.vtime-row .vtime-mid { display: flex; gap: 8px; min-width: 0; }
+.vpp.vtz { width: 46px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.vpp.vtz[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+#trim-segs { position: absolute; inset: 0; clip-path: inset(-14px 0 -14px 0); }
+.trim canvas { position: relative; }
 .trim.dragging .trim-head { display: none; }
 .trim-tr { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #fff; border: 2px solid var(--accent); border-radius: 3px; transform: rotate(45deg); z-index: 2; pointer-events: none; }
-.trim-marks { position: relative; height: 11px; margin-top: 7px; }
+.trim-marks { position: relative; height: 16px; margin-top: 7px; overflow: hidden; }
 .trim-marks:empty { height: 0; margin-top: 0; }
 .tm { position: absolute; top: 0; height: 4px; min-width: 3px; border-radius: 2px; background: var(--muted); opacity: .75; }
 .tm.sel { background: var(--accent); opacity: 1; }
-.tm.mus { top: 7px; background: #4da3ff; opacity: .85; }
+.tm.voz { top: 6px; background: #ff7ac8; opacity: .9; }
+.tm.mus { top: 12px; background: #4da3ff; opacity: .85; }
 .vtime-row span:first-child { color: var(--fg); }
 .trim { position: relative; height: 62px; margin-top: 24px; border-radius: 8px; background: var(--well); touch-action: none; cursor: pointer; }
 /* Franja encima de la tira: tocarla o arrastrarla mueve siempre la línea blanca (nunca recorta un clip). */
@@ -773,7 +779,9 @@ kbd {
 .trim-head { position: absolute; top: -20px; bottom: -7px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; z-index: 4; }
 .trim-head::before { content: ""; position: absolute; left: 50%; top: -10px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.45); }
 .vpanel { background: var(--panel); border-top: 1px solid var(--line); min-width: 0; zoom: 1.08; }
-.vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.vbody { padding: 10px max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); min-height: 108px; max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.vbody > :first-child { margin-top: auto; }
+.vbody > :last-child { margin-bottom: auto; }
 .vrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .vrow::-webkit-scrollbar { display: none; }
 .vrow > * { flex: none; }
@@ -790,6 +798,7 @@ kbd {
 .vsw { width: 28px; height: 28px; padding: 0; border: 2px solid var(--line); border-radius: 50%; cursor: pointer; }
 .vsw[aria-pressed="true"] { border-color: var(--panel); box-shadow: 0 0 0 2px var(--accent); }
 .vsep { width: 1px; height: 22px; background: var(--line); }
+.vstk { width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: none; font-size: 22px; line-height: 1; cursor: pointer; }
 .home-sub { margin: 10px 0 0; font-family: var(--f-ui); font-size: 13px; font-weight: 600; color: var(--muted); }
 .home-list.tight { margin-top: 0; }
 .vproj { padding: 0; gap: 0; cursor: default; }
@@ -1069,6 +1078,23 @@ body::before {
   .sample-hint { display: none; }
   .tab { font-size: 12px; }
 }
+/* iPhone pequeño (SE y similares): opciones más compactas para que la imagen conserve su sitio. */
+@media (max-height: 700px) {
+  .vpanel, .panel { zoom: 1; }
+  .trim { height: 50px; margin-top: 22px; }
+  .vbody { min-height: 88px; gap: 6px; padding-top: 8px; }
+  #v-clip-hint, .vtime-row { font-size: 12px; }
+  #v-clip-hint { display: none; }
+  .tab-body { max-height: 30vh; }
+}
+/* iPhone grande (Plus y Pro Max): más aire, opciones algo mayores y tira más alta. */
+@media (min-width: 420px) and (max-width: 600px) and (min-height: 860px) {
+  .vpanel, .panel { zoom: 1.15; }
+  .trim { height: 70px; }
+  .vtime-row { font-size: 14px; }
+  .topbar .btn, .topbar .btn.icon, .vtop .btn.icon { width: 42px; height: 42px; }
+  .vtop .btn.primary, .topbar #export-open { height: 42px; }
+}
 @media (max-width: 380px) {   /* iPhone pequeño: Guardar solo con su icono para que quepa todo */
   .topbar #export-open { width: 38px; padding: 0; }
   .topbar #export-open .lbl { display: none; }
@@ -1233,7 +1259,7 @@ body::before {
     <div class="vplay" id="v-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg></div>
   </div>
   <div class="vtime">
-    <div class="vtime-row"><span id="v-cur">0:00</span><button class="vpp" id="v-pp" aria-label="Reproducir"></button><span id="v-dur">0:00</span></div>
+    <div class="vtime-row"><span id="v-cur">0:00</span><span class="vtime-mid"><button class="vpp" id="v-pp" aria-label="Reproducir"></button><button class="vpp vtz" id="v-tzoom" aria-label="Acercar la tira" title="Acercar la tira" aria-pressed="false">×1</button></span><span id="v-dur">0:00</span></div>
     <div class="trim" id="trim">
       <canvas id="trim-thumbs" width="800" height="70" aria-hidden="true"></canvas>
       <div id="trim-segs"></div>
@@ -4539,6 +4565,8 @@ body::before {
     mono: { l: "Máquina", w: 500, fam: '"IBM Plex Mono", ui-monospace, Menlo, monospace' },
   };
   const VSTYLES = [["outline", "Borde"], ["plain", "Sombra"], ["box", "Fondo"]];
+  const VANIMS = [["none", "Sin animación"], ["fade", "Suave"], ["pop", "Salto"], ["rise", "Subir"]];
+  const VSTICKERS = ["❤️", "😂", "😍", "🔥", "✨", "🎉", "👍", "⭐", "🌙", "🚀", "💯", "🎵", "😎", "🥳", "👏", "💛"];
   const vDefaults = () => ({ ver: 2, adj: Object.fromEntries(VADJ.map(k => [k, 0])), preset: "original", presetAmount: 100, speed: 1, vol: 100, format: "original", fit: "cover", trDur: 0.5, clips: [], texts: [], music: null });
 
   let vs = vDefaults();            // lo que se guarda del proyecto (y lo que deshacer/rehacer restaura)
@@ -4819,16 +4847,24 @@ void main(){
   function vDrawTexts(T) {
     const W = vcanvas.width, H = vcanvas.height;
     const vis = vs.texts.filter(t => T >= t.t0 - 0.02 && T < t.t1 && String(t.text).trim());
-    const sig = vis.length ? W + "x" + H + "·" + vfontTick + JSON.stringify(vis) : "";
+    // Animación de entrada (y de salida en «Suave»): avance de 0 a 1 de cada texto en este instante.
+    const AD = 0.35 * vs.speed, q = x => Math.round(clamp(x, 0, 1) * 16) / 16;
+    const prog = vis.map(t => (!t.anim || t.anim === "none") ? [1, 1] : [q((T - t.t0) / AD), t.anim === "fade" ? q((Math.min(t.t1, vlay.total) - T) / AD) : 1]);
+    const sig = vis.length ? W + "x" + H + "·" + vfontTick + JSON.stringify(vis) + prog.join(";") : "";
     if (sig === vtextSig) return vis.length > 0;
     vtextSig = sig; vboxes = {};
     if (!vis.length) return false;
     if (vtextCv.width !== W || vtextCv.height !== H) { vtextCv.width = W; vtextCv.height = H; }
     const g = vtextCv.getContext("2d");
     g.clearRect(0, 0, W, H); g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
-    vis.forEach(t => {
+    vis.forEach((t, ti) => {
       const L = vTextLayout(g, t, W, H), pad = L.px * 0.3, x0 = L.cx - L.w / 2, y0 = L.cy - L.h / 2, dark = vIsDark(t.color);
       vboxes[t.id] = { x0: (x0 - pad) / W, y0: (y0 - pad * 0.6) / H, x1: (x0 + L.w + pad) / W, y1: (y0 + L.h + pad * 0.6) / H };
+      const kin = prog[ti][0], kout = prog[ti][1], ease = 1 - (1 - kin) * (1 - kin);
+      g.save();
+      g.globalAlpha = t.anim === "pop" ? Math.min(1, kin * 2) : Math.min(kin, kout);
+      if (t.anim === "pop") { const sc = 0.6 + 0.4 * (ease + 0.25 * Math.sin(kin * Math.PI)); g.translate(L.cx, L.cy); g.scale(sc, sc); g.translate(-L.cx, -L.cy); }
+      if (t.anim === "rise") g.translate(0, (1 - ease) * H * 0.06);
       if (t.style === "box") { g.fillStyle = dark ? "rgba(255,255,255,.88)" : "rgba(0,0,0,.66)"; vRoundRect(g, x0 - pad, y0 - pad * 0.5, L.w + pad * 2, L.h + pad, L.px * 0.24); g.fill(); }
       L.lines.forEach((ln, i) => {
         const y = y0 + L.lh * (i + 0.5);
@@ -4837,6 +4873,7 @@ void main(){
         g.fillStyle = t.color; g.fillText(ln, L.cx, y);
         g.shadowColor = "transparent"; g.shadowBlur = 0; g.shadowOffsetY = 0;
       });
+      g.restore();
     });
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, gltext);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -4860,20 +4897,25 @@ void main(){
   const vmusic = new Audio(); vmusic.preload = "auto";
   const VM = { el: vmusic, want: false, unl: false, ready: false, node: null };
   let vaudio = null, vmusId = null, vmusUrl = null;
+  // Voz grabada encima del video: va en su propio reproductor y empieza en el punto donde se grabó.
+  const vvoice = new Audio(); vvoice.preload = "auto";
+  const VV = { el: vvoice, want: false, unl: false, ready: false, node: null };
+  let vvoiceId = null, vvoiceUrl = null, vrec = null;
   const clipVol = c => (c && c.vol != null ? c.vol : 100);
-  const vNeedGraph = () => !!vaudio || vsrc.size > 1 || !!vs.music || (vs.vol !== 0 && vs.vol !== 100) || vs.clips.some(c => clipVol(c) !== 0 && clipVol(c) !== 100);
-  function vWire(S) { if (!vaudio || S.node || S.still) return; try { S.node = vaudio.ctx.createMediaElementSource(S.el); S.node.connect(vaudio.vid); } catch (e) {} }
+  const vNeedGraph = () => !!vaudio || vsrc.size > 1 || !!vs.music || !!vs.voice || (vs.vol !== 0 && vs.vol !== 100) || vs.clips.some(c => clipVol(c) !== 0 && clipVol(c) !== 100);
+  function vWire(S) { if (!vaudio || S.node || S.still) return; try { S.node = vaudio.ctx.createMediaElementSource(S.el); S.gain = vaudio.ctx.createGain(); S.node.connect(S.gain); S.gain.connect(vaudio.vid); } catch (e) {} }
   function ensureAudio() {
     if (vaudio) return vaudio;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       const ctx = new AC();
       try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}   // que suene aunque el iPhone esté en silencio
-      const vid = ctx.createGain(), mus = ctx.createGain(), bus = ctx.createGain(), mon = ctx.createGain(), dest = ctx.createMediaStreamDestination();
-      vid.connect(bus); mus.connect(bus); bus.connect(mon); mon.connect(ctx.destination); bus.connect(dest);
-      vaudio = { ctx, vid, mus, mon, dest };
-      vsrc.forEach(vWire); vWire(VM);
+      const vid = ctx.createGain(), mus = ctx.createGain(), voi = ctx.createGain(), bus = ctx.createGain(), mon = ctx.createGain(), dest = ctx.createMediaStreamDestination();
+      vid.connect(bus); mus.connect(bus); voi.connect(bus); bus.connect(mon); mon.connect(ctx.destination); bus.connect(dest);
+      vaudio = { ctx, vid, mus, voi, mon, dest };
+      vsrc.forEach(vWire); vWire(VM); vWire(VV);
       if (VM.node) { try { VM.node.disconnect(); VM.node.connect(mus); } catch (e) {} }
+      if (VV.node) { try { VV.node.disconnect(); VV.node.connect(voi); } catch (e) {} }
       vApplyVol();
     } catch (e) { vaudio = null; }
     return vaudio;
@@ -4887,8 +4929,14 @@ void main(){
     if (vaudio) {
       vaudio.vid.gain.value = vquiet ? 0 : v;
       vaudio.mus.gain.value = vquiet ? 0 : m * vMusicFade(vNow());
+      vaudio.voi.gain.value = vquiet || !vs.voice ? 0 : vs.voice.vol / 100;
     }
+    const vw = !!(vaudio && VV.node);
+    vvoice.muted = !vw && vsilent;
+    try { vvoice.volume = vw || !vs.voice ? 1 : vs.voice.vol / 100; } catch (e) {}
+    const curS = curClip() ? srcOf(curClip()) : null;
     vsrc.forEach(S => {
+      if (S.gain) S.gain.gain.value = S === curS ? 1 : 0;       // solo suena el clip que se está viendo
       const wired = !!(vaudio && S.node);
       S.el.muted = S.forceMute || (!wired && (vsilent || v === 0));
       try { S.el.volume = wired ? 1 : v; } catch (e) {}
@@ -4913,11 +4961,71 @@ void main(){
     const cur = curClip() && srcOf(curClip()); let any = false;
     vsrc.forEach(S => { S.forceMute = false; if (S !== cur && !S.unl) { mUnlock(S); any = true; } });
     if (vs.music && VM.ready && !VM.unl) { mUnlock(VM); any = true; }
+    if (vs.voice && VV.ready && !VV.unl) { mUnlock(VV); any = true; }
     if (any) {
       vquiet++;
       if (vaudio) { vaudio.vid.gain.value = 0; vaudio.mus.gain.value = 0; }
       setTimeout(() => { vquiet--; vApplyVol(); }, 400);
     }
+  }
+  async function vSyncVoiceSrc() {       // pone en su reproductor la voz que diga el proyecto
+    const want = vs.voice && vmus.has(vs.voice.id) ? vs.voice.id : null;
+    if (want === vvoiceId) return;
+    mPause(VV); VV.ready = false; VV.unl = false; vvoiceId = null;
+    if (vvoiceUrl) { URL.revokeObjectURL(vvoiceUrl); vvoiceUrl = null; }
+    if (!want) { vvoice.removeAttribute("src"); try { vvoice.load(); } catch (e) {} return; }
+    vvoiceUrl = URL.createObjectURL(vmus.get(want).blob); vvoice.src = vvoiceUrl; vvoice.load();
+    try { await once(vvoice, "loadedmetadata", 15000); } catch (e) { return; }
+    vvoiceId = want; VV.ready = true;
+  }
+  function vVoiceTick(T) {       // arranca y para la voz según por dónde va el video
+    if (!vs.voice || !VV.ready || vrec) return;
+    const v = vs.voice, pos = (T - v.at) / vs.speed, on = pos >= 0 && pos < v.dur - 0.05;
+    if (on && !VV.want) { try { vvoice.currentTime = pos; } catch (e) {} mPlay(VV); }
+    else if (!on && VV.want) mPause(VV);
+    else if (on && vtickN % 45 === 0 && Math.abs(vvoice.currentTime - pos) > 0.3) { try { vvoice.currentTime = pos; } catch (e) {} }
+  }
+  // Grabar voz: se reproduce el video sin sonido por el altavoz (para que el micrófono no lo recoja) y se graba lo que digas.
+  async function vStartRec() {
+    if (vrec || vrun || vstarting || !vs.clips.length) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { toast("Este dispositivo no permite grabar voz desde la app.", true); return; }
+    vPause();
+    let stream, rec;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { toast("Moon no tiene permiso para usar el micrófono. Actívalo en Ajustes → Moon → Micrófono.", true); return; }
+    try { rec = new MediaRecorder(stream); } catch (e) { stream.getTracks().forEach(t => t.stop()); toast("No se pudo empezar a grabar.", true); return; }
+    const r = { rec, stream, chunks: [], at: vNow() >= vlay.total - 0.3 ? 0 : vNow(), t0: 0, dur: 0, done: false };
+    rec.ondataavailable = e => { if (e.data && e.data.size) r.chunks.push(e.data); };
+    rec.onstop = () => vFinishRec(r);
+    vrec = r;
+    const a = ensureAudio();
+    if (a) { try { a.ctx.resume().catch(() => {}); } catch (e) {} a.mon.gain.value = 0; }
+    vsilent = !a; vApplyVol();
+    renderVPanel();
+    rec.start(); r.t0 = performance.now();
+    vPlay(r.at);
+  }
+  function vStopRec() {
+    const r = vrec; if (!r || r.done) return;
+    r.done = true; r.dur = (performance.now() - r.t0) / 1000;
+    try { r.rec.stop(); } catch (e) { vFinishRec(r); }
+  }
+  async function vFinishRec(r) {
+    if (vrec !== r) return;
+    vrec = null;
+    r.stream.getTracks().forEach(t => t.stop());
+    if (vaudio) vaudio.mon.gain.value = 1;
+    vsilent = false;
+    if (vplaying) vPause();
+    const type = (r.rec.mimeType || "audio/mp4").split(";")[0], blob = new Blob(r.chunks, { type });
+    if (!blob.size || r.dur < 0.4 || !vproj) { vApplyVol(); renderVPanel(); toast("No se grabó nada. Inténtalo de nuevo."); return; }
+    const id = vuid(), m = { blob, name: "voz", stored: true };
+    vmus.set(id, m);
+    vs.voice = { id, at: r.at, dur: r.dur, vol: 100 };
+    await vSyncVoiceSrc();
+    store.kvPut(VK.file(vproj.id, "m:" + id), { blob, name: "voz" }).catch(() => { m.stored = false; });
+    vApplyVol(); vScrubTo(r.at); renderVPanel(); vSyncTrim(); vSyncTime(); vCommit();
+    toast("Voz grabada. Toca reproducir para oírla con el video.");
   }
   const vMusicPos = T => (vs.music ? vs.music.offset + T / vs.speed : 0);
   function vMusicStart() {
@@ -4950,7 +5058,8 @@ void main(){
   }
   function vPause() {
     vjumpId++; vjump = false; vplaying = false;
-    vsrc.forEach(mPause); mPause(VM);
+    vsrc.forEach(mPause); mPause(VM); mPause(VV);
+    if (vrec && !vrec.done) vStopRec();
     syncPlayBtn();
   }
   function vPlay(fromT) {
@@ -4980,9 +5089,12 @@ void main(){
     const run = vrun, from = curClip(), a = srcOf(from), to = vs.clips[i], b = srcOf(to), seq = i === vci + 1;
     if (seq && VTMODE[to.tr]) vHoldPrev(to.id); else vprevFor = null;
     if (seq && a === b && Math.abs(to.s - from.e) < 0.06 && !a.el.ended) { vci = i; vpre = false; vApplyVol(); return; }
+    if (!run && seq && a !== b && b.want && !b.el.paused && !b.el.seeking && Math.abs(b.el.currentTime - to.s) < 0.6) {
+      mPause(a); vci = i; vpre = false; vApplyVol(); return;       // el siguiente ya venía en marcha: cambio sin parón
+    }
     const id = ++vjumpId; vjump = true;
     if (run) { try { if (run.rec.state === "recording" && run.rec.pause) run.rec.pause(); } catch (e) {} }
-    mPause(VM); mPause(a);
+    mPause(VM); mPause(VV); mPause(a);
     vci = i; vpre = false; vApplyVol();
     if (b.el.seeking || Math.abs(b.el.currentTime - to.s) > 0.04) await elSeek(b.el, to.s);
     if (id !== vjumpId) return;
@@ -4997,16 +5109,23 @@ void main(){
   function vTick() {
     const i = vci, c = vs.clips[i], S = srcOf(c), el = S.el, t = el.currentTime, nx = vs.clips[i + 1];
     if (nx && !vpre && c.e - t < 1.2 * vs.speed) {       // deja preparado el clip siguiente si es de otro video
-      vpre = true;
+      vpre = 1;
+      const N = srcOf(nx), at = !vrun && !N.still && vaudio ? Math.max(0, nx.s - 0.2 * vs.speed) : nx.s;
+      if (N !== S && Math.abs(N.el.currentTime - at) > 0.03) { try { N.el.currentTime = at; } catch (e) {} }
+    }
+    if (nx && vpre === 1 && !vrun && vaudio && c.e - t < 0.25 * vs.speed) {       // …y lo pone en marcha un instante antes, en silencio
+      vpre = 2;
       const N = srcOf(nx);
-      if (N !== S && Math.abs(N.el.currentTime - nx.s) > 0.03) { try { N.el.currentTime = nx.s; } catch (e) {} }
+      if (N !== S && !N.still) { try { N.el.playbackRate = vs.speed; } catch (e) {} mPlay(N); }
     }
     if (el.ended || t >= c.e - 0.03) {
       if (nx) vAdvance(i + 1);
       else if (vrun) stopExport();
+      else if (vrec) vPause();       // al grabar voz, el final del video termina la grabación
       else vAdvance(0);
       return;
     }
+    vVoiceTick(vNow());
     if (vs.music && VM.ready) {
       if (vaudio && !vquiet) vaudio.mus.gain.value = vs.music.vol / 100 * vMusicFade(vNow());
       if (++vtickN % 45 === 0 && VM.want && !vmusic.paused) { const pos = vMusicPos(vNow()); if (Math.abs(vmusic.currentTime - pos) > 0.3 && pos < vmusic.duration - 0.2) { try { vmusic.currentTime = pos; } catch (e) {} } }
@@ -5022,24 +5141,42 @@ void main(){
   }
   const vStartLoop = () => { if (!vraf) vraf = requestAnimationFrame(vLoop); };
   $("v-pp").addEventListener("click", vToggle);
+  $("v-tzoom").addEventListener("click", () => {
+    vzoom = vzoom === 1 ? 2 : vzoom === 2 ? 4 : 1;
+    $("v-tzoom").textContent = "×" + vzoom; $("v-tzoom").setAttribute("aria-pressed", String(vzoom > 1));
+    vFollow(true); vSyncTrim(); vSyncTime();
+  });
 
   /* ---- Tira de clips ---- */
   function vSyncTime() {
     if (!vlay.total) return;
     const T = vNow();
-    $("trim-head").style.left = clamp(T / vlay.total, 0, 1) * 100 + "%";
+    if (!tdrag && vFollow()) vSyncTrim();
+    const hx = (T - vwin0) / vWinLen();
+    $("trim-head").style.left = clamp(hx, 0, 1) * 100 + "%";
+    $("trim-head").style.visibility = hx < -0.01 || hx > 1.01 ? "hidden" : "";
     $("v-cur").textContent = fmtTime(T / vs.speed);
     vSyncBox();
   }
-  let vthumbSig = "";
+  // La tira se puede acercar (×2, ×4): entonces enseña solo una ventana del video, que va siguiendo a la línea blanca.
+  let vthumbSig = "", vzoom = 1, vwin0 = 0;
+  const vWinLen = () => vlay.total / vzoom;
+  function vFollow(force) {
+    const w = vWinLen(), T = vNow(), max = Math.max(0, vlay.total - w);
+    if (vzoom === 1) { if (vwin0) { vwin0 = 0; return true; } return false; }
+    if (force || T < vwin0 + w * 0.08 || T > vwin0 + w * 0.92 || vwin0 > max + 0.001) { const a = clamp(T - w / 2, 0, max); if (Math.abs(a - vwin0) > 0.001) { vwin0 = a; return true; } }
+    return false;
+  }
   function vDrawThumbs() {
-    const sig = vs.clips.map(c => c.src + ":" + c.s.toFixed(2) + ":" + c.e.toFixed(2)).join("|");
+    const sig = vzoom + "@" + vwin0.toFixed(2) + "/" + vs.clips.map(c => c.src + ":" + c.s.toFixed(2) + ":" + c.e.toFixed(2)).join("|");
     if (sig === vthumbSig) return;
     vthumbSig = sig;
     const cv = $("trim-thumbs"), g = cv.getContext("2d"), CW = cv.width, CH = cv.height;
     g.fillStyle = "#0c0b0a"; g.fillRect(0, 0, CW, CH);
+    const WL = vWinLen();
     vs.clips.forEach((c, i) => {
-      const S = srcOf(c), x0 = vlay.starts[i] / vlay.total * CW, w = clipLen(c) / vlay.total * CW;
+      const S = srcOf(c), x0 = (vlay.starts[i] - vwin0) / WL * CW, w = clipLen(c) / WL * CW;
+      if (x0 > CW || x0 + w < 0) return;
       const n = Math.max(1, Math.round(w / 80)), dw = w / n, tw = S.thumbs.width / VTHUMBS, sw = Math.min(tw, dw * S.thumbs.height / CH);
       for (let k = 0; k < n; k++) {
         const tt = c.s + (k + 0.5) / n * clipLen(c), idx = clamp(Math.floor(tt / S.dur * VTHUMBS), 0, VTHUMBS - 1);
@@ -5050,16 +5187,18 @@ void main(){
   function vSyncTrim() {
     const n = vs.clips.length; if (!n || !vlay.total) return;
     vsel = clamp(vsel, 0, n - 1);
-    const tot = vlay.total, pct = t => (t / tot * 100).toFixed(3) + "%";
+    vFollow();
+    const tot = vlay.total, WL = vWinLen(), pct = t => ((t - vwin0) / WL * 100).toFixed(3) + "%", wid = d => (d / WL * 100).toFixed(3) + "%";
     let html = "";
     vs.clips.forEach((c, i) => {
-      html += `<div class="trim-seg${i === vsel ? " sel" : ""}" style="left:${pct(vlay.starts[i])};width:${pct(clipLen(c))}">${i === vsel ? '<span class="trim-h" data-h="s"></span><span class="trim-h" data-h="e"></span>' : ""}</div>`;
+      html += `<div class="trim-seg${i === vsel ? " sel" : ""}" style="left:${pct(vlay.starts[i])};width:${wid(clipLen(c))}">${i === vsel ? '<span class="trim-h" data-h="s"></span><span class="trim-h" data-h="e"></span>' : ""}</div>`;
       if (i > 0 && c.tr && c.tr !== "none") html += `<i class="trim-tr" style="left:${pct(vlay.starts[i])}"></i>`;
     });
     $("trim-segs").innerHTML = html;
     let marks = "";
-    vs.texts.forEach(t => { if (t.t0 < tot) marks += `<i class="tm${t.id === vtsel ? " sel" : ""}" style="left:${pct(t.t0)};width:${pct(Math.min(tot, t.t1) - t.t0)}"></i>`; });
-    if (vs.music && VM.ready) marks += `<i class="tm mus" style="left:0;width:${pct(Math.min(tot, Math.max(0, vmusic.duration - vs.music.offset) * vs.speed))}"></i>`;
+    vs.texts.forEach(t => { if (t.t0 < tot) marks += `<i class="tm${t.id === vtsel ? " sel" : ""}" style="left:${pct(t.t0)};width:${wid(Math.min(tot, t.t1) - t.t0)}"></i>`; });
+    if (vs.music && VM.ready) marks += `<i class="tm mus" style="left:${pct(0)};width:${wid(Math.min(tot, Math.max(0, vmusic.duration - vs.music.offset) * vs.speed))}"></i>`;
+    if (vs.voice) marks += `<i class="tm voz" style="left:${pct(vs.voice.at)};width:${wid(Math.min(tot - vs.voice.at, vs.voice.dur * vs.speed))}"></i>`;
     $("trim-marks").innerHTML = marks;
     $("v-dur").textContent = fmtTime(tot / vs.speed);
     vDrawThumbs();
@@ -5077,8 +5216,8 @@ void main(){
   }
   // Tocar un clip lo elige; arrastrar sus extremos lo acorta o alarga; tocar o arrastrar la tira mueve la línea blanca.
   const trim = $("trim");
-  let tdrag = null;
-  const trimT = e => { const r = trim.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1) * vlay.total; };
+  var tdrag = null;
+  const trimT = e => { const r = trim.getBoundingClientRect(); return clamp(vwin0 + clamp((e.clientX - r.left) / r.width, 0, 1) * vWinLen(), 0, vlay.total); };
   function trimMove(e) {
     if (!tdrag) return;
     if (tdrag.kind === "seek") {
@@ -5100,7 +5239,7 @@ void main(){
     if (h) {
       const c = vs.clips[vsel], box = e.target.parentElement, r = trim.getBoundingClientRect();
       vSetClip(vsel); vprevFor = null;
-      tdrag = { kind: h, x0: e.clientX, pps: r.width / vlay.total, s0: c.s, e0: c.e, box, left0: box.offsetLeft, w0: box.offsetWidth };
+      tdrag = { kind: h, x0: e.clientX, pps: r.width / vWinLen(), s0: c.s, e0: c.e, box, left0: box.offsetLeft, w0: box.offsetWidth };
       trim.classList.add("dragging");
     } else tdrag = { kind: "seek" };
     try { trim.setPointerCapture(e.pointerId); } catch (e2) {}
@@ -5110,7 +5249,7 @@ void main(){
   ["pointerup", "pointercancel"].forEach(ev => trim.addEventListener(ev, () => {
     if (!tdrag) return;
     const was = tdrag; tdrag = null;
-    if (was.kind === "seek") return;
+    if (was.kind === "seek") { vSyncTime(); return; }
     trim.classList.remove("dragging");
     vRelayout(); vSyncTrim();
     vScrubTo(was.kind === "s" ? vlay.starts[vsel] : vlay.starts[vsel] + clipLen(vs.clips[vsel]) - 0.05);
@@ -5152,7 +5291,7 @@ void main(){
     if (vtsel && !vs.texts.some(t => t.id === vtsel)) vtsel = null;
     vthumbSig = ""; vci = 0;
     vAfterClips(Math.min(T, Math.max(0, vs.clips.reduce((a, c) => a + clipLen(c), 0) - 0.05)));
-    vSyncMusicSrc().then(() => { vApplyVol(); vSyncTrim(); if (vtab === "sonido") renderVPanel(); });
+    vSyncMusicSrc().then(() => vSyncVoiceSrc()).then(() => { vApplyVol(); vSyncTrim(); if (vtab === "sonido") renderVPanel(); });
     vApplyVol(); vApplyRate(); renderVPanel(); syncVUndo(); vSaveSoon();
   }
   function vUndo() { if (!vundo.length || vrun) return; vredo.push(vsnap); vRestore(vundo.pop()); }
@@ -5160,15 +5299,15 @@ void main(){
   $("v-undo").addEventListener("click", vUndo); $("v-redo").addEventListener("click", vRedo);
 
   /* ---- Textos: añadir, elegir y mover con el dedo ---- */
-  function vAddText() {
+  function vAddText(sticker) {       // sin argumento, un texto para escribir; con un emoji, un sticker
     vPause();
     let t0 = Math.floor(vNow() * 10) / 10;
     if (vlay.total - t0 < 0.5) t0 = Math.max(0, vlay.total - 3);
-    const t = { id: vuid(), text: "Tu texto", x: 0.5, y: 0.5, size: 0.08, color: "#ffffff", style: "outline", font: "display", t0, t1: t0 + 3 >= vlay.total - 0.05 ? VALL : t0 + 3 };
+    const t = { id: vuid(), text: sticker || "Tu texto", x: 0.5, y: sticker ? 0.3 : 0.5, size: sticker ? 0.16 : 0.08, color: "#ffffff", style: sticker ? "plain" : "outline", font: "display", anim: sticker ? "pop" : "none", t0, t1: t0 + 3 >= vlay.total - 0.05 ? VALL : t0 + 3 };
     vs.texts.push(t); vtsel = t.id;
     if (vNow() < t0) vScrubTo(t0 + 0.02);
     vdirty = true; renderVPanel(); vSyncTrim(); vCommit();
-    const inp = $("v-text-in"); if (inp) { try { inp.focus(); inp.select(); } catch (e) {} }
+    const inp = $("v-text-in"); if (inp && !sticker) { try { inp.focus(); inp.select(); } catch (e) {} }
   }
   function vSelectText(id) {
     const t = vs.texts.find(x => x.id === id); if (!t) return;
@@ -5239,6 +5378,7 @@ void main(){
   /* ---- Panel de herramientas ---- */
   const VI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const IC_CUT = '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>', IC_PLUS = '<path d="M12 5v14M5 12h14"/>';
+  const IC_MIC = '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>';
   const IC_NOTE = '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>';
   const VTABS = [
     ["clips", "Clips", IC_CUT],
@@ -5281,11 +5421,13 @@ void main(){
       const list = vs.texts.length > (t ? 1 : 0) ? `<div class="vrow" id="v-text-list"></div>` : "";
       if (!t) {
         body.innerHTML = `<div class="vrow"><button class="btn primary" id="v-text-add">${VI(IC_PLUS)}Añadir texto</button></div>${list}
-          <div class="vinfo">Pon un título o una frase encima del video. Aparece donde está la línea blanca; después puedes moverlo con el dedo.</div>`;
+          <div class="vrow" id="v-stickers">${VSTICKERS.map(e => `<button class="vstk" data-stk="${e}">${e}</button>`).join("")}</div>
+          <div class="vinfo">Toca «Añadir texto» o un sticker. Aparece donde está la línea blanca y lo mueves con el dedo.</div>`;
+        body.querySelectorAll("[data-stk]").forEach(b => b.addEventListener("click", () => vAddText(b.dataset.stk)));
       } else {
         body.innerHTML = `<div class="vrow"><input class="vinput" id="v-text-in" type="text" maxlength="140" placeholder="Escribe aquí" autocomplete="off" enterkeyhint="done">
-            <button class="btn icon" id="v-text-add" aria-label="Añadir otro texto" title="Añadir otro texto">${VI(IC_PLUS)}</button>
-            <button class="btn" id="v-text-del">Borrar</button></div>${list}
+            <button class="btn" id="v-text-del">Borrar</button>
+            <button class="btn primary" id="v-text-done">Listo</button></div>${list}
           <div class="vrow" id="v-text-look">
             ${VCOLORS.map(c => `<button class="vsw" data-c="${c}" style="background:${c}" aria-label="Color"></button>`).join("")}
           </div>
@@ -5296,7 +5438,9 @@ void main(){
           </div>
           <div class="ctl"><label for="v-text-size">Tamaño</label><output id="v-text-size-out"></output>
             <input type="range" id="v-text-size" min="3" max="22" step="0.5"></div>
-          <div class="vrow"><button class="chip text" id="v-text-from">Empieza aquí</button><button class="chip text" id="v-text-to">Termina aquí</button><button class="chip text" id="v-text-all">Todo el video</button><span class="vinfo" id="v-text-info"></span></div>`;
+          <div class="vrow"><button class="chip text" id="v-text-from">Empieza aquí</button><button class="chip text" id="v-text-to">Termina aquí</button><button class="chip text" id="v-text-all">Todo el video</button>
+            <span class="vsep"></span>${VANIMS.map(([id, l]) => `<button class="chip text" data-an="${id}">${l}</button>`).join("")}</div>
+          <div class="vinfo" id="v-text-info"></div>`;
         const inp = $("v-text-in"); inp.value = t.text;
         inp.addEventListener("input", () => { t.text = inp.value; vdirty = true; });
         inp.addEventListener("change", () => { vCommit(); syncVText(); });
@@ -5305,6 +5449,8 @@ void main(){
         body.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => { t.color = b.dataset.c; vdirty = true; syncVText(); vCommit(); }));
         body.querySelectorAll("[data-st]").forEach(b => b.addEventListener("click", () => { t.style = b.dataset.st; vdirty = true; syncVText(); vCommit(); }));
         body.querySelectorAll("[data-fo]").forEach(b => b.addEventListener("click", () => { t.font = b.dataset.fo; vdirty = true; syncVText(); vCommit(); }));
+        body.querySelectorAll("[data-an]").forEach(b => b.addEventListener("click", () => { t.anim = b.dataset.an; vdirty = true; syncVText(); vCommit(); if (t.anim !== "none") { vPause(); vPlay(Math.max(0, t.t0 - 0.3 * vs.speed)); } }));
+        $("v-text-done").onclick = () => { vtsel = null; vdirty = true; renderVPanel(); vSyncTrim(); };
         const sz = $("v-text-size");
         sz.addEventListener("input", () => { t.size = +sz.value / 100; vdirty = true; syncVText(true); });
         sz.addEventListener("change", vCommit);
@@ -5312,7 +5458,7 @@ void main(){
         $("v-text-to").onclick = () => { const T = vNow(); t.t1 = Math.max(T, t.t0 + 0.3); vdirty = true; syncVText(); vSyncTrim(); vCommit(); };
         $("v-text-all").onclick = () => { t.t0 = 0; t.t1 = VALL; vdirty = true; syncVText(); vSyncTrim(); vCommit(); };
       }
-      $("v-text-add").onclick = vAddText;
+      if ($("v-text-add")) $("v-text-add").onclick = () => vAddText();
       const lb = $("v-text-list");
       if (lb) vs.texts.forEach(x => {
         const b = document.createElement("button");
@@ -5333,6 +5479,22 @@ void main(){
           <div class="vrow"><button class="chip text" id="v-mfade">Bajar la música al final</button><label class="btn" for="music-input">Cambiar canción</label><button class="btn" id="v-mdel">Quitar música</button></div>`
         : `<div class="vrow"><label class="btn primary" for="music-input">${VI(IC_NOTE)}Añadir música</label></div>
           <div class="vinfo">Elige una canción guardada en tu teléfono (en el iPhone, desde la app Archivos), en MP3 o M4A. Suena junto con el video.</div>`);
+      const vo = vs.voice && VV.ready ? vs.voice : null;
+      body.insertAdjacentHTML("beforeend", vrec
+        ? `<div class="vrow"><button class="btn primary" id="v-rec-stop">${VI('<rect x="7" y="7" width="10" height="10" rx="2"/>')}Detener grabación</button><span class="vinfo" style="flex:1 1 0;min-width:0">Grabando… habla mientras ves el video.</span></div>`
+        : vo ? `<div class="ctl"><label for="v-voz">Voz grabada</label><output id="v-voz-out"></output>
+            <input type="range" id="v-voz" min="0" max="100" step="1"></div>
+          <div class="vrow"><button class="btn" id="v-rec">${VI(IC_MIC)}Grabar de nuevo</button><button class="btn" id="v-voz-del">Quitar voz</button></div>`
+        : `<div class="vrow"><button class="btn" id="v-rec">${VI(IC_MIC)}Grabar voz</button><span class="vinfo" style="flex:1 1 0;min-width:0">Graba tu voz encima del video, desde donde está la línea blanca.</span></div>`);
+      if ($("v-rec")) $("v-rec").onclick = vStartRec;
+      if ($("v-rec-stop")) $("v-rec-stop").onclick = () => vPause();
+      if (vo) {
+        const vz = $("v-voz");
+        vz.value = vo.vol; setFill(vz); $("v-voz-out").textContent = vo.vol + "%";
+        vz.addEventListener("input", () => { vo.vol = +vz.value; setFill(vz); $("v-voz-out").textContent = vo.vol + "%"; vApplyVol(); });
+        vz.addEventListener("change", vCommit);
+        $("v-voz-del").onclick = () => { vPause(); vs.voice = null; vSyncVoiceSrc().then(() => { vApplyVol(); renderVPanel(); vSyncTrim(); }); vCommit(); };
+      }
       const vol = $("v-vol");
       vol.addEventListener("input", () => { vs.vol = +vol.value; vApplyVol(); syncVSound(true); });
       vol.addEventListener("change", vCommit);
@@ -5435,6 +5597,7 @@ void main(){
     $("vbody").querySelectorAll("[data-c]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.c === t.color)));
     $("vbody").querySelectorAll("[data-st]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.st === t.style)));
     $("vbody").querySelectorAll("[data-fo]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.fo === t.font)));
+    $("vbody").querySelectorAll("[data-an]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.an === (t.anim || "none"))));
     $("v-text-info").textContent = t.t0 <= 0.01 && t.t1 >= vlay.total - 0.01 ? "Se ve todo el video." : `Se ve de ${fmtTime(t.t0 / vs.speed)} a ${t.t1 >= vlay.total ? "el final" : fmtTime(t.t1 / vs.speed)}.`;
   }
   function syncVSound(fromSlider = false) {
@@ -5591,12 +5754,14 @@ void main(){
     vsrc.clear(); vmus.clear();
     vs = vDefaults(); vproj = null; vlay = { starts: [], total: 0 };
     vundo = []; vredo = []; vsnap = ""; vci = 0; vsel = 0; vtsel = null; vthumbSig = ""; vprevFor = null;
-    vSyncMusicSrc();
+    vSyncMusicSrc(); vSyncVoiceSrc();
   }
   async function vReady() {       // con los videos ya cargados: lo deja todo listo y abre el editor
     vRelayout(); vci = 0; vsel = 0; vtsel = null; vundo = []; vredo = []; vthumbSig = ""; vtab = "clips";
     vResize();
     if (!(await vSyncMusicSrc())) vs.music = null;
+    if (vs.voice && !vmus.has(vs.voice.id)) vs.voice = null;
+    await vSyncVoiceSrc();
     vsnap = JSON.stringify(vs);
     vApplyVol(); vApplyRate();
     await vSeekTo(0);
@@ -5633,7 +5798,7 @@ void main(){
         const S = await vAddSource(f.blob, f.name || m.name, m.id); if (S) S.stored = true;
       }
       for (const m of rec.mus || []) {
-        if (!st.music || st.music.id !== m.id) { store.kvDel(VK.file(id, "m:" + m.id)).catch(() => {}); continue; }
+        if (!(st.music && st.music.id === m.id) && !(st.voice && st.voice.id === m.id)) { store.kvDel(VK.file(id, "m:" + m.id)).catch(() => {}); continue; }
         const f = await store.kvGet(VK.file(id, "m:" + m.id)); if (f && f.blob) vmus.set(m.id, { blob: f.blob, name: f.name || m.name, stored: true });
       }
       st.clips = st.clips.filter(c => vsrc.has(c.src)).map(c => { const S = vsrc.get(c.src); return { ...c, s: clamp(+c.s || 0, 0, S.dur), e: clamp(+c.e || 0, 0, S.dur) }; }).filter(c => c.e - c.s >= VMIN_LEN * 0.9);
@@ -5759,7 +5924,7 @@ void main(){
     const mime = pickMime();
     if (mime === null || !vcanvas.captureStream) { toast("Este navegador todavía no permite guardar video desde la app.", true); return; }
     vPause(); vstarting = true;
-    const wantAudio = vs.vol > 0 || !!(vs.music && VM.ready && vs.music.vol > 0);
+    const wantAudio = vs.vol > 0 || !!(vs.music && VM.ready && vs.music.vol > 0) || !!(vs.voice && VV.ready && vs.voice.vol > 0);
     let stream, rec, withAudio = false;
     try {
       if (wantAudio) { const a = ensureAudio(); if (a) { try { a.ctx.resume().catch(() => {}); } catch (e) {} } }
@@ -5798,7 +5963,7 @@ void main(){
   function stopExport() {
     const run = vrun; if (!run || run.done) return;
     run.done = true; vjumpId++; vjump = false;
-    vsrc.forEach(mPause); mPause(VM);
+    vsrc.forEach(mPause); mPause(VM); mPause(VV);
     try { if (run.rec.state !== "inactive") run.rec.stop(); else finishExport(run); } catch (e) { finishExport(run); }
   }
   function finishExport(run) {
