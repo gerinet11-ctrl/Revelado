@@ -7,6 +7,8 @@ class MoonViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(MoonSavePlugin())
         bridge?.registerPluginInstance(MoonExportPlugin())
+        // Calienta la gráfica en segundo plano: así el primer guardado de video no espera a que se prepare.
+        DispatchQueue.global(qos: .utility).async { _ = try? MoonRenderer.shared() }
         // Solo en las pruebas automáticas: la app se prueba a sí misma al arrancar.
         if ProcessInfo.processInfo.arguments.contains("-moonSelfTest") {
             let script = WKUserScript(source: "window.__moonAutoTest = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true)
