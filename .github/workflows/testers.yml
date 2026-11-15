@@ -4,6 +4,10 @@ name: Invitar testers
 # Se lanza a mano: pestaña Actions → Invitar testers → Run workflow.
 on:
   workflow_dispatch:
+    inputs:
+      accion:
+        description: "invitar = crear grupo y enviar a revisión · estado = ver grupos y revisiones"
+        default: "invitar"
 
 permissions:
   contents: read
@@ -26,5 +30,5 @@ jobs:
           export ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH="$KEY" GRUPO="Testers Moon"
           export FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_HIDE_CHANGELOG=1 FASTLANE_OPT_OUT_USAGE=1 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
           command -v fastlane >/dev/null || brew install fastlane
-          fastlane ios invitar
+          if [ "${{ github.event.inputs.accion }}" = "estado" ]; then fastlane ios estado; else fastlane ios invitar; fi
           rm -f "$KEY"

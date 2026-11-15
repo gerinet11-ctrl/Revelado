@@ -160,4 +160,26 @@ platform :ios do
     grupo = app.get_beta_groups.find { |g| g.id == grupo.id } || grupo
     UI.success("ENLACE PÚBLICO: #{grupo.public_link.inspect} · activo: #{grupo.public_link_enabled.inspect}")
   end
+  desc "Muestra los grupos de TestFlight y el estado de revisión de cada compilación (sin mostrar correos)"
+  lane :estado do
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], filepath: ENV["ASC_KEY_PATH"]
+    )
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    UI.user_error!("No se encontró la app") unless app
+    Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 15).each do |b|
+      rev = begin
+        r = b.get_beta_app_review_submission
+        r ? r.beta_review_state : "sin enviar"
+      rescue StandardError => ex
+        "no se pudo leer (#{ex.message.to_s[0, 80]})"
+      end
+      UI.message("BUILD #{b.version}: revisión #{rev} · estado externo #{b.external_build_state rescue '?'}")
+    end
+    app.get_beta_groups.each do |g|
+      n = begin; g.fetch_beta_testers.length; rescue StandardError; "?"; end
+      bs = begin; g.fetch_builds.map(&:version).join(", "); rescue StandardError; "?"; end
+      UI.message("GRUPO «#{g.name}»: interno=#{g.is_internal_group.inspect} · enlace público=#{g.public_link_enabled.inspect} · testers=#{n} · compilaciones=[#{bs}]")
+    end
+  end
 end
