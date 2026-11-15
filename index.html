@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -40,7 +40,7 @@
 }
 [hidden] { display: none !important; }
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { height: 100%; touch-action: pan-x pan-y; }   /* sin zoom de toda la app: solo se amplía la foto */
 body {
   margin: 0;
   background: var(--bg);
@@ -992,7 +992,7 @@ body::before {
   }
   .standalone .topbar, .standalone.under-bar .topbar { padding-top: 8px; }   /* el margen del reloj ya lo pone .app: no sumarlo dos veces */
   .topbar .brand { margin-right: auto; font-size: 19px; gap: 8px; }
-  .topbar .brand .mark { width: 30px; height: 30px; }
+  .topbar .brand .mark { display: none; }   /* en el móvil el sitio del logo lo ocupa el botón de volver */
   .topbar #reset { display: none; }   /* en el móvil cada pestaña tiene su «Sin …» */
   .topbar .btn, .topbar .btn.icon { width: 38px; height: 38px; padding: 0; justify-content: center; }
   .topbar .btn svg { width: 18px; height: 18px; }
@@ -1267,6 +1267,7 @@ body::before {
 
 <div class="app">
   <header class="topbar">
+    <button class="btn icon" id="p-back" aria-label="Volver al menú" title="Volver al menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
     <button class="brand" id="brand" title="Volver al menú principal"><svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>Moon</button>
 
     <label class="btn" for="file-input" title="Abrir fotos: puedes elegir varias a la vez, arrastrarlas o pegarlas">
@@ -4347,6 +4348,8 @@ body::before {
   }, { passive: false });
   // Safari del iPhone: que el pellizco amplíe la foto y no toda la página.
   ["gesturestart", "gesturechange", "gestureend"].forEach(t => stage.addEventListener(t, e => e.preventDefault()));
+  // El pellizco con dos dedos no amplía la app entera en ninguna pantalla (la foto tiene su propio zoom).
+  ["gesturestart", "gesturechange"].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
 
   // Ordenador: mantener la barra espaciadora y arrastrar mueve la foto aunque haya un pincel activo.
   window.addEventListener("keydown", e => {
@@ -5813,6 +5816,7 @@ void main(){
   }
   splash.addEventListener("click", hideSplash);
   $("brand").addEventListener("click", () => { if (!brandLong) showHome("main"); brandLong = false; });
+  $("p-back").addEventListener("click", () => showHome("foto"));
   // Mantener pulsado el logo 1 segundo muestra las medidas de la pantalla (para ajustar el diseño al iPhone).
   let brandLong = false, brandTimer = 0;
   $("brand").addEventListener("pointerdown", () => {
