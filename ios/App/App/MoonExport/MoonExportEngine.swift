@@ -700,9 +700,17 @@ final class MoonExporter {
         lock.lock(); session = sess; let wasCancelled = cancelled; lock.unlock()
         if wasCancelled { throw MoonError.cancelled }
 
+        // Vigilante: si en 45 s no hay ningún avance, se corta con un aviso en vez de quedarse colgado.
+        final class Watch { var stalled = false }
+        let watch = Watch()
         let poll = Task {
+            var lastValue = -1.0
+            var lastChange = Date()
             while !Task.isCancelled {
-                progress(Double(sess.progress))
+                let v = Double(sess.progress)
+                progress(v)
+                if v != lastValue { lastValue = v; lastChange = Date() }
+                else if Date().timeIntervalSince(lastChange) > 45 { watch.stalled = true; sess.cancelExport(); break }
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
@@ -714,6 +722,7 @@ final class MoonExporter {
         case .completed:
             progress(1)
         case .cancelled:
+            if watch.stalled { throw MoonError.bad("El guardado se detuvo: sin avances durante 45 segundos") }
             throw MoonError.cancelled
         default:
             throw sess.error ?? MoonError.bad("No se pudo guardar el video")

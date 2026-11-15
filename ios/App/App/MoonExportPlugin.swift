@@ -10,6 +10,7 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "MoonExport"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "ping", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "uploadInfo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "beginFile", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "appendFile", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endFile", returnType: CAPPluginReturnPromise),
@@ -22,33 +23,35 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private let io = DispatchQueue(label: "moon.export.io")
     private var handles: [String: FileHandle] = [:]
-    private var paths: [String: URL] = [:]
     private var exporter: MoonExporter?
     private var fraction: Double = 0
 
-    private var folder: URL {
-        let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("moon-export", isDirectory: true)
-        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        return base
-    }
+    private var folder: URL { MoonFileStore.shared.folder }
 
     @objc func ping(_ call: CAPPluginCall) {
         call.resolve(["ok": true])
     }
 
-    @objc func beginFile(_ call: CAPPluginCall) {
-        let name = (call.getString("name") ?? "archivo").replacingOccurrences(of: "/", with: "_")
-        let id = UUID().uuidString
-        let url = folder.appendingPathComponent("\(id)-\(name)")
+    /// Puerto y clave del canal rápido para pasar archivos (el servidor local).
+    @objc func uploadInfo(_ call: CAPPluginCall) {
         io.async {
-            FileManager.default.createFile(atPath: url.path, contents: nil)
-            guard let h = try? FileHandle(forWritingTo: url) else {
+            do {
+                let port = try MoonUploadServer.shared.start()
+                call.resolve(["port": Int(port), "token": MoonUploadServer.shared.token])
+            } catch {
+                call.reject(error.localizedDescription, "failed")
+            }
+        }
+    }
+
+    @objc func beginFile(_ call: CAPPluginCall) {
+        let name = call.getString("name") ?? "archivo"
+        io.async {
+            guard let f = MoonFileStore.shared.create(name: name) else {
                 call.reject("No se pudo crear el archivo", "failed")
                 return
             }
-            self.handles[id] = h
-            self.paths[id] = url
-            call.resolve(["id": id])
+            call.resolve(["id": f.id, "path": f.url.path])
         }
     }
 
@@ -58,10 +61,12 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         io.async {
-            guard let h = self.handles[id], let data = Data(base64Encoded: text) else {
+            guard let url = MoonFileStore.shared.url(id), let data = Data(base64Encoded: text) else {
                 call.reject("Trozo no válido", "failed")
                 return
             }
+            if self.handles[id] == nil { self.handles[id] = try? FileHandle(forWritingTo: url) }
+            guard let h = self.handles[id] else { call.reject("No se pudo abrir el archivo", "failed"); return }
             h.write(data)
             call.resolve()
         }
@@ -75,11 +80,12 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
         io.async {
             try? self.handles[id]?.close()
             self.handles[id] = nil
-            guard let url = self.paths[id] else {
+            guard let url = MoonFileStore.shared.url(id) else {
                 call.reject("Archivo desconocido", "failed")
                 return
             }
-            call.resolve(["path": url.path])
+            let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.intValue ?? 0
+            call.resolve(["path": url.path, "size": size])
         }
     }
 
@@ -116,6 +122,7 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
         let ex = MoonExporter(project: project)
         exporter = ex
         fraction = 0
+        let started = Date()
         Task {
             do {
                 if save {
@@ -133,7 +140,7 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
                     try? FileManager.default.removeItem(at: out)
                 }
                 self.exporter = nil
-                call.resolve(["saved": save, "path": out.path])
+                call.resolve(["saved": save, "path": out.path, "seconds": Date().timeIntervalSince(started)])
             } catch let e as MoonError {
                 self.exporter = nil
                 switch e {

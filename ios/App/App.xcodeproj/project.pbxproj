@@ -15,6 +15,7 @@
 		A10000032FF0A00100B00B01 /* MoonViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000042FF0A00100B00B01 /* MoonViewController.swift */; };
 		A10000052FF0A00100B00B01 /* MoonExportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000062FF0A00100B00B01 /* MoonExportPlugin.swift */; };
 		A10000072FF0A00100B00B01 /* MoonExportEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000082FF0A00100B00B01 /* MoonExportEngine.swift */; };
+		A100000A2FF0A00100B00B01 /* MoonUploadServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000B2FF0A00100B00B01 /* MoonUploadServer.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -31,8 +32,10 @@
 		A10000042FF0A00100B00B01 /* MoonViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonViewController.swift; sourceTree = "<group>"; };
 		A10000062FF0A00100B00B01 /* MoonExportPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonExportPlugin.swift; sourceTree = "<group>"; };
 		A10000082FF0A00100B00B01 /* MoonExportEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonExportEngine.swift; sourceTree = "<group>"; };
+		A100000B2FF0A00100B00B01 /* MoonUploadServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonUploadServer.swift; sourceTree = "<group>"; };
 		A10000092FF0A00100B00B01 /* MoonExport */ = {isa = PBXGroup; children = (
 				A10000082FF0A00100B00B01 /* MoonExportEngine.swift */,
+				A100000B2FF0A00100B00B01 /* MoonUploadServer.swift */,
 			); path = MoonExport; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -178,6 +181,7 @@
 				A10000032FF0A00100B00B01 /* MoonViewController.swift in Sources */,
 				A10000052FF0A00100B00B01 /* MoonExportPlugin.swift in Sources */,
 				A10000072FF0A00100B00B01 /* MoonExportEngine.swift in Sources */,
+				A100000A2FF0A00100B00B01 /* MoonUploadServer.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

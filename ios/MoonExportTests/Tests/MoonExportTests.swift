@@ -268,4 +268,94 @@ final class MoonExportTests: XCTestCase {
         let p = project(w: 160, h: 90, clips: [MoonProject.Clip(kind: "video", file: "/no/existe.mp4", s: 0, e: 1, tr: "none", vol: 100, scale: [1, 1], off: [0, 0])])
         do { _ = try await run(p); XCTFail("debía fallar") } catch MoonError.missing { } catch { XCTFail("error inesperado: \(error)") }
     }
+
+    // MARK: contrato con la app web
+
+    /// Proyecto tal cual lo manda la app web (capturado de una ejecución real). Si cambia la app web, esta prueba avisa.
+    func testDecodesProjectSentByWebApp() throws {
+        let json = #"""
+{"width":640,"height":360,"fps":30,"speed":1.5,"vol":100,"trDur":0.5,"look":{"m":[0.24236400000000005,0.815328,0.082308,-0.07000000000000006,0.24236400000000005,0.815328,0.082308,-0.07000000000000006,0.24236400000000005,0.815328,0.082308,-0.07000000000000006],"shadows":0,"highlights":0,"split":0,"vignette":0,"grain":0,"flash":0},"clips":[{"kind":"video","file":"/cache/f1-prueba-video.mp4","s":0,"e":6,"tr":"none","vol":100,"scale":[1,1],"off":[0,0]},{"kind":"still","file":"/cache/f2-3f0nve8.png","s":0,"e":3,"tr":"fade","vol":100,"scale":[1,0.75],"off":[0,0]}],"overlays":[{"file":"/cache/f4-texto-wab32en.png","t0":0.4,"t1":3.4,"x":0.5,"y":0.5,"anim":"rise"},{"file":"/cache/f5-texto-ck4is6w.png","t0":0.2,"t1":3.2,"x":0.5,"y":0.3,"anim":"pop"}],"music":{"file":"/cache/f3-audio-rat0ljt","vol":80,"offset":0,"fade":true},"voice":null}
+"""#
+        let p = try JSONDecoder().decode(MoonProject.self, from: Data(json.utf8))
+        XCTAssertEqual(p.clips.count, 2)
+        XCTAssertEqual(p.clips[1].kind, "still")
+        XCTAssertEqual(p.clips[1].tr, "fade")
+        XCTAssertEqual(p.look.m.count, 12)
+        XCTAssertEqual(p.overlays.count, 2)
+        XCTAssertNotNil(p.music)
+        XCTAssertNil(p.voice)
+        XCTAssertEqual(p.speed, 1.5, accuracy: 0.001)
+    }
+
+    // MARK: canal de archivos
+
+    func testUploadServerReceivesBigFile() async throws {
+        let server = MoonUploadServer.shared
+        let port = try server.start()
+        XCTAssertGreaterThan(port, 0)
+        let f = try XCTUnwrap(MoonFileStore.shared.create(name: "grande.bin"))
+        let bytes = 64 * 1024 * 1024
+        var data = Data(count: bytes)
+        data.withUnsafeMutableBytes { raw in for i in stride(from: 0, to: bytes, by: 4096) { raw.storeBytes(of: UInt8(truncatingIfNeeded: i / 4096), toByteOffset: i, as: UInt8.self) } }
+        var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/put/\(server.token)/\(f.id)")!)
+        req.httpMethod = "POST"
+        req.setValue("text/plain", forHTTPHeaderField: "Content-Type")
+        let t0 = Date()
+        let (_, resp) = try await URLSession.shared.upload(for: req, from: data)
+        let dt = Date().timeIntervalSince(t0)
+        XCTAssertEqual((resp as? HTTPURLResponse)?.statusCode, 204)
+        let size = (try FileManager.default.attributesOfItem(atPath: f.url.path)[.size] as? NSNumber)?.intValue
+        XCTAssertEqual(size, bytes)
+        let back = try Data(contentsOf: f.url)
+        XCTAssertEqual(back, data, "el archivo recibido debe ser idéntico")
+        print("CANAL: \(bytes / 1_000_000) MB en \(String(format: "%.2f", dt)) s = \(String(format: "%.0f", Double(bytes) / 1_000_000 / dt)) MB/s")
+        XCTAssertLessThan(dt, 20)
+    }
+
+    func testUploadServerRejectsWrongKeyAndAnswersPreflight() async throws {
+        let server = MoonUploadServer.shared
+        let port = try server.start()
+        let f = try XCTUnwrap(MoonFileStore.shared.create(name: "x.bin"))
+        var bad = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/put/clave-falsa/\(f.id)")!)
+        bad.httpMethod = "POST"
+        let (_, r1) = try await URLSession.shared.upload(for: bad, from: Data([1, 2, 3]))
+        XCTAssertEqual((r1 as? HTTPURLResponse)?.statusCode, 403)
+        var pre = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/put/\(server.token)/\(f.id)")!)
+        pre.httpMethod = "OPTIONS"
+        let (_, r2) = try await URLSession.shared.data(for: pre)
+        let h = r2 as? HTTPURLResponse
+        XCTAssertEqual(h?.statusCode, 204)
+        XCTAssertEqual(h?.value(forHTTPHeaderField: "Access-Control-Allow-Origin"), "*")
+    }
+
+    // MARK: cancelar y rendimiento
+
+    func testCancelEndsQuickly() async throws {
+        let v = try makeVideo("larga.mp4", w: 1280, h: 720, seconds: 20, draw: solid(90, 90, 200))
+        let ex = MoonExporter(project: project(w: 1280, h: 720, clips: [clip(v, e: 20), clip(v, e: 20)]))
+        let out = tmp.appendingPathComponent("cancelado.mp4")
+        let t0 = Date()
+        Task { try? await Task.sleep(nanoseconds: 700_000_000); ex.cancel() }
+        do { try await ex.export(to: out) { _ in }; XCTFail("debía cancelarse") }
+        catch MoonError.cancelled { }
+        catch { XCTFail("error inesperado: \(error)") }
+        let dt = Date().timeIntervalSince(t0)
+        print("CANCELAR: terminó a los \(String(format: "%.2f", dt)) s")
+        XCTAssertLessThan(dt, 6, "cancelar debe responder enseguida")
+    }
+
+    func testHeavyFourKClipIsFasterThanRealTime() async throws {
+        let v = try makeVideo("4k.mp4", w: 3840, h: 2160, seconds: 8) { ctx, w, h in
+            ctx.setFillColor(CGColor(srgbRed: 0.2, green: 0.5, blue: 0.8, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+            ctx.setFillColor(CGColor(srgbRed: 0.9, green: 0.8, blue: 0.1, alpha: 1)); ctx.fill(CGRect(x: w / 4, y: h / 4, width: w / 2, height: h / 2))
+        }
+        var c = clip(v, e: 8)
+        c.scale = [1, 1]
+        let t0 = Date()
+        let out = try await run(project(w: 1920, h: 1080, clips: [c]))
+        let dt = Date().timeIntervalSince(t0)
+        let d = try await duration(out)
+        print("4K: video de \(String(format: "%.1f", d)) s guardado en \(String(format: "%.2f", dt)) s (\(String(format: "%.1f", d / dt))× tiempo real)")
+        XCTAssertLessThan(dt, 8, "guardar debe tardar menos de lo que dura el video")
+    }
 }

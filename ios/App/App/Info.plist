@@ -76,5 +76,10 @@
 	<string>Moon usa la cámara si decides tomar una foto o un video para editarlo.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Moon usa el micrófono si decides grabar un video con sonido para editarlo.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
