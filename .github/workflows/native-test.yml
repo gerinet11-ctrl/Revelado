@@ -17,4 +17,6 @@ jobs:
         run: xcodebuild -version
       - name: Pruebas
         working-directory: ios/MoonExportTests
-        run: swift test 2>&1 | tail -150
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tail -150
