@@ -1579,6 +1579,9 @@ body::before {
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
+window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e.message) + " @" + e.lineno); }); addEventListener("unhandledrejection", e => { window.__errs.push("promesa: " + String(e.reason && (e.reason.message || e.reason))); });
+</script>
+<script>
 // Respaldo para el iPhone en modo app: si no informa del alto de la zona del reloj, se reserva igualmente.
 (() => {
   // Vale para la app de la pantalla de inicio y para la app de la App Store (que ocupa toda la pantalla igual).
