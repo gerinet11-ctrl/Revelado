@@ -34,16 +34,6 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Crear el archivo de la app
-        if: ${{ inputs.subir }}
-        run: |
-          xcodebuild archive \
-            -project ios/App/App.xcodeproj -scheme App \
-            -configuration Release -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/Moon.xcarchive" \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
-
       - name: Firmar y subir a TestFlight
         if: ${{ inputs.subir }}
         env:
@@ -73,13 +63,9 @@ jobs:
           RAROS=$(printf '%s' "$CUERPO" | tr -d 'A-Za-z0-9+/=' | wc -c | tr -d ' ')
           echo "Clave: ${#CUERPO} caracteres en el cuerpo (lo normal son unos 200), $RAROS que no pertenecen a una clave."
           if ! openssl pkey -in "$KEY" -noout 2>/dev/null; then echo "::error::ASC_KEY_P8 no es una clave válida: vuelve a copiar el archivo .p8 completo, sin cambiar nada"; exit 1; fi
-          sed "s/__TEAM_ID__/$APPLE_TEAM_ID/" ios/ci/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Moon.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          export ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID ASC_KEY_PATH="$KEY" BUILD_NUMBER=${{ github.run_number }}
+          export FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_HIDE_CHANGELOG=1 FASTLANE_OPT_OUT_USAGE=1 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+          command -v fastlane >/dev/null || brew install fastlane
+          fastlane --version | tail -1
+          fastlane ios beta
           rm -f "$KEY"

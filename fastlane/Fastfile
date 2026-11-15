@@ -1,0 +1,38 @@
+# Firma Moon con un certificado de distribución y la sube a TestFlight desde un Mac de GitHub.
+# Usa la clave de App Store Connect guardada en los secretos del repositorio. Se lanza desde
+# .github/workflows/ios.yml; no hace falta ejecutarlo a mano.
+default_platform(:ios)
+
+APP_ID = "com.gerinet11.moon"
+PROJECT = "ios/App/App.xcodeproj"
+
+platform :ios do
+  desc "Firma Moon y la sube a TestFlight"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_filepath: ENV["ASC_KEY_PATH"], in_house: false
+    )
+    setup_ci
+    keychain = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
+
+    # Cada compilación crea su propio certificado de distribución (el Mac de GitHub es nuevo cada vez).
+    # No se borra ni se retira nada de la cuenta. Apple permite pocos certificados a la vez: si se llega
+    # al límite, este paso falla con un aviso y hay que decidir a mano cuál retirar.
+    cert(api_key: api_key, keychain_path: keychain, keychain_password: "")
+    sigh(api_key: api_key, app_identifier: APP_ID, force: true, cert_id: lane_context[SharedValues::CERT_CERTIFICATE_ID])
+    perfil = lane_context[SharedValues::SIGH_NAME]
+
+    update_code_signing_settings(
+      use_automatic_signing: false, path: PROJECT, team_id: ENV["APPLE_TEAM_ID"], targets: ["App"],
+      build_configurations: ["Release"], code_sign_identity: "Apple Distribution",
+      profile_name: perfil, bundle_identifier: APP_ID
+    )
+    build_app(
+      project: PROJECT, scheme: "App", configuration: "Release", clean: true,
+      export_method: "app-store", output_directory: ENV["RUNNER_TEMP"], output_name: "Moon.ipa",
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV['BUILD_NUMBER']}",
+      export_options: { provisioningProfiles: { APP_ID => perfil } }
+    )
+    upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
+  end
+end
