@@ -6119,6 +6119,11 @@ void main(){
         clips: [{ kind: "still", file: pngPath, s: 0, e: 1, tr: "none", vol: 100, scale: [1, 1], off: [0, 0] }], overlays: [], music: null, voice: null };
       const r = await step("guardar un video de prueba", () => nat("export", { project: JSON.stringify(proj), save: false }), 150000);
       if (r && r.path) await step("el video existe", () => nat("has", { paths: [r.path] }), 5000);
+      const tv = await step("crear un video de 3 s", () => nat("selfTestVideo"), 20000);
+      if (tv && tv.path) {
+        const proj2 = { ...proj, speed: 2, clips: [{ kind: "video", file: tv.path, s: 0, e: 3, tr: "none", vol: 100, scale: [1, 1], off: [0, 0] }, { kind: "still", file: pngPath, s: 0, e: 1, tr: "fade", vol: 100, scale: [1, 1], off: [0, 0] }] };
+        await step("guardar video + foto con transición ×2", () => nat("export", { project: JSON.stringify(proj2), save: false }), 150000);
+      }
     }
     log("FIN");
   }

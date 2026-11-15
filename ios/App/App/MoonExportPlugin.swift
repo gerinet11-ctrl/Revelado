@@ -18,7 +18,8 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "export", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "progress", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "clean", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "clean", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "selfTestVideo", returnType: CAPPluginReturnPromise)
     ]
 
     private let io = DispatchQueue(label: "moon.export.io")
@@ -102,6 +103,14 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func cancel(_ call: CAPPluginCall) {
         exporter?.cancel()
         call.resolve()
+    }
+
+    /// Solo para la autoprueba: crea un video sintético de 3 s.
+    @objc func selfTestVideo(_ call: CAPPluginCall) {
+        io.async {
+            do { call.resolve(["path": try MoonExporter.makeTestVideo(seconds: 3).path]) }
+            catch { call.reject(error.localizedDescription, "failed") }
+        }
     }
 
     @objc func clean(_ call: CAPPluginCall) {

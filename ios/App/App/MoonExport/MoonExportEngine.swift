@@ -55,6 +55,12 @@ struct MoonProject: Codable {
     var voice: Voice?
 }
 
+/// Reloj para el registro de tiempos (solo ayuda a diagnosticar).
+enum MoonClock {
+    static var start = Date()
+    static func t() -> String { String(format: "+%.2f s", Date().timeIntervalSince(start)) }
+}
+
 enum MoonError: LocalizedError {
     case bad(String)
     case missing(String)
@@ -115,6 +121,7 @@ final class MoonInstruction: NSObject, AVVideoCompositionInstructionProtocol {
 // MARK: - Compositor (lo que dibuja cada fotograma)
 
 final class MoonCompositor: NSObject, AVVideoCompositing {
+    static var firstFrame = true
     private let queue = DispatchQueue(label: "moon.compositor")
     private static let attrs: [String: Any] = [
         kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
@@ -134,7 +141,11 @@ final class MoonCompositor: NSObject, AVVideoCompositing {
                     guard let cur = request.sourceFrame(byTrackID: inst.trackA) else { throw MoonError.bad("Falta una imagen del video") }
                     var prev: CVPixelBuffer? = nil
                     if let b = inst.trackB { prev = request.sourceFrame(byTrackID: b) }
+                    let first = MoonCompositor.firstFrame
+                    MoonCompositor.firstFrame = false
+                    if first { print("MOONNATIVE \(MoonClock.t()) llegó el primer fotograma") }
                     try MoonRenderer.shared().render(plan: inst.plan, index: inst.index, time: request.compositionTime.seconds, cur: cur, prev: prev, out: out)
+                    if first { print("MOONNATIVE \(MoonClock.t()) primer fotograma dibujado") }
                     request.finish(withComposedVideoFrame: out)
                 } catch {
                     print("MOONNATIVE compositor error: \(error)")
@@ -302,7 +313,9 @@ final class MoonRenderer {
         print("MOONNATIVE Metal: \(d.name)")
         device = d
         queue = q
+        print("MOONNATIVE \(MoonClock.t()) compilando el programa de la gráfica")
         let lib = try d.makeLibrary(source: moonShader, options: nil)
+        print("MOONNATIVE \(MoonClock.t()) programa compilado")
         func pipe(_ frag: String, blend: Bool) throws -> MTLRenderPipelineState {
             let desc = MTLRenderPipelineDescriptor()
             desc.vertexFunction = lib.makeFunction(name: "vs_main")
@@ -323,6 +336,7 @@ final class MoonRenderer {
         mainPipe = try pipe("fs_main", blend: false)
         textPipe = try pipe("fs_text", blend: true)
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, d, nil, &cache)
+        print("MOONNATIVE \(MoonClock.t()) gráfica lista")
     }
 
     private func texture(_ pb: CVPixelBuffer, target: Bool) throws -> (MTLTexture, CVMetalTexture) {
@@ -485,6 +499,37 @@ final class MoonExporter {
         if c { throw MoonError.cancelled }
     }
 
+    /// Video de prueba (solo para la autoprueba en el simulador).
+    static func makeTestVideo(seconds: Double) throws -> URL {
+        let w = 640, h = 360, fps = 30
+        let out = FileManager.default.temporaryDirectory.appendingPathComponent("moon-prueba-\(UUID().uuidString).mp4")
+        let writer = try AVAssetWriter(outputURL: out, fileType: .mp4)
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: w, AVVideoHeightKey: h])
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: w, kCVPixelBufferHeightKey as String: h])
+        writer.add(input)
+        guard writer.startWriting() else { throw writer.error ?? MoonError.bad("No se pudo crear el video de prueba") }
+        writer.startSession(atSourceTime: .zero)
+        for f in 0..<Int(seconds * Double(fps)) {
+            while !input.isReadyForMoreMediaData { Thread.sleep(forTimeInterval: 0.005) }
+            var pb: CVPixelBuffer?
+            CVPixelBufferCreate(kCFAllocatorDefault, w, h, kCVPixelFormatType_32BGRA, nil, &pb)
+            guard let b = pb else { throw MoonError.bad("Sin memoria") }
+            CVPixelBufferLockBaseAddress(b, [])
+            if let base = CVPixelBufferGetBaseAddress(b) {
+                let bpr = CVPixelBufferGetBytesPerRow(b)
+                for y in 0..<h { let row = base.advanced(by: y * bpr).assumingMemoryBound(to: UInt8.self); for x in 0..<w { row[x * 4] = UInt8((f * 8) % 255); row[x * 4 + 1] = UInt8(y * 255 / h); row[x * 4 + 2] = UInt8(x * 255 / w); row[x * 4 + 3] = 255 } }
+            }
+            CVPixelBufferUnlockBaseAddress(b, [])
+            _ = adaptor.append(b, withPresentationTime: CMTime(value: CMTimeValue(f), timescale: CMTimeScale(fps)))
+        }
+        input.markAsFinished()
+        let sem = DispatchSemaphore(value: 0)
+        writer.finishWriting { sem.signal() }
+        sem.wait()
+        if writer.status != .completed { throw writer.error ?? MoonError.bad("No se pudo crear el video de prueba") }
+        return out
+    }
+
     /// Una foto se convierte en un video corto sin movimiento para tratarla como cualquier clip.
     static func makeStillMovie(png: URL, seconds: Double) throws -> URL {
         guard let src = CGImageSourceCreateWithURL(png as CFURL, nil), let img = CGImageSourceCreateImageAtIndex(src, 0, nil) else { throw MoonError.missing(png.lastPathComponent) }
@@ -544,6 +589,9 @@ final class MoonExporter {
 
     func export(to url: URL, progress: @escaping (Double) -> Void) async throws {
         let p = project
+        MoonClock.start = Date()
+        MoonCompositor.firstFrame = true
+        print("MOONNATIVE \(MoonClock.t()) empieza el montaje")
         guard !p.clips.isEmpty else { throw MoonError.bad("El proyecto no tiene clips") }
         let speed = max(0.25, p.speed)
         let fm = FileManager.default
@@ -705,7 +753,7 @@ final class MoonExporter {
         // Vigilante: si en 45 s no hay ningún avance, se corta con un aviso en vez de quedarse colgado.
         final class Watch { var stalled = false }
         let watch = Watch()
-        print("MOONNATIVE sesión lista: \(p.clips.count) clip(s), \(String(format: "%.2f", plan.totalOut)) s, \(p.width)x\(p.height)")
+        print("MOONNATIVE \(MoonClock.t()) sesión lista: \(p.clips.count) clip(s), \(String(format: "%.2f", plan.totalOut)) s, \(p.width)x\(p.height)")
         let poll = Task {
             var lastValue = -1.0
             var ticks = 0
@@ -714,9 +762,9 @@ final class MoonExporter {
                 let v = Double(sess.progress)
                 progress(v)
                 ticks += 1
-                if ticks % 10 == 0 { print("MOONNATIVE progreso \(String(format: "%.2f", v)) estado \(sess.status.rawValue)") }
+                if ticks % 10 == 0 { print("MOONNATIVE \(MoonClock.t()) progreso \(String(format: "%.2f", v)) estado \(sess.status.rawValue)") }
                 if v != lastValue { lastValue = v; lastChange = Date() }
-                else if Date().timeIntervalSince(lastChange) > 45 { watch.stalled = true; sess.cancelExport(); break }
+                else if Date().timeIntervalSince(lastChange) > 90 { watch.stalled = true; sess.cancelExport(); break }
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
@@ -724,12 +772,12 @@ final class MoonExporter {
             sess.exportAsynchronously { c.resume() }
         }
         poll.cancel()
-        print("MOONNATIVE sesión terminó: estado \(sess.status.rawValue) error \(String(describing: sess.error))")
+        print("MOONNATIVE \(MoonClock.t()) sesión terminó: estado \(sess.status.rawValue) error \(String(describing: sess.error))")
         switch sess.status {
         case .completed:
             progress(1)
         case .cancelled:
-            if watch.stalled { throw MoonError.bad("El guardado se detuvo: sin avances durante 45 segundos") }
+            if watch.stalled { throw MoonError.bad("El guardado se detuvo: sin avances durante 90 segundos") }
             throw MoonError.cancelled
         default:
             throw sess.error ?? MoonError.bad("No se pudo guardar el video")
