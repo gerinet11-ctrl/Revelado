@@ -142,7 +142,11 @@ platform :ios do
       grupo = app.create_beta_group(group_name: nombre, public_link_enabled: true, public_link_limit_enabled: false)
       UI.success("Grupo «#{nombre}» creado")
     end
-    grupo.add_builds(build_ids: [build.id])
+    begin
+      build.add_beta_groups(beta_groups: [grupo])
+    rescue StandardError => ex
+      UI.important("Al añadir la compilación al grupo: #{ex.message.to_s[0, 400]}")
+    end
     UI.success("Compilación #{build.version} añadida al grupo")
 
     # Revisión de Apple para pruebas externas
