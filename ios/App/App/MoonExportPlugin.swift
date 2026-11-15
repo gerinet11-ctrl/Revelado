@@ -123,6 +123,7 @@ public class MoonExportPlugin: CAPPlugin, CAPBridgedPlugin {
         exporter = ex
         fraction = 0
         let started = Date()
+        print("MOONNATIVE export pedido: \(project.clips.count) clip(s)")
         Task {
             do {
                 if save {

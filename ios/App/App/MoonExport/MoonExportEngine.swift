@@ -137,6 +137,7 @@ final class MoonCompositor: NSObject, AVVideoCompositing {
                     try MoonRenderer.shared().render(plan: inst.plan, index: inst.index, time: request.compositionTime.seconds, cur: cur, prev: prev, out: out)
                     request.finish(withComposedVideoFrame: out)
                 } catch {
+                    print("MOONNATIVE compositor error: \(error)")
                     request.finish(with: error)
                 }
             }
@@ -297,7 +298,8 @@ final class MoonRenderer {
     private let lock = NSLock()
 
     private init() throws {
-        guard let d = MTLCreateSystemDefaultDevice(), let q = d.makeCommandQueue() else { throw MoonError.bad("Este dispositivo no permite el guardado rápido") }
+        guard let d = MTLCreateSystemDefaultDevice(), let q = d.makeCommandQueue() else { print("MOONNATIVE sin Metal"); throw MoonError.bad("Este dispositivo no permite el guardado rápido") }
+        print("MOONNATIVE Metal: \(d.name)")
         device = d
         queue = q
         let lib = try d.makeLibrary(source: moonShader, options: nil)
@@ -703,12 +705,16 @@ final class MoonExporter {
         // Vigilante: si en 45 s no hay ningún avance, se corta con un aviso en vez de quedarse colgado.
         final class Watch { var stalled = false }
         let watch = Watch()
+        print("MOONNATIVE sesión lista: \(p.clips.count) clip(s), \(String(format: "%.2f", plan.totalOut)) s, \(p.width)x\(p.height)")
         let poll = Task {
             var lastValue = -1.0
+            var ticks = 0
             var lastChange = Date()
             while !Task.isCancelled {
                 let v = Double(sess.progress)
                 progress(v)
+                ticks += 1
+                if ticks % 10 == 0 { print("MOONNATIVE progreso \(String(format: "%.2f", v)) estado \(sess.status.rawValue)") }
                 if v != lastValue { lastValue = v; lastChange = Date() }
                 else if Date().timeIntervalSince(lastChange) > 45 { watch.stalled = true; sess.cancelExport(); break }
                 try? await Task.sleep(nanoseconds: 200_000_000)
@@ -718,6 +724,7 @@ final class MoonExporter {
             sess.exportAsynchronously { c.resume() }
         }
         poll.cancel()
+        print("MOONNATIVE sesión terminó: estado \(sess.status.rawValue) error \(String(describing: sess.error))")
         switch sess.status {
         case .completed:
             progress(1)
