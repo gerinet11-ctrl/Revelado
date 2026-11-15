@@ -1,0 +1,38 @@
+name: Probar en iPhone simulado
+
+# Abre la app en un iPhone simulado y la hace probarse a sí misma: habla con la parte nativa, pasa archivos y guarda un video.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulador:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar para el simulador
+        run: |
+          xcodebuild build -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO 2>&1 | tail -5
+      - name: Abrir el simulador y la app
+        run: |
+          xcrun simctl list devices available | grep -i iphone | head -5
+          UDID=$(xcrun simctl list devices available | grep -i 'iPhone' | grep -v -i 'se' | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "Simulador: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name App.app -maxdepth 3 | head -1)
+          xcrun simctl install "$UDID" "$APP"
+          (xcrun simctl launch --console-pty "$UDID" com.gerinet11.moon -moonSelfTest > "$RUNNER_TEMP/app.log" 2>&1 &)
+          for i in $(seq 1 60); do
+            if grep -q "MOONTEST FIN" "$RUNNER_TEMP/app.log" 2>/dev/null; then break; fi
+            sleep 3
+          done
+          echo "===== REGISTRO DE LA APP ====="
+          grep -E "MOONTEST|⚡️|rror|plugin" "$RUNNER_TEMP/app.log" | head -80
+          echo "===== (fin) ====="
+          grep -q "MOONTEST FIN" "$RUNNER_TEMP/app.log"

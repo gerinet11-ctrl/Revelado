@@ -5996,7 +5996,12 @@ void main(){
     vBusy("Preparando el guardado…", "No cierres la app hasta que termine.", { bar: true, cancel: true });
     let poll = 0, result = "fallback";
     try {
-      await nat("ping");
+      try { await withTimeout(nat("ping"), 6000, "el código nativo"); }
+      catch (e) {
+        let puente = "no responde";
+        try { await withTimeout(window.Capacitor.nativePromise("WebView", "getServerBasePath", {}), 3000, "puente"); puente = "responde"; } catch (e2) {}
+        throw natErr("failed", "el módulo de guardado rápido no contesta (puente nativo " + puente + ")");
+      }
       for (let attempt = 0; attempt < 2; attempt++) {
         // Archivos que el código nativo todavía no tiene
         const used = [...new Set(vs.clips.map(c => srcOf(c)))];
@@ -6082,6 +6087,39 @@ void main(){
     }
     return result;
   }
+  /* Autoprueba: la lanza el código nativo con «-moonSelfTest» (solo en las pruebas automáticas, nunca para el usuario). */
+  async function moonSelfTest() {
+    const log = m => console.log("MOONTEST " + m);
+    const step = async (name, fn, ms) => {
+      const t0 = performance.now();
+      try {
+        const r = await Promise.race([fn(), new Promise((_, rej) => setTimeout(() => rej(new Error("SIN RESPUESTA en " + ms + " ms")), ms))]);
+        log(`${name}: ok (${Math.round(performance.now() - t0)} ms) ${JSON.stringify(r)}`); return r;
+      } catch (e) { log(`${name}: FALLÓ ${(e && (e.message || e.code)) || e}`); return null; }
+    };
+    log("plataforma=" + window.Capacitor.getPlatform() + " nativa=" + window.Capacitor.isNativePlatform() + " nativePromise=" + typeof window.Capacitor.nativePromise);
+    await step("WebView.getServerBasePath", () => window.Capacitor.nativePromise("WebView", "getServerBasePath", {}), 5000);
+    await step("MoonExport.ping", () => nat("ping"), 5000);
+    const info = await step("MoonExport.uploadInfo", () => nat("uploadInfo"), 8000);
+    vnatInfo = info || null;
+    const run = { cancelled: false, xhr: null, note: "" };
+    const big = new Blob([new Uint8Array(40 * 1024 * 1024)], { type: "application/octet-stream" });
+    let got = 0;
+    const path = await step("subir 40 MB (canal rápido)", async () => { const t0 = performance.now(); const p = await natUpload(big, "prueba.bin", n => { got += n; }, run); return { path: p.split("/").pop(), MBs: +(40 / ((performance.now() - t0) / 1000)).toFixed(1), nota: run.note }; }, 30000);
+    const cv = document.createElement("canvas"); cv.width = 640; cv.height = 360;
+    const g = cv.getContext("2d"); g.fillStyle = "#2a6fb0"; g.fillRect(0, 0, 640, 360); g.fillStyle = "#f0c040"; g.fillRect(200, 100, 240, 160);
+    const png = await new Promise(r => cv.toBlob(r, "image/png"));
+    const pngPath = await step("subir una foto", () => natUpload(png, "foto.png", () => {}, run), 15000);
+    if (pngPath) {
+      const proj = { width: 640, height: 360, fps: 30, speed: 1, vol: 100, trDur: 0.5,
+        look: { m: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], shadows: 0, highlights: 0, split: 0, vignette: 0, grain: 0, flash: 0 },
+        clips: [{ kind: "still", file: pngPath, s: 0, e: 1, tr: "none", vol: 100, scale: [1, 1], off: [0, 0] }], overlays: [], music: null, voice: null };
+      const r = await step("guardar un video de prueba", () => nat("export", { project: JSON.stringify(proj), save: false }), 90000);
+      if (r && r.path) await step("el video existe", () => nat("has", { paths: [r.path] }), 5000);
+    }
+    log("FIN");
+  }
+  if (window.__moonAutoTest) setTimeout(moonSelfTest, 3000);
   async function exportVideo() {
     if (vrun || vstarting || vnat || !vs.clips.length) return;
     if (isNative) { const r = await exportNative(); if (r !== "fallback") return; }
