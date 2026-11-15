@@ -721,7 +721,10 @@ kbd {
   background: var(--bg);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.standalone.under-bar .vapp { padding-top: calc(var(--safe-top, 0px) + 2px); }
+.standalone.under-bar .vapp { padding-top: max(0px, calc(var(--safe-top, 0px) - 8px)); }
+/* Abajo: la fila de pestañas llega hasta el borde de la pantalla; solo se deja libre la rayita de inicio del iPhone. */
+.standalone .vapp { padding-bottom: 0; }
+.standalone .vtabs { padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 18px)); }
 .vtop { display: flex; align-items: center; gap: 8px; padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); }
 .vtitle { flex: 1 1 0; width: 0; min-width: 0; height: 34px; padding: 0 2px; border: 0; border-radius: 0; background: none; color: var(--fg); outline: none; text-overflow: ellipsis; font-family: var(--f-display); font-weight: 600; font-size: 17px; }
 .vtitle:focus { box-shadow: 0 1px 0 var(--accent); }
@@ -986,7 +989,9 @@ body::before {
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .standalone .app { padding-top: 4px; }
-  .standalone.under-bar .app { padding-top: calc(var(--safe-top, 0px) + 2px); }
+  .standalone.under-bar .app { padding-top: max(0px, calc(var(--safe-top, 0px) - 8px)); }
+  html.standalone { padding-bottom: 0 !important; }
+  .standalone .panel .tabs { padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 18px)); }
   .topbar {
     grid-row: 1; grid-column: 1;
     flex-wrap: nowrap; justify-content: flex-start; gap: 6px;
