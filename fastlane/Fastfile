@@ -168,13 +168,19 @@ platform :ios do
     app = Spaceship::ConnectAPI::App.find(APP_ID)
     UI.user_error!("No se encontró la app") unless app
     Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 15).each do |b|
+      det = begin
+        d = b.get_build_beta_detail
+        d ? "externo=#{d.external_build_state} · interno=#{d.internal_build_state}" : "sin datos"
+      rescue StandardError => ex
+        "no se pudo leer (#{ex.message.to_s[0, 100]})"
+      end
       rev = begin
-        r = b.get_beta_app_review_submission
+        r = Spaceship::ConnectAPI::BetaAppReviewSubmission.all(filter: { build: b.id }).first
         r ? r.beta_review_state : "sin enviar"
       rescue StandardError => ex
-        "no se pudo leer (#{ex.message.to_s[0, 80]})"
+        "no se pudo leer (#{ex.message.to_s[0, 100]})"
       end
-      UI.message("BUILD #{b.version}: revisión #{rev} · estado externo #{b.external_build_state rescue '?'}")
+      UI.message("BUILD #{b.version}: revisión=#{rev} · #{det}")
     end
     app.get_beta_groups.each do |g|
       n = begin; g.fetch_beta_testers.length; rescue StandardError; "?"; end
