@@ -999,7 +999,10 @@ body::before {
   .topbar .btn .lbl { display: none; }
   .topbar #export-open { width: auto; padding: 0 14px; }
   .topbar #export-open .lbl { display: inline; }
-  .stage { grid-row: 2; grid-column: 1; border-radius: 0; padding: 0 0 46px; background-image: none; }
+  .stage { grid-row: 2; grid-column: 1; border-radius: 0; padding: 0; background-image: none; }
+  /* El indicador de zoom va encima de la foto y solo aparece unos segundos cuando cambia el zoom. */
+  .zoom-ctl { opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .zoom-ctl.show { opacity: 1; pointer-events: auto; }
   .stage-meta { display: none; }
   .reset-chip { display: inline-flex; }
   .app > .strip { display: none; }
@@ -4188,6 +4191,7 @@ body::before {
   // La foto se amplía con una transformación CSS; los pinceles y el recorte calculan sobre el tamaño en pantalla,
   // así que al acercar se pinta y se recorta con más precisión.
   const zoom = { s: 1, x: 0, y: 0 };
+  let zoomShownPct = 100, zoomHideTimer = 0;
   const ZMAX = 8;
   let justPanned = false, spaceHeld = false, pinch = null, pan = null, lastTap = null, lastTouchZoom = 0;
   const touches = new Map();
@@ -4207,7 +4211,14 @@ body::before {
     frame.classList.toggle("zoom-anim", !!anim);
     frame.style.transform = zoom.s === 1 && !zoom.x && !zoom.y ? "" : `translate3d(${zoom.x}px, ${zoom.y}px, 0) scale(${zoom.s})`;
     frame.style.setProperty("--inv", (1 / zoom.s).toFixed(4));
-    $("zoom-fit").textContent = Math.round(zoom.s * 100) + "%";
+    const pct = Math.round(zoom.s * 100);
+    $("zoom-fit").textContent = pct + "%";
+    if (pct !== zoomShownPct) {       // en el móvil el control se enseña 3 segundos cada vez que cambia el zoom
+      zoomShownPct = pct;
+      $("zoom-ctl").classList.add("show");
+      clearTimeout(zoomHideTimer);
+      zoomHideTimer = setTimeout(() => $("zoom-ctl").classList.remove("show"), 3000);
+    }
     $("zoom-out").disabled = zoom.s <= 1.001;
     $("zoom-in").disabled = zoom.s >= ZMAX - 0.001;
     const zoomed = zoom.s > 1.001;
