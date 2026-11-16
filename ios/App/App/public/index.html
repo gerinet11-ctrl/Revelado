@@ -162,7 +162,13 @@ button, label, .film, .preset { -webkit-tap-highlight-color: transparent; }
     linear-gradient(to bottom, transparent calc(33.33% - .5px), rgba(255,255,255,.45) calc(33.33% - .5px) calc(33.33% + .5px), transparent calc(33.33% + .5px), transparent calc(66.66% - .5px), rgba(255,255,255,.45) calc(66.66% - .5px) calc(66.66% + .5px), transparent calc(66.66% + .5px));
 }
 /* --inv = 1/zoom: los tiradores del recorte mantienen su tamaño aunque la foto esté ampliada */
-.crop-h { position: absolute; width: calc(40px * var(--inv, 1)); height: calc(40px * var(--inv, 1)); }
+.crop-h { position: absolute; width: calc(40px * var(--inv, 1)); height: calc(40px * var(--inv, 1)); pointer-events: none; }
+/* Barras de los cuatro bordes: se agarran con el dedo para recortar solo por ese lado */
+.crop-e { position: absolute; background: #fff; border-radius: calc(3px * var(--inv, 1)); pointer-events: none; box-shadow: 0 0 0 calc(1px * var(--inv, 1)) rgba(0,0,0,.35); }
+.crop-e[data-h="n"], .crop-e[data-h="s"] { left: 50%; width: calc(30px * var(--inv, 1)); height: calc(5px * var(--inv, 1)); margin-left: calc(-15px * var(--inv, 1)); }
+.crop-e[data-h="w"], .crop-e[data-h="e"] { top: 50%; height: calc(30px * var(--inv, 1)); width: calc(5px * var(--inv, 1)); margin-top: calc(-15px * var(--inv, 1)); }
+.crop-e[data-h="n"] { top: calc(2px * var(--inv, 1)); } .crop-e[data-h="s"] { bottom: calc(2px * var(--inv, 1)); }
+.crop-e[data-h="w"] { left: calc(2px * var(--inv, 1)); } .crop-e[data-h="e"] { right: calc(2px * var(--inv, 1)); }
 .crop-h::before { content: ""; position: absolute; width: calc(20px * var(--inv, 1)); height: calc(20px * var(--inv, 1)); border: 0 solid #fff; }
 .crop-h[data-h="nw"] { left: calc(-20px * var(--inv, 1)); top: calc(-20px * var(--inv, 1)); cursor: nwse-resize; }
 .crop-h[data-h="ne"] { right: calc(-20px * var(--inv, 1)); top: calc(-20px * var(--inv, 1)); cursor: nesw-resize; }
@@ -1355,6 +1361,7 @@ body::before {
       </div>
       <div class="crop-layer" id="crop-layer" hidden>
         <div class="crop-box" id="crop-box">
+          <span class="crop-e" data-h="n"></span><span class="crop-e" data-h="s"></span><span class="crop-e" data-h="w"></span><span class="crop-e" data-h="e"></span>
           <span class="crop-h" data-h="nw"></span><span class="crop-h" data-h="ne"></span>
           <span class="crop-h" data-h="sw"></span><span class="crop-h" data-h="se"></span>
         </div>
@@ -2294,7 +2301,7 @@ window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e
     if (typeof updateSafeZones === "function") updateSafeZones();
     const tag = $("mode-tag");
     tag.hidden = comparing || mode === "normal";
-    tag.textContent = mode === "crop" ? "Arrastra las esquinas para recortar" : mode === "paint" ? (activeTab === "ajustes" ? "Pinta encima del sujeto principal" : "Pinta la zona que quieras suavizar") : "Pinta lo que quieras borrar";
+    tag.textContent = mode === "crop" ? "Arrastra los bordes o las esquinas para recortar" : mode === "paint" ? (activeTab === "ajustes" ? "Pinta encima del sujeto principal" : "Pinta la zona que quieras suavizar") : "Pinta lo que quieras borrar";
   }
 
   function layoutView() {
@@ -3036,20 +3043,64 @@ window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e
     Object.assign(cropBox.style, { left: c.x * W + "px", top: c.y * H + "px", width: c.w * W + "px", height: c.h * H + "px" });
   }
   let drag = null;
+  // Qué agarra el dedo según dónde toca (en píxeles de pantalla, así funciona igual con la foto ampliada):
+  // esquinas (cuadrados grandes), bordes (franjas por dentro), o el centro para mover el recorte.
+  function cropHit(e) {
+    const r = cropBox.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top, w = r.width, h = r.height, M = 22;
+    if (x < -M || y < -M || x > w + M || y > h + M) return null;
+    const T = Math.max(14, Math.min(34, w / 3, h / 3)), C = Math.max(20, Math.min(54, w / 2.2, h / 2.2));
+    const dl = x, dr = w - x, dt = y, db = h - y;
+    if (dl <= C && dt <= C) return "nw";
+    if (dr <= C && dt <= C) return "ne";
+    if (dl <= C && db <= C) return "sw";
+    if (dr <= C && db <= C) return "se";
+    if (dt <= T) return "n";
+    if (db <= T) return "s";
+    if (dl <= T) return "w";
+    if (dr <= T) return "e";
+    return x >= 0 && y >= 0 && x <= w && y <= h ? "move" : null;
+  }
+  const CROP_CURSOR = { n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize", nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", move: "move" };
   cropLayer.addEventListener("pointerdown", e => {
-    if (!cropBox.contains(e.target)) return;
+    const h = cropHit(e);
+    if (!h) return;
     e.preventDefault();
     const r = frame.getBoundingClientRect();
-    drag = { h: e.target.dataset.h || "move", sx: e.clientX, sy: e.clientY, start: { ...(state.crop || FULL) }, r };
+    drag = { h, sx: e.clientX, sy: e.clientY, start: { ...(state.crop || FULL) }, r };
     cropLayer.setPointerCapture(e.pointerId);
   });
   cropLayer.addEventListener("pointermove", e => {
-    if (!drag) return;
+    if (!drag) { if (e.pointerType === "mouse") { const h = cropHit(e); cropLayer.style.cursor = h ? CROP_CURSOR[h] : ""; } return; }
     const { r, start: s0 } = drag, MIN = 0.06;
     let c;
     if (drag.h === "move") {
       const dx = (e.clientX - drag.sx) / r.width, dy = (e.clientY - drag.sy) / r.height;
       c = { ...s0, x: clamp(s0.x + dx, 0, 1 - s0.w), y: clamp(s0.y + dy, 0, 1 - s0.h) };
+    } else if (drag.h.length === 1) {
+      // Un solo borde: solo cambia ese lado (con proporción fija, el otro eje se ajusta desde el centro)
+      const E = drag.h, x0 = s0.x, y0 = s0.y, x1 = s0.x + s0.w, y1 = s0.y + s0.h, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const px = clamp((e.clientX - r.left) / r.width, 0, 1), py = clamp((e.clientY - r.top) / r.height, 0, 1);
+      const ratio = cropRatio();
+      let nx0 = x0, nx1 = x1, ny0 = y0, ny1 = y1;
+      if (!ratio) {
+        if (E === "w") nx0 = clamp(px, 0, x1 - MIN); else if (E === "e") nx1 = clamp(px, x0 + MIN, 1);
+        else if (E === "n") ny0 = clamp(py, 0, y1 - MIN); else ny1 = clamp(py, y0 + MIN, 1);
+      } else {
+        const [rw, rh] = rotatedDims(), rn = ratio * rh / rw;       // ancho / alto en coordenadas normalizadas
+        if (E === "w" || E === "e") {
+          let w = E === "w" ? clamp(x1 - px, MIN, x1) : clamp(px - x0, MIN, 1 - x0);
+          let h = w / rn; if (h > 1) { h = 1; w = h * rn; }
+          if (E === "w") { nx1 = x1; nx0 = x1 - w; } else { nx0 = x0; nx1 = x0 + w; }
+          ny0 = clamp(cy - h / 2, 0, 1 - h); ny1 = ny0 + h;
+        } else {
+          let h = E === "n" ? clamp(y1 - py, MIN, y1) : clamp(py - y0, MIN, 1 - y0);
+          let w = h * rn; if (w > 1) { w = 1; h = w / rn; }
+          if (E === "n") { ny1 = y1; ny0 = y1 - h; } else { ny0 = y0; ny1 = y0 + h; }
+          nx0 = clamp(cx - w / 2, 0, 1 - w); nx1 = nx0 + w;
+        }
+      }
+      c = { x: nx0, y: ny0, w: nx1 - nx0, h: ny1 - ny0 };
     } else {
       const ax = drag.h.includes("w") ? s0.x + s0.w : s0.x;   // esquina opuesta, fija
       const ay = drag.h.includes("n") ? s0.y + s0.h : s0.y;
@@ -3813,7 +3864,7 @@ window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e
     aspectBox.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", String(!fmtLock && b.dataset.id === state.cropAspect)));
     $("crop-note").textContent = fmtLock
       ? `La proporción la marca el formato «${fmtLock.name}». Puedes mover y ajustar el marco; si eliges otra proporción, se quita el formato.`
-      : "Arrastra las esquinas para recortar y el centro para mover el recorte.";
+      : "Arrastra los bordes o las esquinas para recortar, y el centro para mover el recorte.";
     $("crop-reset").disabled = !state.crop;
     $("crop-swap").disabled = !cropRatio() || cropRatio() === 1;
     $("straighten").value = state.straighten || 0; setFill($("straighten"));
