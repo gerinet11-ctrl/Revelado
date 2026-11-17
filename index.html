@@ -1231,10 +1231,13 @@ body::before {
       </button>
       <h1 class="home-title">Editar foto</h1>
       <div class="home-list">
-        <button class="home-row primary" id="home-resume" hidden>
-          <span class="home-thumbs" id="home-thumbs"></span>
-          <span><b>Retomar proyecto</b><small id="home-resume-info"></small></span>
-        </button>
+        <div class="home-row primary vproj" id="home-resume-row" hidden>
+          <button class="vproj-open" id="home-resume" hidden>
+            <span class="home-thumbs" id="home-thumbs"></span>
+            <span><b>Retomar proyecto</b><small id="home-resume-info"></small></span>
+          </button>
+          <button class="vproj-del" id="home-del" aria-label="Borrar proyecto" title="Borrar proyecto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>¿Borrar?</span></button>
+        </div>
         <label class="home-row" id="home-new" for="file-input">
           <span class="home-ico small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
           <span><b>Nuevo proyecto</b><small id="home-new-info"></small></span>
@@ -6333,6 +6336,7 @@ void main(){
   function renderHome() {
     const real = docs.filter(d => !d.isSample);
     $("home-resume").hidden = !real.length;
+    $("home-resume-row").hidden = !real.length;
     $("home-sample").hidden = !!real.length;
     $("home-resume-info").textContent = real.length === 1 ? real[0].name : `${real.length} fotos, tal como las dejaste`;
     $("home-new-info").textContent = real.length ? "Elige fotos nuevas. Sustituyen al proyecto guardado." : "Elige una o varias fotos de tu galería";
@@ -6365,6 +6369,25 @@ void main(){
       }, 2600);
     }
   }
+  // Borrar el proyecto de fotos: quita todas tus fotos abiertas (y lo guardado de ellas) y deja la de ejemplo. Dos toques.
+  function deletePhotoProject() {
+    const real = docs.filter(d => !d.isSample);
+    if (!real.length) return;
+    real.forEach(d => store.remove(d.id).catch(() => {}));
+    if (srcCanvas) { srcCanvas.width = srcCanvas.height = 0; srcCanvas = null; }
+    docs.length = 0; cur = -1;
+    const sample = makeSample();
+    docs.push(makeDoc(sample, sample.width, sample.height, "ejemplo-atardecer.jpg", true));
+    activate(0, false);
+    saveMetaSoon();
+    renderHome();
+    toast("Proyecto de fotos borrado.");
+  }
+  { const del = $("home-del"); let armed = 0;
+    del.addEventListener("click", () => {
+      if (del.classList.contains("armed")) { clearTimeout(armed); del.classList.remove("armed"); deletePhotoProject(); return; }
+      del.classList.add("armed"); armed = setTimeout(() => del.classList.remove("armed"), 3000);
+    }); }
   $("home-foto").addEventListener("click", () => showHome("foto"));
   $("home-video").addEventListener("click", () => showHome("video"));
   $("home-back-v").addEventListener("click", () => showHome("main"));
