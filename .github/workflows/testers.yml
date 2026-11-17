@@ -33,6 +33,7 @@ jobs:
           case "${{ github.event.inputs.accion }}" in
             estado) fastlane ios estado ;;
             reemplazar) OLD=10 NEW=20 fastlane ios reemplazar && fastlane ios estado ;;
+            enviar) NEW=22 fastlane ios reemplazar && fastlane ios estado ;;
             *) fastlane ios invitar ;;
           esac
           rm -f "$KEY"
