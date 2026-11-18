@@ -700,6 +700,22 @@ kbd {
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
 
+.home-feedback { margin-top: 22px; }
+.fb-body { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 20px; }
+.fb-sheet { width: min(520px, 100%); }
+.fb-kinds { display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-body textarea {
+  width: 100%; min-height: 130px; resize: vertical;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--well); color: var(--fg);
+  font: inherit; font-size: 16px; line-height: 1.4;
+}
+.fb-body textarea:focus { border-color: var(--accent); outline: none; }
+.fb-check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--muted); line-height: 1.4; cursor: pointer; }
+.fb-check input { margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+.fb-actions { display: flex; flex-direction: column; gap: 10px; }
+.fb-actions .btn { width: 100%; justify-content: center; height: 44px; }
+.fb-link { align-self: flex-start; border: 0; background: none; padding: 4px 0; color: var(--accent); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .toast {
   position: fixed;
   left: 50%;
@@ -1207,6 +1223,10 @@ body::before {
           <b>Video</b><small>Unir clips, texto, música, transiciones y filtros</small>
         </button>
       </div>
+      <button class="home-row home-feedback" id="home-feedback">
+        <span class="home-ico small plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></svg></span>
+        <span><b>Ideas y comentarios</b><small>Cuéntanos qué mejorar o qué te gustaría ver</small></span>
+      </button>
     </div>
 
     <div id="home-step-video" hidden>
@@ -1307,6 +1327,7 @@ body::before {
         </dl>
         <div class="row"><button class="btn primary" id="v-download">Guardar video</button></div>
         <p class="note" id="v-res-note">En el iPhone se abre el menú de compartir: elige «Guardar video» y va a Fotos.</p>
+        <button class="fb-link" type="button" data-feedback="resultado de video">¿Algo que mejorar? Cuéntanos</button>
       </div>
     </div>
   </div>
@@ -1581,6 +1602,7 @@ body::before {
         </div>
         <p class="note" id="save-all-note"></p>
         <p class="note" id="save-note">En el ordenador se descarga en tu carpeta de descargas. En el iPhone se abre el menú de compartir: elige «Guardar imagen» y la foto va a Fotos.</p>
+        <button class="fb-link" type="button" data-feedback="resultado de foto">¿Algo que mejorar? Cuéntanos</button>
       </div>
     </div>
   </div>
@@ -1591,6 +1613,29 @@ body::before {
 <script>
 window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e.message) + " @" + e.lineno); }); addEventListener("unhandledrejection", e => { window.__errs.push("promesa: " + String(e.reason && (e.reason.message || e.reason))); });
 </script>
+<div class="modal" id="fb-modal" hidden role="dialog" aria-modal="true" aria-labelledby="fb-title">
+  <div class="sheet fb-sheet">
+    <div class="sheet-head">
+      <h2 id="fb-title">Tu opinión cuenta</h2>
+      <button class="btn icon" id="fb-close" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="fb-body">
+      <div class="fb-kinds" id="fb-kinds" role="group" aria-label="Tipo de mensaje">
+        <button class="chip text" type="button" data-k="Idea" aria-pressed="true">Una idea</button>
+        <button class="chip text" type="button" data-k="Error" aria-pressed="false">Algo falla</button>
+        <button class="chip text" type="button" data-k="Me gusta" aria-pressed="false">Me gusta</button>
+      </div>
+      <textarea id="fb-text" maxlength="1500" placeholder="¿Qué te gustaría que Moon hiciera mejor o que le faltara?" aria-label="Tu mensaje"></textarea>
+      <label class="fb-check"><input type="checkbox" id="fb-tech" checked><span>Añadir datos del teléfono (modelo de iOS e idioma) para entender mejor el problema. Nunca se envían tus fotos ni videos.</span></label>
+      <div class="fb-actions">
+        <button class="btn primary" id="fb-send" type="button">Enviar por correo</button>
+        <button class="btn" id="fb-copy" type="button">Copiar mensaje</button>
+      </div>
+      <p class="note" id="fb-note">Se abre tu app de Correo con el mensaje listo y tú decides si lo envías. Si no se abre, pulsa «Copiar mensaje» y escríbenos a mooneditapp@gmail.com. Moon no recoge datos por su cuenta.</p>
+    </div>
+  </div>
+</div>
+
 <script>
 // Respaldo para el iPhone en modo app: si no informa del alto de la zona del reloj, se reserva igualmente.
 (() => {
@@ -6391,6 +6436,53 @@ void main(){
   $("home-foto").addEventListener("click", () => showHome("foto"));
   $("home-video").addEventListener("click", () => showHome("video"));
   $("home-back-v").addEventListener("click", () => showHome("main"));
+
+  /* ================= Ideas y comentarios ================= */
+  // No hay servidor: el mensaje se prepara aquí y se abre en la app de Correo del teléfono; la persona decide si lo envía.
+  const FB_MAIL = "mooneditapp@gmail.com", FB_VER = "1.0";
+  let fbKind = "Idea", fbFrom = "inicio";
+  const fbModal = $("fb-modal");
+  function fbMessage() {
+    let body = $("fb-text").value.trim();
+    if ($("fb-tech").checked) {
+      const m = /OS (\d+(?:_\d+)*)/.exec(navigator.userAgent || "");
+      body += "\n\n— — —\nMoon " + FB_VER + " · iOS " + (m ? m[1].replace(/_/g, ".") : "?") + " · " + (navigator.language || "?") + " · desde: " + fbFrom;
+    }
+    return { subject: "Moon: " + fbKind, body };
+  }
+  function openFeedback(from) {
+    fbFrom = from || "inicio";
+    fbModal.hidden = false;
+  }
+  function closeFeedback() { fbModal.hidden = true; }
+  $("home-feedback").addEventListener("click", () => openFeedback("inicio"));
+  document.querySelectorAll("[data-feedback]").forEach(b => b.addEventListener("click", () => openFeedback(b.dataset.feedback)));
+  $("fb-close").addEventListener("click", closeFeedback);
+  fbModal.addEventListener("click", e => { if (e.target === fbModal) closeFeedback(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !fbModal.hidden) closeFeedback(); });
+  $("fb-kinds").querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+    fbKind = b.dataset.k;
+    $("fb-kinds").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    $("fb-text").placeholder = fbKind === "Error" ? "¿Qué estabas haciendo y qué pasó?" : fbKind === "Me gusta" ? "¿Qué es lo que más te gusta de Moon?" : "¿Qué te gustaría que Moon hiciera mejor o que le faltara?";
+  }));
+  $("fb-send").addEventListener("click", () => {
+    if (!$("fb-text").value.trim()) { toast("Escribe primero tu mensaje.", true); $("fb-text").focus(); return; }
+    const { subject, body } = fbMessage();
+    const a = document.createElement("a");
+    a.href = "mailto:" + FB_MAIL + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  $("fb-copy").addEventListener("click", async () => {
+    if (!$("fb-text").value.trim()) { toast("Escribe primero tu mensaje.", true); $("fb-text").focus(); return; }
+    const { subject, body } = fbMessage();
+    const txt = "Para: " + FB_MAIL + "\nAsunto: " + subject + "\n\n" + body;
+    try { await navigator.clipboard.writeText(txt); }
+    catch (e) {
+      const t = document.createElement("textarea"); t.value = txt; t.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch (e2) {} t.remove();
+    }
+    toast("Mensaje copiado. Pégalo en un correo a " + FB_MAIL);
+  });
   $("home-back").addEventListener("click", () => showHome("main"));
   $("home-resume").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
   $("home-sample").addEventListener("click", () => { closeVideoEditor(); hideHome(); });
