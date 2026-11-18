@@ -607,6 +607,7 @@ final class MoonExporter {
         // Archivos de cada clip
         struct Src { var asset: AVURLAsset; var video: AVAssetTrack; var audio: AVAssetTrack?; var ax: SIMD4<Float>; var ay: SIMD4<Float> }
         var srcs: [Int: Src] = [:]
+        var maxRate = 0.0     // fotogramas por segundo del video original más fluido
         for (i, c) in p.clips.enumerated() {
             try checkCancelled()
             var url = URL(fileURLWithPath: c.file)
@@ -620,6 +621,7 @@ final class MoonExporter {
             guard let vt = vts.first else { throw MoonError.bad("«\(URL(fileURLWithPath: c.file).lastPathComponent)» no tiene video") }
             let ats = try await asset.loadTracks(withMediaType: .audio)
             let nat = try await vt.load(.naturalSize)
+            if c.kind != "still", let r = try? await vt.load(.nominalFrameRate), r.isFinite { maxRate = max(maxRate, Double(r)) }
             let tf = try await vt.load(.preferredTransform)
             let (ax, ay) = MoonExporter.orientation(natural: nat, transform: tf)
             srcs[i] = Src(asset: asset, video: vt, audio: c.kind == "still" ? nil : ats.first, ax: ax, ay: ay)
@@ -730,7 +732,9 @@ final class MoonExporter {
         let vc = AVMutableVideoComposition()
         vc.customVideoCompositorClass = MoonCompositor.self
         vc.renderSize = CGSize(width: p.width, height: p.height)
-        vc.frameDuration = CMTime(value: 1, timescale: CMTimeScale(max(1, p.fps)))
+        // fps 0 = automático: se conserva la fluidez del original (30 o 60), nunca menos de 30
+        let outFps = p.fps > 0 ? p.fps : Int(min(60, max(30, maxRate.rounded())))
+        vc.frameDuration = CMTime(value: 1, timescale: CMTimeScale(outFps))
         vc.instructions = instr
         vc.colorPrimaries = AVVideoColorPrimaries_ITU_R_709_2
         vc.colorYCbCrMatrix = AVVideoYCbCrMatrix_ITU_R_709_2
@@ -753,7 +757,7 @@ final class MoonExporter {
         // Vigilante: si en 45 s no hay ningún avance, se corta con un aviso en vez de quedarse colgado.
         final class Watch { var stalled = false }
         let watch = Watch()
-        print("MOONNATIVE \(MoonClock.t()) sesión lista: \(p.clips.count) clip(s), \(String(format: "%.2f", plan.totalOut)) s, \(p.width)x\(p.height)")
+        print("MOONNATIVE \(MoonClock.t()) sesión lista: \(p.clips.count) clip(s), \(String(format: "%.2f", plan.totalOut)) s, \(p.width)x\(p.height) a \(outFps) fps")
         let poll = Task {
             var lastValue = -1.0
             var ticks = 0

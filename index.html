@@ -1586,8 +1586,8 @@ body::before {
           </div>
         </div>
         <div class="ctl" id="ctl-quality">
-          <label for="quality">Calidad</label><output id="out-quality">92</output>
-          <input type="range" id="quality" min="50" max="100" step="1" value="92">
+          <label for="quality">Calidad</label><output id="out-quality">98</output>
+          <input type="range" id="quality" min="50" max="100" step="1" value="98">
         </div>
         <dl class="facts">
           <dt>Tamaño</dt><dd id="exp-size">—</dd>
@@ -4673,7 +4673,7 @@ window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e
     { id: "16:9", label: "16:9 · YouTube", r: 16 / 9 },
   ];
   const VADJ = ["exposure", "contrast", "highlights", "shadows", "saturation", "temperature", "tint", "fade", "vignette", "grain"];
-  const VMAX = 1920, VMIN_LEN = 0.3, VTHUMBS = 10, VALL = 1e6, VBIG = 600 * 1048576;
+  const VMAX = 1920, VNATMAX = 3840, VMIN_LEN = 0.3, VTHUMBS = 10, VALL = 1e6, VBIG = 600 * 1048576;
   const VTRANS = [["none", "Ninguna"], ["fade", "Disolver"], ["black", "A negro"], ["white", "A blanco"], ["slide", "Deslizar"], ["zoom", "Zoom"]];
   const VTMODE = { fade: 1, slide: 2, zoom: 3 };
   const VCOLORS = ["#ffffff", "#111111", "#ffd84a", "#e7a240", "#ff5a4d", "#4da3ff", "#ff7ac8", "#5fe08a"];
@@ -4892,7 +4892,7 @@ void main(){
     return p;
   }
   const even = v => Math.max(2, Math.round(v / 2) * 2);
-  function vOutDims() {       // el tamaño lo marca el primer clip, o el formato elegido
+  function vOutDims(max = VMAX) {       // el tamaño lo marca el primer clip, o el formato elegido
     const S = vs.clips[0] ? srcOf(vs.clips[0]) : null, vw = S ? S.w : 16, vh = S ? S.h : 9;
     let W = vw, H = vh;
     const f = VFORMATS.find(x => x.id === vs.format);
@@ -4901,7 +4901,7 @@ void main(){
       if (vs.fit === "cover") { if (wide) { H = vh; W = vh * f.r; } else { W = vw; H = vw / f.r; } }
       else { if (wide) { W = vw; H = vw / f.r; } else { H = vh; W = vh * f.r; } }
     }
-    const k = Math.min(1, VMAX / Math.max(W, H));
+    const k = Math.min(1, max / Math.max(W, H));
     return { w: even(W * k), h: even(H * k) };
   }
   function vResize() {
@@ -5736,7 +5736,7 @@ void main(){
       zshow();
       body.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { vs.format = b.dataset.f; vResize(); vCommit(); renderVPanel(); }));
       body.querySelectorAll("#v-fit button").forEach(b => b.addEventListener("click", () => { vs.fit = b.dataset.fit; vResize(); vCommit(); renderVPanel(); }));
-      const o = vOutDims(); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
+      const o = vOutDims(isNative && !vnatOff ? VNATMAX : VMAX); $("v-format-info").innerHTML = `Se guardará a <b>${o.w} × ${o.h} px</b>.`;
     }
   }
   function syncVText(fromSlider = false) {
@@ -6163,7 +6163,7 @@ void main(){
           used.forEach(S => { if (gone.has(S.natPath)) S.natPath = null; });
           vmus.forEach(m => { if (gone.has(m.natPath)) m.natPath = null; });
         }
-        const W = vcanvas.width, H = vcanvas.height;
+        const od = vOutDims(VNATMAX), W = od.w, H = od.h; run.dims = od;
         const jobs = [];       // { blob, name, done(path) }
         used.forEach(S => { if (!S.natPath) jobs.push({ get: async () => S.still ? await new Promise(r => S.el.img.toBlob(r, "image/png")) : S.blob, name: S.still ? S.id + ".png" : natName(S.name || S.id, S.blob && S.blob.type), done: p => { S.natPath = p; } }); });
         const addAudio = ref => { const m = ref && vmus.get(ref.id); if (m && !m.natPath) jobs.push({ get: async () => m.blob, name: natName("audio-" + ref.id, m.blob.type), done: p => { m.natPath = p; } }); };
@@ -6188,7 +6188,7 @@ void main(){
         // Proyecto
         const p = vParams(), M = colorMatrix(p);
         const proj = {
-          width: W, height: H, fps: 30, speed: vs.speed, vol: vs.vol, trDur: vs.trDur,
+          width: W, height: H, fps: 0, speed: vs.speed, vol: vs.vol, trDur: vs.trDur,
           look: { m: [M[0], M[1], M[2], M[3] / 255, M[4], M[5], M[6], M[7] / 255, M[8], M[9], M[10], M[11] / 255],
             shadows: (p.shadows || 0) / 100 * 70 / 255, highlights: (p.highlights || 0) / 100 * 70 / 255, split: (p.split || 0) / 100,
             vignette: (p.vignette || 0) / 100 * 0.85, grain: (p.grain || 0) * 0.55 / 255, flash: Math.min(1, (p.flash || 0) / 100) },
@@ -6219,7 +6219,7 @@ void main(){
           throw e;
         }
       }
-      if (result === "ok") toast(`Video guardado en Fotos (${Math.round((performance.now() - t0) / 1000)} s${run.secs ? ", montaje " + Math.round(run.secs) + " s" : ""})`);
+      if (result === "ok") toast(`Video guardado en Fotos · ${run.dims.w}×${run.dims.h} (${Math.round((performance.now() - t0) / 1000)} s${run.secs ? ", montaje " + Math.round(run.secs) + " s" : ""})`);
     } catch (e) {
       const code = e && e.code;
       if (run.cancelled) { result = "cancel"; }
@@ -6340,7 +6340,7 @@ void main(){
     const base = (vproj ? vproj.name : "video").replace(/[\\/:*?"<>|]+/g, " ").trim() || "video";
     vresult = { blob, name: `${base}-moon.${ext}`, type };
     const rv = $("v-result-video"); rv.src = vresultUrl;
-    $("v-res-size").textContent = `${vcanvas.width} × ${vcanvas.height} px`;
+    $("v-res-size").textContent = run.dims ? `${run.dims.w} × ${run.dims.h} px` : `${vcanvas.width} × ${vcanvas.height} px`;
     $("v-res-dur").textContent = fmtTime(vlay.total / vs.speed) + (run.withAudio ? " · con sonido" : " · sin sonido") + (vs.clips.length > 1 ? ` · ${vs.clips.length} clips` : "");
     $("v-res-weight").textContent = humanBytes(blob.size);
     $("v-res-name").textContent = vresult.name;
