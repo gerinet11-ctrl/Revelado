@@ -715,6 +715,11 @@ kbd {
 .fb-check input { margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
 .fb-actions { display: flex; flex-direction: column; gap: 10px; }
 .fb-actions .btn { width: 100%; justify-content: center; height: 44px; }
+.wl-body { display: flex; flex-direction: column; gap: 14px; padding: 20px 22px 22px; }
+.wl-body .mark { width: 56px; height: 56px; display: block; }
+.wl-body p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--fg); }
+.wl-body p.wl-sign { font-family: var(--f-display); color: var(--accent); font-size: 14px; }
+.wl-body .btn { width: 100%; justify-content: center; height: 46px; }
 .fb-link { align-self: flex-start; border: 0; background: none; padding: 4px 0; color: var(--accent); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 .toast {
   position: fixed;
@@ -1632,6 +1637,20 @@ window.__errs = []; addEventListener("error", e => { window.__errs.push(String(e
         <button class="btn" id="fb-copy" type="button">Copiar mensaje</button>
       </div>
       <p class="note" id="fb-note">Se abre tu app de Correo con el mensaje listo y tú decides si lo envías. Si no se abre, pulsa «Copiar mensaje» y escríbenos a mooneditapp@gmail.com. Moon no recoge datos por su cuenta.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="wl-modal" hidden role="dialog" aria-modal="true" aria-labelledby="wl-title">
+  <div class="sheet fb-sheet">
+    <div class="wl-body">
+      <svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#icono"/></svg>
+      <h2 id="wl-title" style="margin:0;font-family:var(--f-display);font-size:24px;line-height:1.15">Gracias por probar Moon</h2>
+      <p>Moon está en desarrollo y la mejoramos cada semana con la ayuda de personas como tú. Agradecemos mucho que la hayas descargado y que le dediques tu tiempo.</p>
+      <p>Si algo no funciona como esperas o se te ocurre una idea, cuéntanos en <b>«Ideas y comentarios»</b>, en la pantalla de inicio. Leemos cada mensaje.</p>
+      <p class="wl-sign">Volemos hacia la perfección.</p>
+      <button class="btn primary" id="wl-idea" type="button">Dejar una idea ahora</button>
+      <button class="btn" id="wl-go" type="button">Empezar a editar</button>
     </div>
   </div>
 </div>
@@ -6456,6 +6475,19 @@ void main(){
   }
   function closeFeedback() { fbModal.hidden = true; }
   $("home-feedback").addEventListener("click", () => openFeedback("inicio"));
+  // Aviso de bienvenida: una sola vez por instalación (o con ?bienvenida=1 para verlo).
+  const wlModal = $("wl-modal");
+  function maybeWelcome() {
+    let seen = false;
+    try { seen = !!localStorage.getItem("moon-bienvenida-1"); } catch (e) {}
+    const force = /[?&]bienvenida=1/.test(location.search);
+    if ((seen || navigator.webdriver || /moonSelfTest/.test(location.search)) && !force) return;
+    try { localStorage.setItem("moon-bienvenida-1", "1"); } catch (e) {}
+    setTimeout(() => { wlModal.hidden = false; }, 500);
+  }
+  window.maybeWelcome = maybeWelcome;
+  $("wl-go").addEventListener("click", () => { wlModal.hidden = true; });
+  $("wl-idea").addEventListener("click", () => { wlModal.hidden = true; openFeedback("bienvenida"); });
   document.querySelectorAll("[data-feedback]").forEach(b => b.addEventListener("click", () => openFeedback(b.dataset.feedback)));
   $("fb-close").addEventListener("click", closeFeedback);
   fbModal.addEventListener("click", e => { if (e.target === fbModal) closeFeedback(); });
@@ -6505,7 +6537,7 @@ void main(){
     splashRun++; clearTimeout(splashTimer);
     splash.classList.add("leaving");
     app.classList.remove("entering"); void app.offsetWidth; app.classList.add("entering");
-    setTimeout(() => { splash.hidden = true; splash.classList.remove("leaving", "play", "launch"); scheduleRender(); }, 450);
+    setTimeout(() => { splash.hidden = true; splash.classList.remove("leaving", "play", "launch"); scheduleRender(); if (window.maybeWelcome) maybeWelcome(); }, 450);
   }
   // Fases: 1) aparecen el logo y el lema; 2) cuando la app está lista y ha dado tiempo a leer, despega el cohete;
   // 3) se abre la app. `ready` es una promesa que se cumple cuando la app terminó de preparar las fotos.
